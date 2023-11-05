@@ -22,6 +22,8 @@ int main() {
     int inputH = 0;
     double totalDPA = 0.2;
     double dpa = 0.0;
+    double progress = 0.0;
+    double prev_progress = 0.0;
     fstream st;
     /* check whether to restart*/
     restart(iStep, advTime, srscd);
@@ -44,16 +46,22 @@ int main() {
         }
         
         if(iStep%PSTEPS == 0){
+            double system_dt = (clock() - t1) / (double)CLOCKS_PER_SEC;
             t1 = clock()-t0;
             st.open("st.txt", ios::app);
             st << (float)t1/CLOCKS_PER_SEC << "  "<< dpa << endl;
             
-            /*
-            cout << "t = " << advTime << endl;
+            cout << "\nt = " << advTime << endl;
             cout <<"iStep = "<< iStep << endl;
             cout<<"dt= " << dt <<endl;
             cout<<"BulkRate = "<<bulkRate<<endl;
-             */
+
+            progress = (dpa / totalDPA) * 100.;
+            double eta_min = 100. / ((progress - prev_progress) / system_dt) / 60.;
+            prev_progress = progress;
+            cout << "eta: " << eta_min << " min" << endl;
+            cout << "Progress: " << (dpa / totalDPA) * 100. << "%" << endl;
+             
             srscd->drawSpeciesAndReactions(advTime);
             srscd->drawDamage(advTime);
             srscd->writeFile(advTime, iStep);
