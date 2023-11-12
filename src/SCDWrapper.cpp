@@ -181,7 +181,8 @@ Object* SCDWrapper::selectReaction(
             }
             
             count = pointIndex;
-            fs << "Element = " << pointIndex + 1 <<", "<< "Reaction = " << reaction << endl << endl;
+            if (LOG_REACTIONS)
+                fs << "Element = " << pointIndex + 1 <<", "<< "Reaction = " << reaction << endl << endl;
             fs.close();
             return tempObject;
         }
@@ -203,20 +204,24 @@ void SCDWrapper::processEvent(
     switch (reaction) {
         case DIFFUSETOF:
             processDiffEvent(hostObject, n, 'f');
-            fs << hostObject->getKey() <<"  diffuses from element "<< n << " to element " << n-1 << endl;
+            if (LOG_REACTIONS)
+                fs << hostObject->getKey() <<"  diffuses from element "<< n << " to element " << n-1 << endl;
             break;
         case DIFFUSETOB:
             processDiffEvent(hostObject, n, 'b');
-            fs << hostObject->getKey() <<"  diffuses from element "<< n << " to element " << n+1 << endl;
+            if (LOG_REACTIONS)
+                fs << hostObject->getKey() <<"  diffuses from element "<< n << " to element " << n+1 << endl;
             break;
         case SINK:
             processSinkEvent(hostObject, n);
-            fs << hostObject->getKey() <<"  in element "<< n << " goes to sink."<< endl;
+            if (LOG_REACTIONS)
+                fs << hostObject->getKey() <<"  in element "<< n << " goes to sink."<< endl;
             writeSinkFile(hostObject, n, time); /* this step also updated sinkDissRate */
             break;
         case DISSOCIATION:
             processDissoEvent(hostObject, n, theOtherKey, fs);
-            fs << hostObject->getKey() <<"   experiences a dissociation."
+            if (LOG_REACTIONS)
+                fs << hostObject->getKey() <<"   experiences a dissociation." << endl;
             break;
         case COMBINATION:
             processCombEvent(hostObject, n, theOtherKey, fs);
@@ -872,11 +877,13 @@ void SCDWrapper::processCombEvent(
         }
     }
     */
-    
-    if(recognizeSAV(hostObject, theOtherObject)){
-        fs<<"Combination Reaction: "<< hostObject->getKey()<<" + "<<theOtherKey<<" -> "<<productKey<< " + "<< SIAKey <<" in element "<< n <<endl;
-    }else{
-        fs<<"Combination Reaction: "<< hostObject->getKey()<<" + "<<theOtherKey<<" -> "<<productKey<<" in element "<< n <<endl;
+    if (LOG_REACTIONS)
+    {
+        if(recognizeSAV(hostObject, theOtherObject)){
+            fs<<"Combination Reaction: "<< hostObject->getKey()<<" + "<<theOtherKey<<" -> "<<productKey<< " + "<< SIAKey <<" in element "<< n <<endl;
+        }else{
+            fs<<"Combination Reaction: "<< hostObject->getKey()<<" + "<<theOtherKey<<" -> "<<productKey<<" in element "<< n <<endl;
+        }
     }
 
 }
@@ -1027,7 +1034,8 @@ void SCDWrapper::getIonInsertion(const int & n, const double& dt, fstream& fs)
                         }
                         updateObjectInMap(tempObject, n);
                     }/* we have this cluster */
-                    fs <<"ion insertion in element "<< n <<", gain " << number <<" " << clusterKey <<endl;
+                    if (LOG_REACTIONS)
+                        fs <<"ion insertion in element "<< n <<", gain " << number <<" " << clusterKey <<endl;
                 }
             }
         }
@@ -1076,7 +1084,8 @@ void SCDWrapper::getHInsertion(const int& n, const double& dt, fstream& fs)
         tempObject->addNumber(n);
         updateObjectInMap(tempObject, n);
     }/* we have this cluster */
-    fs << "H insertion: get 1 " << clusterKey <<" in element "<< n <<endl;
+    if (LOG_REACTIONS)
+        fs << "H insertion: get 1 " << clusterKey <<" in element "<< n <<endl;
     fluenceH += 4.00e+16*dt; /* 4.00e+16 is H flux */
 }
 
