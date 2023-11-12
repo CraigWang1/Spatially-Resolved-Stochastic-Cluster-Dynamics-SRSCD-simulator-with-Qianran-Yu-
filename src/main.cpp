@@ -38,28 +38,33 @@ int main() {
     t0 = clock();
     //srscd->drawHD(advTime);
     //while (advTime < TOTAL_TIME) {
-    while(dpa < totalDPA){
+    while(dpa < totalDPA)
+    {
         hostObject = srscd->selectReaction(theOtherKey, reaction, pointIndex);/* choose an event */
         srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
-        if(reaction == 6){
+        if(reaction == 6)
+        {
             accTime = 0.0;
         }
         
-        if(iStep%PSTEPS == 0){
+        if(iStep%PSTEPS == 0)
+        {
             double system_dt = (clock() - t1) / (double)CLOCKS_PER_SEC;
             t1 = clock()-t0;
             st.open("st.txt", ios::app);
             st << (float)t1/CLOCKS_PER_SEC << "  "<< dpa << endl;
             
+            /*
             cout << "\nt = " << advTime << endl;
             cout <<"iStep = "<< iStep << endl;
             cout<<"dt= " << dt <<endl;
             cout<<"BulkRate = "<<bulkRate<<endl;
+            */
 
             progress = (dpa / totalDPA) * 100.;
             double eta_min = 100. / ((progress - prev_progress) / system_dt) / 60.;
             prev_progress = progress;
-            cout << "eta: " << eta_min << " min" << endl;
+            cout << "\neta: " << eta_min << " min" << endl;
             cout << "Progress: " << (dpa / totalDPA) * 100. << "%" << endl;
              
             srscd->drawSpeciesAndReactions(advTime);

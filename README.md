@@ -70,6 +70,17 @@ The users need to manually create input files to run specific cases. These input
 - restart.txt : this file is needed when you want to continue the simulation from a previous result, see "SCDWrapper.cpp/restart()"
 - sink.txt: store sink absorption information from previous result, see "SCDWrapper.cpp/restart()"
 
+****Output files****
+
+After running the simulation, the following files will appear in the src folder:
+- vd.txt: Density of vacancies at each depth [cm^-3].
+- vt.txt: DPA and sum of vacancy densities at each simulation run.
+- st.txt: DPA and timestamp [s].
+- sd.txt: Vacancy and SIA cluster information.
+- species.txt: How much of each species is stored at each spatial element. Rename this to "restart.txt" if wish to restart from a checkpoint for the next simulation.
+- selectReaction.txt: Log of which reactions were selected at each simulation step.
+- Reactions.txt: Log of reaction performed at each time step.
+
 ****Additional remarks****
 
 The current code is used to simulate irradiation damage. We also used it to simulate Zr-hydride formation, Hydrogen doposition into W and thermal desorption processes. Each case includes different/additional functions. The user is welcomed to contact Qianran for specific version of the SRSCD code.

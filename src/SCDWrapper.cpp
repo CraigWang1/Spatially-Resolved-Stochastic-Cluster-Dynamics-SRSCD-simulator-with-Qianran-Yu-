@@ -142,8 +142,8 @@ Object* SCDWrapper::selectReaction(
                                    Reaction& reaction,
                                    int& count)
 {
-    //ofstream fs;
-    //fs.open("selectReaction.txt", ios::app);
+    ofstream fs;
+    fs.open("selectReaction.txt", ios::app);
     int pointIndex;
     long double randRate = ((double)rand() / RAND_MAX)*bulkRate;
     double tempRandRate = randRate;
@@ -181,8 +181,8 @@ Object* SCDWrapper::selectReaction(
             }
             
             count = pointIndex;
-           // fs << "Element = " << pointIndex + 1 <<", "<< "Reaction = " << reaction << endl << endl;
-           // fs.close();
+            fs << "Element = " << pointIndex + 1 <<", "<< "Reaction = " << reaction << endl << endl;
+            fs.close();
             return tempObject;
         }
     }
@@ -203,19 +203,20 @@ void SCDWrapper::processEvent(
     switch (reaction) {
         case DIFFUSETOF:
             processDiffEvent(hostObject, n, 'f');
-            //fs << hostObject->getKey() <<"  diffuses from element "<< n << " to element " << n-1 << endl;
+            fs << hostObject->getKey() <<"  diffuses from element "<< n << " to element " << n-1 << endl;
             break;
         case DIFFUSETOB:
             processDiffEvent(hostObject, n, 'b');
-            //fs << hostObject->getKey() <<"  diffuses from element "<< n << " to element " << n+1 << endl;
+            fs << hostObject->getKey() <<"  diffuses from element "<< n << " to element " << n+1 << endl;
             break;
         case SINK:
             processSinkEvent(hostObject, n);
-            //fs << hostObject->getKey() <<"  in element "<< n << " goes to sink."<< endl;
+            fs << hostObject->getKey() <<"  in element "<< n << " goes to sink."<< endl;
             writeSinkFile(hostObject, n, time); /* this step also updated sinkDissRate */
             break;
         case DISSOCIATION:
             processDissoEvent(hostObject, n, theOtherKey, fs);
+            fs << hostObject->getKey() <<"   experiences a dissociation."
             break;
         case COMBINATION:
             processCombEvent(hostObject, n, theOtherKey, fs);
@@ -753,7 +754,7 @@ void SCDWrapper::processDissoEvent(
         fs5 <<"Dissociation: " << hostObject->getKey() << " -> " << theOtherKey << " + "<<monomerKey<<endl;
     }
      */
-    //fs <<"Dissociation: " << hostObject->getKey() << " -> " << theOtherKey << " + "<<monomerKey<<" in Element "<<n<<endl;
+    fs <<"Dissociation: " << hostObject->getKey() << " -> " << theOtherKey << " + "<<monomerKey<<" in Element "<<n<<endl;
 }
 
 void SCDWrapper::processCombEvent(
@@ -871,13 +872,13 @@ void SCDWrapper::processCombEvent(
         }
     }
     */
-    /*
+    
     if(recognizeSAV(hostObject, theOtherObject)){
         fs<<"Combination Reaction: "<< hostObject->getKey()<<" + "<<theOtherKey<<" -> "<<productKey<< " + "<< SIAKey <<" in element "<< n <<endl;
     }else{
         fs<<"Combination Reaction: "<< hostObject->getKey()<<" + "<<theOtherKey<<" -> "<<productKey<<" in element "<< n <<endl;
     }
-    */
+
 }
 void SCDWrapper::processSinkDissEvent(const int type, const int& point){
     // dissV event
@@ -1026,7 +1027,7 @@ void SCDWrapper::getIonInsertion(const int & n, const double& dt, fstream& fs)
                         }
                         updateObjectInMap(tempObject, n);
                     }/* we have this cluster */
-                    //fs <<"ion insertion in element "<< n <<", gain " << number <<" " << clusterKey <<endl;
+                    fs <<"ion insertion in element "<< n <<", gain " << number <<" " << clusterKey <<endl;
                 }
             }
         }
@@ -1075,7 +1076,7 @@ void SCDWrapper::getHInsertion(const int& n, const double& dt, fstream& fs)
         tempObject->addNumber(n);
         updateObjectInMap(tempObject, n);
     }/* we have this cluster */
-    //fs << "H insertion: get 1 " << clusterKey <<" in element "<< n <<endl;
+    fs << "H insertion: get 1 " << clusterKey <<" in element "<< n <<endl;
     fluenceH += 4.00e+16*dt; /* 4.00e+16 is H flux */
 }
 
