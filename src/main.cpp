@@ -37,8 +37,8 @@ int main() {
     clock_t t0, t1;
     t0 = clock();
     //srscd->drawHD(advTime);
-    //while (advTime < TOTAL_TIME) {
-    while(dpa < totalDPA)
+    while (advTime < TOTAL_TIME)
+    // while(dpa < totalDPA)
     {
         hostObject = srscd->selectReaction(theOtherKey, reaction, pointIndex);/* choose an event */
         srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
@@ -61,11 +61,21 @@ int main() {
             cout<<"BulkRate = "<<bulkRate<<endl;
             */
 
-            progress = (dpa / totalDPA) * 100.;
-            double eta_min = 100. / ((progress - prev_progress) / system_dt) / 60.;
+            double eta_min, progress; // progress of 50 = 50% done
+            if (dpa != 0)
+            {
+                progress = (dpa / totalDPA) * 100.;
+            }
+            else
+            {
+                // If running while loop for total time instead of total dpa
+                progress = (advTime / TOTAL_TIME) * 100.;
+            }
+            eta_min = 100. / ((progress - prev_progress) / system_dt) / 60.;
             prev_progress = progress;
             cout << "\neta: " << eta_min << " min" << endl;
-            cout << "Progress: " << (dpa / totalDPA) * 100. << "%" << endl;
+            cout << "Progress: " << progress << "%" << endl;
+            std::cout << iStep / progress * 100. << endl;
              
             srscd->drawSpeciesAndReactions(advTime);
             srscd->drawDamage(advTime);
@@ -74,6 +84,13 @@ int main() {
             //srscd->drawHD(advTime);
             st.close();
         }
+        // if(iStep % 5 == 0)
+        // if(iStep %% LSTEPS == 0)
+        // {
+            // srscd->drawHD(advTime);
+            // srscd->countDefectNumber(2, "H");
+
+        // }
         bulkRate = srscd->getAndExamineRate(); /* calculate the bulk rate */
         ++iStep;
         do {
@@ -92,4 +109,3 @@ int main() {
     cout << "Finished, Bye" << endl;
     return 0;
 }
-

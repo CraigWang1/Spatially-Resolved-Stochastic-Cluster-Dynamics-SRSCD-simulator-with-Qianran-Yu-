@@ -1520,9 +1520,9 @@ void SCDWrapper::drawHD(double& t){
     countDefectNumber(0, "V");
     countDefectNumber(0, "SIA");
     countDefectNumber(2, "H");
-    //gh1.cmd("set key bmargin left horizontal Right noreverse enhanced title \"Td= 573K \" box\n");
+    gh1.cmd("set key bmargin left horizontal Right noreverse enhanced title \"Td= 573K \" box\n");
     cmdstr1<<"plot \"vd.txt\" using 1:2 with lp title \" t = "<<buffer<<" V \" lw 3, \"id.txt\" using 1:2 with lp title \"SIA\" lw 3, \"hd.txt\" using 1:2 with lp title \"H\" lw 3\n";
-    //gh1.cmd(cmdstr1.str());
+    gh1.cmd(cmdstr1.str());
     
    
     /* draw H to V ratio */

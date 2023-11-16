@@ -8,6 +8,7 @@
 using namespace std;
 
 /* public function implementations */
+/* Helper class to calculate reaction rates of a species in one spatial element */
 OneLine::OneLine(
                  const Object* const hostObject,
                  const int & count,
@@ -228,8 +229,8 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int& cou
 
 void OneLine::computeSinkReaction(const Object* const hostObject, const int & count)
 {
-    sinkR = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSink();
-    //sinkR = 0.0;
+    // sinkR = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSink();
+    sinkR = 0.0;
 }
 
 void OneLine::computeDissReaction(

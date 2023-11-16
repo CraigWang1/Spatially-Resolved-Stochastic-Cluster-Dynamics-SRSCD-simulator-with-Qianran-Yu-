@@ -89,8 +89,9 @@ void Damage::readFile()
 
 void Damage::computeDamageZero(const int & n)
 {
-    //damage[n][0] = 0.0; /* after damage */
+    damage[n][0] = 0.0; /* after damage */
     
+    /*
     if(n != 0){
         if( NRT[n] == 0.0 ){
             
@@ -102,6 +103,7 @@ void Damage::computeDamageZero(const int & n)
     }else{
         damage[n][0] = 0.0;
     }
+    */
     //damage[n][0] = DPA_RATE[n] * DENSITY*VOLUME / NRT[n];
     totalRate[n] += damage[n][0];
 }
@@ -118,8 +120,8 @@ void Damage::computeDamageTwo(const int & n)
     double concentration_H = 1.34e+4;
     double flux_H = 4.00e+16;
     if (n == 0) {
-        //damage[n][2] = concentration_H * flux_H * volume;
-        damage[n][2] = 0.0; /* no hydrogen insertion */
+        damage[n][2] = concentration_H * flux_H * volume;
+        // damage[n][2] = 0.0; /* no hydrogen insertion */
     }
     else {
         damage[n][2] = 0.0;
