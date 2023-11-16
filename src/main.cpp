@@ -73,9 +73,9 @@ int main() {
             }
             eta_min = 100. / ((progress - prev_progress) / system_dt) / 60.;
             prev_progress = progress;
+            cout << "time: " << advTime << endl;
             cout << "\neta: " << eta_min << " min" << endl;
             cout << "Progress: " << progress << "%" << endl;
-            std::cout << iStep / progress * 100. << endl;
              
             srscd->drawSpeciesAndReactions(advTime);
             srscd->drawDamage(advTime);
@@ -85,12 +85,11 @@ int main() {
             st.close();
         }
         // if(iStep % 5 == 0)
-        // if(iStep %% LSTEPS == 0)
-        // {
-            // srscd->drawHD(advTime);
+        if(iStep % PSTEPS == 0)
+        {
+            srscd->drawHD(advTime);
             // srscd->countDefectNumber(2, "H");
-
-        // }
+        }
         bulkRate = srscd->getAndExamineRate(); /* calculate the bulk rate */
         ++iStep;
         do {

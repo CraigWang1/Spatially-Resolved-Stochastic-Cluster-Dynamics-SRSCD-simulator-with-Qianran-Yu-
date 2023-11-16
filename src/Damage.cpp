@@ -110,7 +110,8 @@ void Damage::computeDamageZero(const int & n)
 
 void Damage::computeDamageOne(const int & n)
 {
-    damage[n][1]= RATIO_HE*1.0e-06*DPA_RATE[n]*DENSITY*VOLUME;
+    damage[n][1]= 0.;
+    // damage[n][1]= RATIO_HE*1.0e-06*DPA_RATE[n]*DENSITY*VOLUME;
     totalRate[n] += damage[n][1];
 }
 

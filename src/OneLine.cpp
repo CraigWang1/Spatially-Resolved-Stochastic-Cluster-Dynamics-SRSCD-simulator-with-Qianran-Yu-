@@ -94,6 +94,7 @@ void OneLine::updateReaction(
                              const int & n)
 {
     double rate = computeCombReaction(hostObject, mobileObject, n);
+    // double rate = 0;
     secondR[mobileObject->getKey()] = rate;
 }
 
@@ -254,15 +255,15 @@ void OneLine::computeDissReaction(
         dissociationR[index] = 0.0;
         
     }
-    //dissociationR[index] = 0.0;
+    dissociationR[index] = 0.0;
 }
 
 double OneLine::computeCombReaction(
                                     const Object* const hostObject,
                                     const Object* const mobileObject,
                                     const int& count)
-{
-    
+{    
+    return 0;
     double concentration;
     double r12;
     double dimensionTerm;
@@ -300,7 +301,7 @@ double OneLine::computeCombReaction(
     int64 key2 = mobileObject->getKey();
     return 4.0*PI*concentration*r12*dimensionTerm;
     
-    //return 0.0;
+    // return 0.0;
     
 }
 
