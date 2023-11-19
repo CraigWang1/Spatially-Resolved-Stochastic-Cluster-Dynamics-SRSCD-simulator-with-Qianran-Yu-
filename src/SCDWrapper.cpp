@@ -1086,7 +1086,7 @@ void SCDWrapper::getHInsertion(const int& n, const double& dt, fstream& fs)
     }/* we have this cluster */
     if (LOG_REACTIONS)
         fs << "H insertion: get 1 " << clusterKey <<" in element "<< n <<endl;
-    fluenceH += 4.00e+16*dt; /* 4.00e+16 is H flux */
+    fluenceH += FLUX_H*dt; /* 4.00e+16 is H flux */
 }
 
 void restart(int & iStep, double & advTime, SCDWrapper *srscd)

@@ -31,6 +31,7 @@ Reaction Damage::selectDamage(const int & n, double & randRate)
 {
     int index = 0;
     double tempRate = randRate;
+
     if (totalRate[n] < randRate) {
         randRate -= totalRate[n];
         return NONE;
@@ -119,9 +120,8 @@ void Damage::computeDamageTwo(const int & n)
 {
     double volume = VOLUME/36 * SURFACE_THICKNESS;
     double concentration_H = 1.34e+4;
-    double flux_H = 4.00e+16;
     if (n == 0) {
-        damage[n][2] = concentration_H * flux_H * volume;
+        damage[n][2] = concentration_H * FLUX_H * volume; // rate (num hydrogen insertions/s)
         // damage[n][2] = 0.0; /* no hydrogen insertion */
     }
     else {

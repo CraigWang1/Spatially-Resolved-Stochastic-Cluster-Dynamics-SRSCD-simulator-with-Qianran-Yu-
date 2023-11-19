@@ -174,6 +174,7 @@ void OneLine::setOneLine(
 
 void OneLine::computeDiffReaction(const Object* const hostObject, const int& count)
 {/* by having two diffusion rates, this rate will never be less than 0 */
+    /* length measured in cm */
 	double lengthf = 0.0, lengthb = 0.0;
 	if(count == 0){
 		lengthf = 2.74e-8; /* thickness of W surface is 0.544nm, this length is centroid to vacuum */
@@ -216,12 +217,13 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int& cou
     else {
         diffRToB = 0.0;
     }
-    /*
+    
+    
     if (count == POINTS - 1) {
         //objects at bottom is not allowed to diffuse into vacuum
         diffRToB = 0.0;
     }
-    */
+    
     /*
     diffRToB = 0.0;
     diffRToF = 0.0;
