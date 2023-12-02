@@ -24,6 +24,8 @@ int main() {
     double dpa = 0.0;
     double progress = 0.0;
     double prev_progress = 0.0;
+    double write_time = 60;
+    double write_increment = 15;
     fstream st;
     /* check whether to restart*/
     restart(iStep, advTime, srscd);
@@ -71,7 +73,7 @@ int main() {
                 // If running while loop for total time instead of total dpa
                 progress = (advTime / TOTAL_TIME) * 100.;
             }
-            eta_min = 100. / ((progress - prev_progress) / system_dt) / 60.;
+            eta_min = (100 - progress) / ((progress - prev_progress) / system_dt) / 60.;
             prev_progress = progress;
             cout << "time: " << advTime << endl;
             cout << "\neta: " << eta_min << " min" << endl;
@@ -90,13 +92,20 @@ int main() {
             srscd->drawHD(advTime);
             // srscd->countDefectNumber(2, "H");
         }
+
+        if (advTime / write_time >= 1)
+        {
+            // srscd->writeFile(advTime, iStep);
+            write_time += write_increment;
+        }
+
         bulkRate = srscd->getAndExamineRate(); /* calculate the bulk rate */
         ++iStep;
         do {
             random = (double)rand() / RAND_MAX;
         } while (random == 0);
         dt = (-1) / bulkRate*log(random);
-        accTime +=dt;
+        accTime += dt;
         advTime += dt;
         dpa = srscd->getTotalDpa();
     }

@@ -13,7 +13,7 @@ HEADER_FILES= SCDWrapper.h Bundle.h CascadeDamage.h Damage.h Object.h OneLine.h 
 # Build executable:
 exe : $(EXE_FILE)
 $(EXE_FILE) : $(OBJ_FILES) 
-	$(CXX) -o $(EXE_FILE) $(OBJ_FILES) -g -lm -lboost_iostreams -lboost_system -lboost_filesystem
+	$(CXX) -o $(EXE_FILE) $(OBJ_FILES) -g -lm
 	# chmod ugo+x $(EXE_FILE)	# turn on execute permissionss
 
 # Rules:

@@ -318,6 +318,7 @@ void SCDWrapper::writeSpeciesFile(const double& time, const int& n)
 {
     ofstream fo;
     unordered_map<int64, Object*>::iterator iter;
+    // fo.open(std::string("species") + std::to_string(time) + std::string(".txt"), ios::out);
     fo.open("species.txt", ios::out);
     fo << "step = " << n << endl;
     fo << "time = " << time << endl;
@@ -1367,7 +1368,7 @@ void SCDWrapper::writeReaction(){
 
 /* test functions */
 void SCDWrapper::countRatioDistribution(double& t){
-    double sW = DENSITY * (VOLUME / 36) * SURFACE_THICKNESS;
+    double sW = DENSITY * (VOLUME / 20) * SURFACE_THICKNESS;
     /*number of surface tungsten */
     int sH = 0; /* number of surface hydrogen*/
     unordered_map<int64, Object*>::iterator iter;

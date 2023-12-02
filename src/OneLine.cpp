@@ -94,7 +94,6 @@ void OneLine::updateReaction(
                              const int & n)
 {
     double rate = computeCombReaction(hostObject, mobileObject, n);
-    // double rate = 0;
     secondR[mobileObject->getKey()] = rate;
 }
 
@@ -185,16 +184,20 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int& cou
 	}else{
 		lengthf = lengthb = 2.0e-6; /* other element distances */
 	}
-    int ratio  = round(20/SURFACE_THICKNESS);
+    double ratio  = 20. / SURFACE_THICKNESS;
     double prefactor = 0.0;
     int objectN[3];
     hostObject->getThreeNumber(count, objectN);
     if(count == 0){
-        objectN[0] *= ratio;
+        objectN[0] = round(objectN[0] * ratio);
     }else if(count == 1){
-        objectN[1] *= ratio;
+        objectN[1] = round(objectN[1] * ratio);
     }
-    /* 1. compute diffusion rate to the front element */
+
+    /* 
+     * 1. compute diffusion rate to the front element 
+     * Diffusion goes from area of higher concentration to lower concentration
+     */
     if (objectN[0] > objectN[1]) {
         /* if diffusable, surface objects diffusing into vacuum is considered */
         prefactor = hostObject->getDiff() / lengthf / lengthf;
@@ -265,14 +268,13 @@ double OneLine::computeCombReaction(
                                     const Object* const mobileObject,
                                     const int& count)
 {    
-    return 0;
     double concentration;
     double r12;
     double dimensionTerm;
     double volume;
     if(count == 0){
-        volume = (VOLUME/36) * SURFACE_THICKNESS;
-        // volume on surface volume/36nm * 0.54nm
+        volume = (VOLUME/20) * SURFACE_THICKNESS;
+        // volume on surface volume/20nm * 0.54nm
         
     }else{
         volume = VOLUME;
