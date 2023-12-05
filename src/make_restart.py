@@ -3,7 +3,7 @@ LENGTH = 20
 SURFACE_LEN = 0.544
 SURFACE_VOLUME = VOLUME / LENGTH * SURFACE_LEN
 
-num = 100
+num = 1
 num_surface = round(num / VOLUME * SURFACE_VOLUME)
 
 

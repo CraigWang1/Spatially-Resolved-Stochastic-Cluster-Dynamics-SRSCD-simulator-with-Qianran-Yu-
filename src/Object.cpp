@@ -529,7 +529,7 @@ void Object::computeBindTerm()
                 bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
                 
             } else if (attributes[0]==1 && attributes[2]==3){ // SIA-H3
-                energy_b = 0.40;
+                energy_b = 0.22;
                 energy_d[2] = energy_b + emh;
                 bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
                 bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
@@ -542,7 +542,7 @@ void Object::computeBindTerm()
                 
                 
             } else if (attributes[0]==1 && attributes[2]==5){ // SIA-H5
-                energy_b = 0.20;
+                energy_b = -0.1;
                 energy_d[2] = energy_b + emh;
                 bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
                 bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
@@ -564,14 +564,14 @@ void Object::computeBindTerm()
                 
             } else if (attributes[0]==2 && attributes[2]==3){ // SIA2-H3
                 energy_d[0] = 2.12;
-                energy_b = 0.1;
+                energy_b = 0.22;
                 energy_d[2] = energy_b + emh;
                 bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
                 bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
                 
             } else if (attributes[0]==2 && attributes[2]==4){ // SIA2-H4
                 energy_d[0] = 2.12;
-                energy_b = 0.3;
+                energy_b = 0.1;
                 energy_d[2] = energy_b + emh;
                 bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
                 bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
@@ -579,9 +579,9 @@ void Object::computeBindTerm()
             } else{
                 int H = attributes[2];
                 energy_d[0] = 2.12;
-                energy_d[2] = H + 0.013 * H * H * H * H - 0.44 * H * H;
-                /* this part is unknown */
-
+                energy_d[2] = -0.12 * H + 0.59 + emh; /* extrapolate */
+                bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
+                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
             }
 
         }else if (attributes[0]== 0) { // nH clusters, this is binding energy of nH cluster dissociating 1 H from Qin(2015)

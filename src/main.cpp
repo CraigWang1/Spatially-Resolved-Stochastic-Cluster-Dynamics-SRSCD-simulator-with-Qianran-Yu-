@@ -33,7 +33,7 @@ int main() {
     /* check ended */
     srand(time(0));
     /*display damage*/
-    srscd->displayDamage();
+    // srscd->displayDamage();
     srscd->displayAllObject();
     srscd->drawSpeciesAndReactions(advTime);
     clock_t t0, t1;

@@ -782,7 +782,7 @@ void SCDWrapper::processCombEvent(
     } /* now I have the attribute of the product object */
     if(recognizeSAV(hostObject, theOtherObject)){
         ++reactions[7][n];
-        //cout<<"SAV"<<endl;
+        // cout<<"SAV"<<endl;
         productAttr[0] -= 1; /* generate 1 vacancy */
         if (allObjects.find(SIAKey) != allObjects.end()) {
             /* we have SIA */
@@ -1093,7 +1093,8 @@ void SCDWrapper::getHInsertion(const int& n, const double& dt, fstream& fs)
 void restart(int & iStep, double & advTime, SCDWrapper *srscd)
 {
     int64 objectKey;
-    int number[LEVELS+1] = { 0 };
+    int numberSinks[LEVELS+1] = { 0 };
+    int number[POINTS] = { 0 };
     int step = 0;
     string skip;
     string oneLine;
@@ -1105,9 +1106,9 @@ void restart(int & iStep, double & advTime, SCDWrapper *srscd)
             while (getline(file, oneLine)) {
                 lineHold.str(oneLine);
                 for (int i = 0; i < LEVELS+1; i++) {
-                    lineHold >> number[i];
+                    lineHold >> numberSinks[i];
                 }
-                srscd->updateSinks(j,number);
+                srscd->updateSinks(j,numberSinks);
                 lineHold.clear();
             }
         }
@@ -1115,7 +1116,7 @@ void restart(int & iStep, double & advTime, SCDWrapper *srscd)
     file.close();
     /* update species informtion */
     ifstream ofile("restart.txt");
-    if (file.good()) {
+    if (ofile.good()) {
         while (getline(ofile, oneLine)) {
             step++;
             lineHold.str(oneLine);
@@ -1147,12 +1148,13 @@ void restart(int & iStep, double & advTime, SCDWrapper *srscd)
 }
 
 bool SCDWrapper::recognizeSAV(const Object *const hostObject, const Object *const theOtherObject){
+    return false;
     int hostAttrZero = hostObject->getAttri(0);
     int hostAttrTwo = hostObject->getAttri(2);
     int otherAttrZero = theOtherObject->getAttri(0);
     int otherAttrTwo = theOtherObject->getAttri(2);
     if(hostAttrZero < 0 && hostAttrTwo != 0){/* check whether it is a mV-nH cluster */
-        /*
+        
         if(otherAttrZero == 0 && (otherAttrTwo == 1 || otherAttrTwo == 2)){
             //check whether the other cluster is H or 2H
             double ratio = (double)hostAttrTwo/(double)abs(hostAttrZero);
@@ -1184,12 +1186,13 @@ bool SCDWrapper::recognizeSAV(const Object *const hostObject, const Object *cons
             
         }else{
             return false;
-            //if not H or 2H code do original combination reactio;
+            //if not H or 2H code do original combination reaction;
             
         }
-        */
-        return false;
         
+        return false;
+    
+    /* A high concentration of H also will trigger SAV mechanism? */
     }else if(hostAttrZero == 0 && hostAttrTwo != 0){/* check if it is pure nH cluster*/
         if(otherAttrZero == 0 && (otherAttrTwo == 1 || otherAttrTwo == 2)){
             // check whether the other cluster is H or 2H

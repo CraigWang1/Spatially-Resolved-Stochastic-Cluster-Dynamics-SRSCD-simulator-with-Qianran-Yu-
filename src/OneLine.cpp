@@ -260,7 +260,7 @@ void OneLine::computeDissReaction(
         dissociationR[index] = 0.0;
         
     }
-    dissociationR[index] = 0.0;
+    // dissociationR[index] = 0.0;
 }
 
 double OneLine::computeCombReaction(
@@ -319,7 +319,7 @@ double OneLine::computeDimensionTerm(
     double hostDiff = hostObject->getDiff(), mobileDiff = mobileObject->getDiff();
     int hostDim = hostObject->getDim(), mobileDim = mobileObject->getDim();
     int hostN = hostObject->getNumber(count), mobileN = mobileObject->getNumber(count);
-    /* int dimsum = hostDim + mobileDim; */
+    // int dimsum = hostDim + mobileDim; 
     int dimsum = 6;
     double alpha_a = -log(PI*PI*pow(r12, 3.0) / VOLUME / hostN);
     double alpha_b = -log(PI*PI*pow(r12, 3.0) / VOLUME / mobileN);
