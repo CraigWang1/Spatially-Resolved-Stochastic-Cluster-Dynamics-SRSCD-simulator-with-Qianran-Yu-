@@ -39,7 +39,7 @@
 // Run parameters:
 
 #define ION               // Irradiation type.
-#define TOTAL_TIME 15    // [s] Total simulated time.
+#define TOTAL_TIME 2      // [s] Total simulated time.
 #define VOLUME 1.0e-17    // [cm^3] System volume.
 #define TEMPERATURE 383.0  // [K] System temperature.
 //#define RATIO_HE 1.1       // [appm/dpa] He-to-dpa ratio.
@@ -49,7 +49,6 @@
 //#define DPA_RATE 0       //When only H exposure is available. no self-damage at all
 //#define DPA_RATE 3.55e-6   // [dpa/s] Damage rate.
 #define CHANNELS 3         // Irradiation channels used (1:W, 2:He, 3:H,...). the number of different particle insertion(irradiation) process.
-#define LSTEPS 14000000    // Log specific data every so many.
 #define PSTEPS 5000 // Print data every so many.
 #define TSTEPS 50000 // Run these many steps.
 #define LEVELS 3

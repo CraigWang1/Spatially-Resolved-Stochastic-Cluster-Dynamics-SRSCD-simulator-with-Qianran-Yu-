@@ -760,7 +760,8 @@ void SCDWrapper::processDissoEvent(
         fs5 <<"Dissociation: " << hostObject->getKey() << " -> " << theOtherKey << " + "<<monomerKey<<endl;
     }
      */
-    fs <<"Dissociation: " << hostObject->getKey() << " -> " << theOtherKey << " + "<<monomerKey<<" in Element "<<n<<endl;
+    if (LOG_REACTIONS)
+        fs <<"Dissociation: " << hostObject->getKey() << " -> " << theOtherKey << " + "<<monomerKey<<" in Element "<<n<<endl;
 }
 
 void SCDWrapper::processCombEvent(
@@ -1524,18 +1525,18 @@ void SCDWrapper::drawHD(double& t){
     countDefectNumber(0, "V");
     countDefectNumber(0, "SIA");
     countDefectNumber(2, "H");
-    gh1.cmd("set key bmargin left horizontal Right noreverse enhanced title \"Td= 573K \" box\n");
-    cmdstr1<<"plot \"vd.txt\" using 1:2 with lp title \" t = "<<buffer<<" V \" lw 3, \"id.txt\" using 1:2 with lp title \"SIA\" lw 3, \"hd.txt\" using 1:2 with lp title \"H\" lw 3\n";
-    gh1.cmd(cmdstr1.str());
+    // gh1.cmd("set key bmargin left horizontal Right noreverse enhanced title \"Td= 573K \" box\n");
+    // cmdstr1<<"plot \"vd.txt\" using 1:2 with lp title \" t = "<<buffer<<" V \" lw 3, \"id.txt\" using 1:2 with lp title \"SIA\" lw 3, \"hd.txt\" using 1:2 with lp title \"H\" lw 3\n";
+    // gh1.cmd(cmdstr1.str());
     
    
     /* draw H to V ratio */
     //gh2.cmd("plot \"vha.txt\" using 1:2 w l title \" whole H/V \" lw 3, \"vhc.txt\" using 1:2 w l title \" cluster H/V \" lw 3 \n");
     
-    if(plotTime2==1){
-        getchar();
-        ++plotTime2;
-    }
+    // if(plotTime2==1){
+    //     getchar();
+    //     ++plotTime2;
+    // }
     //sleep(0.02);
 }
 

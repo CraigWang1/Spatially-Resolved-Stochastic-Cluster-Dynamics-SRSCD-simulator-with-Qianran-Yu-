@@ -24,11 +24,13 @@ int main() {
     double dpa = 0.0;
     double progress = 0.0;
     double prev_progress = 0.0;
-    double write_time = 60;
-    double write_increment = 15;
+    double write_time = 0.2;
+    double write_increment = 0.2;
     fstream st;
     /* check whether to restart*/
     restart(iStep, advTime, srscd);
+    while (advTime > write_time)
+        write_time += write_increment;
     srscd->getAndExamineRate();
     /* check ended */
     srand(time(0));

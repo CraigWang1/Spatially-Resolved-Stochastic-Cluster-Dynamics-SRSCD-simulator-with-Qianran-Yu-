@@ -306,7 +306,6 @@ double OneLine::computeCombReaction(
     return 4.0*PI*concentration*r12*dimensionTerm;
     
     // return 0.0;
-    
 }
 
 double OneLine::computeDimensionTerm(
