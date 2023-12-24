@@ -7,7 +7,8 @@
 #include"CascadeDamage.h"
 #include"constants.h"
 // #include"gnuplot_i.h"
-#include<string>
+#include <string>
+#include <iomanip>
 
 class SCDWrapper {
 private:

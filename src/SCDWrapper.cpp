@@ -411,7 +411,7 @@ void SCDWrapper::displayAllObject(){
         for(int i = 0; i < POINTS; i++){
             std::cout << (iter->second->getNumber(i)) << "    " ;
         }
-        std::cout<<endl;
+        std::cout<<endl<<endl;
     }
 }
 

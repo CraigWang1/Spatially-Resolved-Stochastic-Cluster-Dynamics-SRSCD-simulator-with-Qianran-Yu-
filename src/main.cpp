@@ -22,8 +22,10 @@ int main() {
     int inputH = 0;
     double totalDPA = 0.2;
     double dpa = 0.0;
-    double progress = 0.0;
+    double progress = 0.0; /* progress of 50 = 50% done with simulation */
+    double eta_min = 0.0;
     double prev_progress = 0.0;
+    double prev_eta_min = 0.0;
     double write_time = 0.2;
     double write_increment = 0.2;
     fstream st;
@@ -38,8 +40,7 @@ int main() {
     // srscd->displayDamage();
     srscd->displayAllObject();
     srscd->drawSpeciesAndReactions(advTime);
-    clock_t t0, t1;
-    t0 = clock();
+    clock_t prev_time = clock();
     //srscd->drawHD(advTime);
     while (advTime < TOTAL_TIME)
     // while(dpa < totalDPA)
@@ -53,10 +54,10 @@ int main() {
         
         if(iStep%PSTEPS == 0)
         {
-            double system_dt = (clock() - t1) / (double)CLOCKS_PER_SEC;
-            t1 = clock()-t0;
+            double system_dt = (clock() - prev_time) / (double)CLOCKS_PER_SEC;
+            prev_time = clock();
             st.open("st.txt", ios::app);
-            st << (float)t1/CLOCKS_PER_SEC << "  "<< dpa << endl;
+            st << (float)prev_time/CLOCKS_PER_SEC << "  "<< dpa << endl;
             
             /*
             cout << "\nt = " << advTime << endl;
@@ -65,21 +66,44 @@ int main() {
             cout<<"BulkRate = "<<bulkRate<<endl;
             */
 
-            double eta_min, progress; // progress of 50 = 50% done
+            // Chose between dpa or time to calculate progress
             if (dpa != 0)
             {
                 progress = (dpa / totalDPA) * 100.;
             }
             else
             {
-                // If running while loop for total time instead of total dpa
                 progress = (advTime / TOTAL_TIME) * 100.;
             }
-            eta_min = (100 - progress) / ((progress - prev_progress) / system_dt) / 60.;
+
+            // Initialize the first eta estimate, or update the previous one
+            if (prev_progress != 0)
+            {
+                eta_min = (100 - progress) / ((progress - prev_progress) / system_dt) / 60.;
+                
+                if (prev_eta_min != 0)
+                {
+                    eta_min = prev_eta_min + 0.1 * (eta_min - prev_eta_min);
+
+                    // Print progress bar
+                    cout << "[";
+                    int barWidth = 70;
+                    int pos = barWidth * (progress/100.);
+                    for (int i = 0; i < barWidth; i++)
+                    {
+                        if (i < pos) cout << "=";
+                        else if (i == pos) cout << ">";
+                        else cout << " ";
+                    }
+                    cout << "] " << std::fixed << std::setprecision(2) << progress << "%";
+                    cout << "   eta: " << std::fixed << std::setprecision(1) << eta_min << " min";
+                    cout << "   time: " << std::fixed << std::setprecision(6) << advTime << " s\r";
+                    cout.flush();
+                }
+            }
+
+            prev_eta_min = eta_min;
             prev_progress = progress;
-            cout << "time: " << advTime << endl;
-            cout << "\neta: " << eta_min << " min" << endl;
-            cout << "Progress: " << progress << "%" << endl;
              
             srscd->drawSpeciesAndReactions(advTime);
             srscd->drawDamage(advTime);
