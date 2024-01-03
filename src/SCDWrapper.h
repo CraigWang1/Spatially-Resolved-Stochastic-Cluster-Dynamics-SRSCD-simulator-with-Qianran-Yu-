@@ -78,10 +78,10 @@ private:
     void getHeInsertion(const int&);  // deal with damage[1]
     void getHInsertion(const int&, const double&, fstream&);   // deal with damage[2]
     /* write file funcitons*/
-    void writeSinkFile(const Object* const, const int& n, const double&);
+    void writeSinkFile(const Object* const, const long int& n, const double&);
     /* sinks.out only writes when sink reaction happens, now this function is not "writing things" but only updating sinks[][] */
-    void writeSpeciesFile(const double&, const int&);
-    void writeClusterFile(const double&, const int&);
+    void writeSpeciesFile(const double&, const long int&);
+    void writeClusterFile(const double&, const long int&);
     /* distinguish reaction type function */
     bool recognizeSAV(const Object* const, const Object* const);
     /* if SAV, return true, if not, return false*/
@@ -108,11 +108,11 @@ public:
     /* output file functions */
     void displayDamage();
     void displayAllObject();
-    void writeFile(const double&, const int&);
+    void writeFile(const double&, const long int&);
     /* testing functions which includes display/output file functions that might be used when debugging */
-    void writeSinkFile(const double&, const int&);
+    void writeSinkFile(const double&, const long int&);
     void display() const;   // display rateMatrix within in one element
-    friend void restart(int&, double&, SCDWrapper*);
+    friend void restart(long int&, double&, SCDWrapper*);
     /* test functions, don't need in the future */
     void test(const int&); /* count how many vacancies now in the bulk */
     

@@ -296,7 +296,7 @@ const double SCDWrapper::getAndExamineRate()
     return bulkRate;
 }
 
-void SCDWrapper::writeSinkFile(const Object * const hostObject, const int& n, const double& time)
+void SCDWrapper::writeSinkFile(const Object * const hostObject, const long int& n, const double& time)
 {
     int i;
     for (i = 0; i < LEVELS; i++) {
@@ -314,7 +314,7 @@ void SCDWrapper::writeSinkFile(const Object * const hostObject, const int& n, co
     }
 }
 
-void SCDWrapper::writeSpeciesFile(const double& time, const int& n)
+void SCDWrapper::writeSpeciesFile(const double& time, const long int& n)
 {
     ofstream fo;
     unordered_map<int64, Object*>::iterator iter;
@@ -337,7 +337,7 @@ void SCDWrapper::writeSpeciesFile(const double& time, const int& n)
     
 }
 
-void SCDWrapper::writeClusterFile(const double& time, const int& n)
+void SCDWrapper::writeClusterFile(const double& time, const long int& n)
 {
     int i;
     ofstream fc;
@@ -383,7 +383,7 @@ void SCDWrapper::writeClusterFile(const double& time, const int& n)
     fc.close();
 }
 
-void SCDWrapper::writeSinkFile(const double& time, const int& n)
+void SCDWrapper::writeSinkFile(const double& time, const long int& n)
 {
     int i, j;
     ofstream fs;
@@ -415,7 +415,7 @@ void SCDWrapper::displayAllObject(){
     }
 }
 
-void SCDWrapper::writeFile(const double& time, const int & n)
+void SCDWrapper::writeFile(const double& time, const long int & n)
 {
     writeSpeciesFile(time, n);
     writeSinkFile(time, n);
@@ -1091,7 +1091,7 @@ void SCDWrapper::getHInsertion(const int& n, const double& dt, fstream& fs)
     fluenceH += FLUX_H*dt; /* 4.00e+16 is H flux */
 }
 
-void restart(int & iStep, double & advTime, SCDWrapper *srscd)
+void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
 {
     int64 objectKey;
     int numberSinks[LEVELS+1] = { 0 };

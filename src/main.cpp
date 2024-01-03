@@ -13,7 +13,7 @@ int main() {
     Object* hostObject = nullptr;
     Reaction reaction = ERROR;
     int pointIndex = -1;
-    int iStep = 0;
+    long int iStep = 0;
     double random;
     double advTime = 0.0;
     double dt = 0.0;
@@ -95,9 +95,17 @@ int main() {
                         else if (i == pos) cout << ">";
                         else cout << " ";
                     }
+
+                    // Print a set amount of digits
+                    int numDigits = 7;
+                    int magnitude = 0;
+                    while ((int)(advTime / pow(10, magnitude)))
+                    {
+                        magnitude++;
+                    }
                     cout << "] " << std::fixed << std::setprecision(2) << progress << "%";
                     cout << "   eta: " << std::fixed << std::setprecision(1) << eta_min << " min";
-                    cout << "   time: " << std::fixed << std::setprecision(6) << advTime << " s\r";
+                    cout << "   time: " << std::fixed << std::setprecision(numDigits - magnitude) << advTime << " s            \r";
                     cout.flush();
                 }
             }
