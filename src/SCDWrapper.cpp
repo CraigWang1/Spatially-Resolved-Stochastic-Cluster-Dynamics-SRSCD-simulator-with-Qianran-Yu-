@@ -24,6 +24,7 @@ SCDWrapper::SCDWrapper():damage(), cpdf()
         computeMatrixRate(i);
     } /* initialized matrix rate in every element */
     computeBulkRate();  /* initialized total rate in the bulk */
+    computeDomainRate();
     
     /* initialize reactions[][] */
     for(int i=0; i<8; i++){
@@ -95,7 +96,7 @@ SCDWrapper::SCDWrapper():damage(), cpdf()
 void SCDWrapper::computeMatrixRate(const int & n)
 {
     /* Qianran 0925 */
-    //cout << "Element " << n + 1 << endl;
+    // cout << "Element " << n + 1 << endl;
     matrixRate[n] = 0.0;
     unordered_map<int64, Object*>::iterator iter;
     for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
@@ -127,6 +128,7 @@ void SCDWrapper::computeMatrixRate(const int & n)
     matrixRate[n] += damage.getTotalDamage(n);
     matrixRate[n] += sinkDissRate[0][n];
     matrixRate[n] += sinkDissRate[1][n];
+    matrixRate[n] += noneRate / numVolumeElements;
 }
 
 void SCDWrapper::computeBulkRate()
@@ -134,6 +136,15 @@ void SCDWrapper::computeBulkRate()
     bulkRate = 0.0;
     for (int i = 0; i < POINTS; ++i) {
         bulkRate += matrixRate[i];
+    }
+}
+
+void SCDWrapper::computeDomainRate()
+{
+    domainRate = 0.0;
+    for (int i = startIndex; i <= endIndex; i++)
+    {
+        domainRate += matrixRate[i];
     }
 }
 
@@ -178,6 +189,61 @@ Object* SCDWrapper::selectReaction(
                     reaction = DISSH;
                 }
                 
+            }
+            
+            count = pointIndex;
+            if (LOG_REACTIONS)
+                fs << "Element = " << pointIndex + 1 <<", "<< "Reaction = " << reaction << endl << endl;
+            fs.close();
+            return tempObject;
+        }
+    }
+    return tempObject;
+}
+
+Object* SCDWrapper::selectDomainReaction(
+                                   int64& theOtherKey,
+                                   Reaction& reaction,
+                                   int& count)
+{
+    ofstream fs;
+    fs.open("selectReaction.txt", ios::app);
+    int pointIndex;
+    long double randRate = ((double)rand() / RAND_MAX)*domainRate;
+    double tempRandRate = randRate;
+    Object* tempObject = nullptr;
+    Bundle* tempBundle;
+    OneLine* tempLine;
+    //fs << "BulkRate = " << bulkRate << "RandRate = " << randRate << endl;
+    for (pointIndex = startIndex; pointIndex <= endIndex; ++pointIndex) {
+        if (matrixRate[pointIndex] < tempRandRate) {
+            tempRandRate -= matrixRate[pointIndex];
+            continue;
+        }/* if the event is not positioned in this element, move on to the next one */
+        else {
+            reaction = NONE;
+            unordered_map<int64, Object*>::iterator iter = allObjects.begin();
+            while (reaction == NONE && iter != allObjects.end()) {
+                tempObject = iter->second;
+                tempBundle = linePool[tempObject];
+                tempLine = tempBundle->lines[pointIndex];
+                if (tempLine != nullptr) {
+                    reaction = tempLine->selectReaction(tempObject, theOtherKey, tempRandRate);
+                }
+                ++iter;
+            }
+            if (reaction == NONE) {
+                reaction = damage.selectDamage(pointIndex, tempRandRate);
+            }
+            if (reaction == NONE){
+                if(sinkDissRate[0][pointIndex] >= tempRandRate){
+                    reaction = DISSV;
+                }else{
+                    tempRandRate -= sinkDissRate[0][pointIndex];
+                    if (sinkDissRate[1][pointIndex] >= tempRandRate){
+                        reaction = DISSH;
+                    }
+                }
             }
             
             count = pointIndex;
@@ -294,6 +360,16 @@ const double SCDWrapper::getAndExamineRate()
     //fs.close();
 
     return bulkRate;
+}
+
+const double SCDWrapper::getAndExamineDomainRate()
+{
+    for (int i = startIndex; i <= endIndex; i++)
+    {
+        computeMatrixRate(i);
+    }
+    computeDomainRate();
+    return domainRate;
 }
 
 void SCDWrapper::writeSinkFile(const Object * const hostObject, const long int& n, const double& time)
@@ -529,6 +605,41 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
     }/* if this object is valid, add it to map */
 }
 
+void SCDWrapper::addNewObjectToMapCheckBoundary(const int64& key, const int& count)
+{
+    int relativeChange = 1;
+    addNewObjectToMap(key, count);
+    if ((count == startIndex     && count != 0)          ||
+        (count == startIndex - 1 && count != -1)         ||
+        (count == endIndex       && count != POINTS - 1) ||
+        (count == endIndex + 1   && count != POINTS))
+    {
+        TxBoundaryChangeQueue.push_back(
+            new BoundaryChange(key, count, relativeChange));
+    }
+}
+
+void SCDWrapper::addNewObjectToMapCheckBoundary(Object* newObject, const int& count, const int& number)
+{
+    /* 
+     * Use this when you already have an Object that already has initialized
+     * the count and number of instances it has. 
+     * This only works if the Object has already initialized at only one point.
+     */
+    if (newObject->getKey() != 0)
+    {
+        addNewObjectToMap(newObject);
+        if ((count == startIndex     && count != 0)          ||
+            (count == startIndex - 1 && count != -1)         ||
+            (count == endIndex       && count != POINTS - 1) ||
+            (count == endIndex + 1   && count != POINTS))
+        {
+            TxBoundaryChangeQueue.push_back(
+                new BoundaryChange(newObject->getKey(), count, number));
+        }
+    } 
+}
+
 void SCDWrapper::updateObjectInMap(Object * hostObject, const int & count)
 {
     OneLine* tempLine = linePool[hostObject]->lines[count];
@@ -624,6 +735,33 @@ void SCDWrapper::removeRateToOther(const int64& deleteKey)
     }
 }
 
+void SCDWrapper::addNumberCheckBoundary(Object* object, const int& pointIndex, const int& number)
+{
+    object->addNumber(pointIndex, number);
+    if ((pointIndex == startIndex     && pointIndex != 0)          ||
+        (pointIndex == startIndex - 1 && pointIndex != -1)         ||
+        (pointIndex == endIndex       && pointIndex != POINTS - 1) ||
+        (pointIndex == endIndex + 1   && pointIndex != POINTS))
+    {
+        TxBoundaryChangeQueue.push_back(
+            new BoundaryChange(object->getKey(), pointIndex, number));
+    }
+}
+
+void SCDWrapper::reduceNumberCheckBoundary(Object* object, const int& pointIndex)
+{
+    int relativeChange = -1;
+    object->reduceNumber(pointIndex);
+    if ((pointIndex == startIndex     && pointIndex != 0)          ||
+        (pointIndex == startIndex - 1 && pointIndex != -1)         ||
+        (pointIndex == endIndex       && pointIndex != POINTS - 1) ||
+        (pointIndex == endIndex + 1   && pointIndex != POINTS))
+    {
+        TxBoundaryChangeQueue.push_back(
+            new BoundaryChange(object->getKey(), pointIndex, relativeChange));
+    }
+}
+
 void SCDWrapper::updateSinks(const int point, const int* number){
     for(int i = 0; i< LEVELS+1; i++){
         sinks[i][point] = number[i];
@@ -638,13 +776,13 @@ void SCDWrapper::updateSinks(const int point, const int* number){
 /* private function */
 void SCDWrapper::processDiffEvent(Object* hostObject, const int& n, const char& signal)
 {
-    hostObject->reduceNumber(n);
+    reduceNumberCheckBoundary(hostObject, n);
     
     if (signal == 'f') {
         ++reactions[0][n];
         if(n != 0){ /* when not surface */
             /* diffuse to the previous element */
-            hostObject->addNumber(n - 1); // because it is diffusion to front, the surface element will not diffuse
+            addNumberCheckBoundary(hostObject, n - 1); // because it is diffusion to front, the surface element will not diffuse
             updateObjectInMap(hostObject, n - 1); // updated n-2, n-1, n
             
         }else{
@@ -664,7 +802,7 @@ void SCDWrapper::processDiffEvent(Object* hostObject, const int& n, const char& 
         ++reactions[1][n];
         /* diffuse to the latter element */
         if ((n + 1) != POINTS) {
-            hostObject->addNumber(n + 1); // because it is diffusion to back
+            addNumberCheckBoundary(hostObject, n + 1); // because it is diffusion to back
             updateObjectInMap(hostObject, n + 1); // updated n n+1 and n+2
         }else{
             // bottom diffuses to vacuum
@@ -684,7 +822,7 @@ void SCDWrapper::processSinkEvent(Object * hostObject, const int & n)
 {
     int64 key = hostObject->getKey();
     ++reactions[2][n];
-    hostObject->reduceNumber(n);
+    reduceNumberCheckBoundary(hostObject, n);
     /*
     if(key == -1000000){
         //case 1V
@@ -714,12 +852,12 @@ void SCDWrapper::processDissoEvent(
     if (allObjects.find(monomerKey) != allObjects.end()) {
         /* monomer found! then number of monomer in this element increase 1*/
         Object* anObject = allObjects[monomerKey];
-        anObject->addNumber(n);
+        addNumberCheckBoundary(anObject, n);
         updateObjectInMap(anObject, n);
     }
     else {
         /* monomer didn't find! build new object and insert it into map */
-        addNewObjectToMap(monomerKey, n);
+        addNewObjectToMapCheckBoundary(monomerKey, n);
     }
     /* 2) generate the other cluster */
     Object* monomer = allObjects[monomerKey];
@@ -739,16 +877,16 @@ void SCDWrapper::processDissoEvent(
     if (allObjects.find(theOtherKey) != allObjects.end()) {
         /* the other cluster found! then number of this cluster in this element increase 1 */
         Object* anObject = allObjects[theOtherKey];
-        anObject->addNumber(n, number);
+        addNumberCheckBoundary(anObject, n, number);
         updateObjectInMap(anObject, n);
     }
     else {
         /* cluster didn't find! build new object and insert it into map */
         Object* anObject = new Object(theOtherKey, n, number);
-        addNewObjectToMap(anObject);
+        addNewObjectToMapCheckBoundary(anObject, n, number);
     }
     /* 3) deal with the host object */
-    hostObject->reduceNumber(n);
+    reduceNumberCheckBoundary(hostObject, n);
     updateObjectInMap(hostObject, n);
     /*
     if(n==0){
@@ -788,13 +926,13 @@ void SCDWrapper::processCombEvent(
         if (allObjects.find(SIAKey) != allObjects.end()) {
             /* we have SIA */
             Object* SIA = allObjects[SIAKey];
-            SIA->addNumber(n);
+            addNumberCheckBoundary(SIA, n);
             updateObjectInMap(SIA, n);
         }
         else { /* we don't have this object */
             Object* SIA = new Object(SIAKey, n);
             /* add SIA to map */
-            addNewObjectToMap(SIA);
+            addNewObjectToMapCheckBoundary(SIA, n, 1);
         }/* produce one SIA */
     }
     productKey = attrToKey(productAttr);
@@ -803,25 +941,25 @@ void SCDWrapper::processCombEvent(
         number = productAttr[2];
         if (allObjects.find(productKey) != allObjects.end()) {/* we have this product */
             Object* productObject = allObjects[productKey];
-            productObject->addNumber(n, number);
+            addNumberCheckBoundary(productObject, n, number);
             updateObjectInMap(productObject, n);
         }
         else { /* we don't have this object */
             Object* productObject = new Object(productAttr, n, number);
             /* add product to map */
-            addNewObjectToMap(productObject);
+            addNewObjectToMapCheckBoundary(productObject, n, number);
         }
         productKey = (productAttr[0]+hostObject->getAttri(0)) * SIAKey;
         number = 1;
         if (allObjects.find(productKey) != allObjects.end()) {/* we have this product */
             Object* productObject = allObjects[productKey];
-            productObject->addNumber(n, number);
+            addNumberCheckBoundary(productObject, n, number);
             updateObjectInMap(productObject, n);
         }
         else { /* we don't have this object */
             Object* productObject = new Object(productAttr, n, number);
             /* add product to map */
-            addNewObjectToMap(productObject);
+            addNewObjectToMapCheckBoundary(productObject, n, number);
         }
     }else if(hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && theOtherObject->getAttri(0)>0 && theOtherObject->getAttri(2)==0 && abs(hostObject->getAttri(0)) == theOtherObject->getAttri(0)){
         /* Vn-Hm + SIAn -> Hm (n, m are not zero) */
@@ -830,31 +968,31 @@ void SCDWrapper::processCombEvent(
         number = hostObject->getAttri(2);
         if (allObjects.find(productKey) != allObjects.end()) {/* we have this product */
             Object* productObject = allObjects[productKey];
-            productObject->addNumber(n, number);
+            addNumberCheckBoundary(productObject, n, number);
             updateObjectInMap(productObject, n);
         }
         else { /* we don't have this object */
             Object* productObject = new Object(productAttr, n, number);
             /* add product to map */
-            addNewObjectToMap(productObject);
+            addNewObjectToMapCheckBoundary(productObject, n, number);
         }
     }else{
         if (allObjects.find(productKey) != allObjects.end()) {/* we have this product */
             Object* productObject = allObjects[productKey];
-            productObject->addNumber(n, number);
+            addNumberCheckBoundary(productObject, n, number);
             updateObjectInMap(productObject, n);
         }
         else { /* we don't have this object */
             Object* productObject = new Object(productAttr, n, number);
             /* add product to map */
-            addNewObjectToMap(productObject);
+            addNewObjectToMapCheckBoundary(productObject, n, number);
         }
         
     }
     /* update reactant */
-    hostObject->reduceNumber(n);
+    reduceNumberCheckBoundary(hostObject, n);
     updateObjectInMap(hostObject, n);
-    theOtherObject->reduceNumber(n);
+    reduceNumberCheckBoundary(theOtherObject, n);
     updateObjectInMap(theOtherObject, n);
     int attrZeroA = hostObject->getAttri(0);
     int attrZeroB = theOtherObject -> getAttri(0);
@@ -902,13 +1040,13 @@ void SCDWrapper::processSinkDissEvent(const int type, const int& point){
     }
     if (allObjects.find(productKey) != allObjects.end()) {/* we have this product */
         Object* productObject = allObjects[productKey];
-        productObject->addNumber(point, 1);
+        addNumberCheckBoundary(productObject, point);
         updateObjectInMap(productObject, point);
     }
     else { /* we don't have this object */
         Object* productObject = new Object(productKey, point, 1);
         /* add product to map */
-        addNewObjectToMap(productObject);
+        addNewObjectToMapCheckBoundary(productObject, point, 1);
     }
     computeSinkDissRate(type, point);
 }
@@ -920,19 +1058,19 @@ void SCDWrapper::getElectronInsertion(const int& n)
     int64 vacancyKey = (-1) * SIAKey; /* Key for vacancy */
     if (allObjects.find(SIAKey) != allObjects.end()) {
         Object* tempObject = allObjects[SIAKey];
-        tempObject->addNumber(n); /* default: increasing by one */
+        addNumberCheckBoundary(tempObject, n); /* default: increasing by one */
         updateObjectInMap(tempObject, n);
     }/* we have SIA */
     else {
-        addNewObjectToMap(SIAKey, n);
+        addNewObjectToMapCheckBoundary(SIAKey, n);
     }/* we don't have SIA */
     if (allObjects.find(vacancyKey) != allObjects.end()) {
         Object* tempObject = allObjects[vacancyKey];
-        tempObject->addNumber(n); /* default: increasing by one */
+        addNumberCheckBoundary(tempObject, n); /* default: increasing by one */
         updateObjectInMap(tempObject, n);
     }/* we have vacancy */
     else {
-        addNewObjectToMap(vacancyKey, n);
+        addNewObjectToMapCheckBoundary(vacancyKey, n);
     }
 }
 
@@ -961,11 +1099,11 @@ void SCDWrapper::getNeutronInsertion(const int & n)
                     /* generate cluster key */
                     if (allObjects.find(clusterKey) == allObjects.end()) {
                         Object* newObject = new Object(clusterKey, n, number);
-                        addNewObjectToMap(newObject);
+                        addNewObjectToMapCheckBoundary(newObject, n, number);
                     } /* we don't have this cluster */
                     else {
                         Object* tempObject = allObjects[clusterKey];
-                        tempObject->addNumber(n, number);
+                        addNumberCheckBoundary(tempObject, n, number);
                         updateObjectInMap(tempObject, n);
                     }/* we have this cluster */
                 }
@@ -1025,11 +1163,11 @@ void SCDWrapper::getIonInsertion(const int & n, const double& dt, fstream& fs)
                         if(nov < 0){
                             generationNumber += (-1) * nov * number;
                         }
-                        addNewObjectToMap(newObject);
+                        addNewObjectToMapCheckBoundary(newObject, n, number);
                     } /* we don't have this cluster */
                     else {
                         Object* tempObject = allObjects[clusterKey];
-                        tempObject->addNumber(n, number);
+                        addNumberCheckBoundary(tempObject, n, number);
                         nov = tempObject->getAttri(0);
                         if(nov < 0){
                             generationNumber += (-1) * nov * number;
@@ -1064,11 +1202,11 @@ void SCDWrapper::getHeInsertion(const int& n)
     int channel = 1;
     int64 clusterKey = atomProperty(INTERSTITIAL, channel + 1);
     if (allObjects.find(clusterKey) == allObjects.end()) {
-        addNewObjectToMap(clusterKey, n);
+        addNewObjectToMapCheckBoundary(clusterKey, n);
     } /* we don't have this cluster */
     else {
         Object* tempObject = allObjects[clusterKey];
-        tempObject->addNumber(n);
+        addNumberCheckBoundary(tempObject, n);
         updateObjectInMap(tempObject, n);
     }/* we have this cluster */
 }
@@ -1079,11 +1217,11 @@ void SCDWrapper::getHInsertion(const int& n, const double& dt, fstream& fs)
     int channel = 2;
     int64 clusterKey = atomProperty(INTERSTITIAL, channel + 1);
     if (allObjects.find(clusterKey) == allObjects.end()) {
-        addNewObjectToMap(clusterKey, n);
+        addNewObjectToMapCheckBoundary(clusterKey, n);
     } /* we don't have this cluster */
     else {
         Object* tempObject = allObjects[clusterKey];
-        tempObject->addNumber(n);
+        addNumberCheckBoundary(tempObject, n);
         updateObjectInMap(tempObject, n);
     }/* we have this cluster */
     if (LOG_REACTIONS)
@@ -1440,6 +1578,92 @@ void SCDWrapper::test(const int& inputV){
     fo.close();
 }
 
+void SCDWrapper::setDomain(const int& startIndex, const int& endIndex)
+{
+    /* Which volume elements the processor should focus on (inclusive) */
+    this->startIndex = startIndex;
+    this->endIndex = endIndex;
+    numVolumeElements = endIndex - startIndex + 1;
+}
+
+void SCDWrapper::fillNoneReaction(const double& maxDomainRate)
+{
+    /*
+     * Fill the remainder of the domain rate with NONE reaction
+     * so that each processor can move at the same time step in parallel
+     * (Dunn 2016)
+     */
+    noneRate = maxDomainRate - domainRate;
+    (void) getAndExamineDomainRate();
+}
+
+void SCDWrapper::clearNoneReaction()
+{
+    noneRate = 0.0;
+}
+
+void SCDWrapper::implementBoundaryChanges(vector<BoundaryChange*> boundaryChanges)
+{
+    for (BoundaryChange* bc: boundaryChanges)
+    {
+        if (bc->pointIndex == startIndex     ||      // go one past the boundary because you need that info for diffusion rates out of the boundary
+            bc->pointIndex == startIndex - 1 ||
+            bc->pointIndex == endIndex       || 
+            bc->pointIndex == endIndex + 1)
+        {
+            if (allObjects.find(bc->objKey) != allObjects.end()) {
+                /* object found! then number of instances in this element increase */
+                Object* anObject = allObjects[bc->objKey];
+                anObject->addNumber(bc->pointIndex, bc->change); // negative change account for decrease
+                updateObjectInMap(anObject, bc->pointIndex);
+            }
+            else {
+                /* object didn't find! build new object and insert it into map */
+                Object* anObject = new Object(bc->objKey, bc->pointIndex, bc->change);
+                addNewObjectToMap(anObject);
+            }
+        }
+    }
+}
+
+void SCDWrapper::combineVolumeElements(const vector<SCDWrapper*> &procs)
+{
+    /* Combine volume elements from multiple processors */
+    allObjects.clear();
+    mobileObjects.clear();
+    linePool.clear();
+    for (SCDWrapper* srscd: procs)
+    {
+        int startIndex = srscd->getStartIdx();
+        int endIndex = srscd->getEndIdx();
+        unordered_map<int64, Object*>* objects = srscd->getAllObjects();
+        unordered_map<int64, Object*>::iterator iter;
+        for (iter = objects->begin(); iter != objects->end(); ++iter) 
+        {
+            int64 tempKey = iter->first;
+            Object* tempObject = iter->second;
+            for (int i = startIndex; i <= endIndex; i++)
+            {
+                int num = tempObject->getNumber(i);
+                if (num > 0)
+                {
+                    if (allObjects.find(tempKey) != allObjects.end())
+                    {
+                        /* Found object, updating the number in this element */
+                        Object* anObject = allObjects[tempKey];
+                        anObject->addNumber(i, num);
+                    }
+                    else
+                    {
+                        /* Couldn't find object, so create a new one */
+                        addNewObjectToMap(new Object(tempKey, i, num));
+                    }
+                }
+            }
+        }
+    }
+}
+
 void SCDWrapper::drawSpeciesAndReactions( double&t ){
     /* draw species */
     countRatioDistribution(t);
@@ -1549,11 +1773,44 @@ void SCDWrapper::writeVacancy(){
 }
 
 double SCDWrapper::getTotalDpa(){
-    double dpa = 0;;
+    double dpa = 0;
     for(int i = 0; i<POINTS; i++){
         dpa += doseIon[i];
     }
     return dpa;
 }
 
+double SCDWrapper::getDomainDpa()
+{
+    double dpa = 0;
+    for (int i = startIndex; i <= endIndex; i++)
+    {
+        dpa += doseIon[i];
+    }
+    return dpa;
+}
 
+vector<BoundaryChange*> SCDWrapper::getTxBoundaryChangeQueue()
+{
+    return TxBoundaryChangeQueue;
+}
+
+void SCDWrapper::clearTxBoundaryChangeQueue()
+{
+    TxBoundaryChangeQueue.clear();
+}
+
+void SCDWrapper::setRxBoundaryChangeQueue(vector<BoundaryChange*> queue)
+{
+    RxBoundaryChangeQueue = queue;
+}
+
+int SCDWrapper::getStartIdx()
+{
+    return startIndex;
+}
+
+int SCDWrapper::getEndIdx()
+{
+    return endIndex;
+}

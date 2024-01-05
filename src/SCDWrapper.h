@@ -2,6 +2,7 @@
 #pragma once
 #include"Damage.h"
 #include"Bundle.h"
+#include"BoundaryChange.h"
 #include"cpdf.h"
 #include"rvgs.h"
 #include"CascadeDamage.h"
@@ -9,6 +10,8 @@
 // #include"gnuplot_i.h"
 #include <string>
 #include <iomanip>
+#include <stdio.h>
+#include <omp.h>
 
 class SCDWrapper {
 private:
@@ -18,16 +21,22 @@ private:
     unordered_map<Object*, Bundle*> linePool;
     unordered_map<int64, int> surface;
     unordered_map<int64, int> bottom;
+    vector<BoundaryChange*> RxBoundaryChangeQueue; // Store changes in processor's boundary volume elements
+    vector<BoundaryChange*> TxBoundaryChangeQueue;
     Damage damage;
     Cpdf cpdf;
+    int startIndex, endIndex;   // assign this srscd object to a subsection of the volume for parallelization
+    int numVolumeElements;      // ^
     int sinks[LEVELS+1][POINTS];
     long double sinkDissRate[2][POINTS];
+    long double noneRate;       // rate of no reaction happening in this domain (Dunn 2016)
     // dissociation rate of V/H from dislocations
     int reactions[8][POINTS];
     
     /* hold reactions, 1st dimension is reaction type, second dimension is element, value is total number of this reaction */
     long double matrixRate[POINTS];    // total rate in every element(point)
     long double bulkRate;  // total rate in the whole bulk;
+    long double domainRate; // total rate in this srscd's assigned domain (startIndex to endIndex)
     enum InsertStyle {INTERSTITIAL, SUBSTITUTIONAL};
     ofstream fs1, fs2, fs3, fs4, fs5, fs6;
     fstream fs;
@@ -53,6 +62,8 @@ private:
     /* add new object to map by key (only increase by 1 to #kth element)*/
     void addNewObjectToMap(Object*);
     /* add new object to map by object pointer(only increase 1 to #nth element) */
+    void addNewObjectToMapCheckBoundary(const int64&, const int&);
+    void addNewObjectToMapCheckBoundary(Object*, const int&, const int&);
     void updateObjectInMap(Object*, const int&);
     void removeObjectFromMap(const int64&); /* remove one object from map */
     void addReactionToOther(const Object* const);
@@ -63,6 +74,10 @@ private:
     /* when one mobile object has been removed,
      ** rates of this object with other extisting objects should also be removed
      */
+    void addNumberCheckBoundary(Object*, const int&, const int& number=1);
+    /* Add the object count by one in that volume element, and check if it's a boundary point */
+    void reduceNumberCheckBoundary(Object*, const int&);
+    /* Reduce the object count by one in that volume element, and check if it's a boundary point */
     void updateSinks(const int, const int*); /* only for restart use */
     /* process event functions */
     void processDiffEvent(Object*, const int&, const char&);     /* process diffusion reactionObject */
@@ -97,7 +112,9 @@ public:
     //SCDWrapper();  // constructor: for restart;
     void computeMatrixRate(const int& n);  // computes total rate in element n
     void computeBulkRate();
-    Object* selectReaction(int64&, Reaction&, int&);  // select reaction
+    void computeDomainRate();
+    Object* selectReaction(int64&, Reaction&, int&);  // select reaction across total simulation volume
+    Object* selectDomainReaction(int64&, Reaction&, int&);  // select reaction inside processor's domain
     void processEvent(const Reaction&, Object*, const int&, const int64&, const double&, const double&);    // deal with reactions
     ~SCDWrapper();          /* destructor to delete everything newed */
     // get series functions that allow direct manipulation on private data member
@@ -105,6 +122,7 @@ public:
     unordered_map<int64, Object*>* getMobileObjects();
     unordered_map<Object*, Bundle*>* getLinePool();
     const double getAndExamineRate(); /* computes bulk rate and matrix rate and returns bulk rate*/
+    const double getAndExamineDomainRate();
     /* output file functions */
     void displayDamage();
     void displayAllObject();
@@ -115,12 +133,23 @@ public:
     friend void restart(long int&, double&, SCDWrapper*);
     /* test functions, don't need in the future */
     void test(const int&); /* count how many vacancies now in the bulk */
-    
+    void setDomain(const int&, const int&);
+    void fillNoneReaction(const double&);
+    void clearNoneReaction();
+    void implementBoundaryChanges(vector<BoundaryChange*>);
+    void combineVolumeElements(const vector<SCDWrapper*> &);
+
     /* draw picture functions */
     void drawSpeciesAndReactions(double&t);
     void drawDamage(double&); /* this function draw all diagrams in damage process */
     void drawHD(double&); /* this function draw all diagrams in H deposition process */
     void writeVacancy();
     double getTotalDpa();
+    double getDomainDpa();
+    vector<BoundaryChange*> getTxBoundaryChangeQueue();
+    void clearTxBoundaryChangeQueue();
+    void setRxBoundaryChangeQueue(vector<BoundaryChange*> queue);
+    int getStartIdx();
+    int getEndIdx();
 };
 
