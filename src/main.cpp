@@ -17,6 +17,7 @@ int main() {
     double random;
     double advTime = 0.0;
     double dt = 0.0;
+    double system_dt = 0.0;
     double accTime = 0.0;
     long double bulkRate = 0.0; /* total rate of the whole bulk */
     int inputH = 0;
@@ -28,6 +29,9 @@ int main() {
     double prev_eta_min = 0.0;
     double write_time = 0.2;
     double write_increment = 0.2;
+    int barWidth, pos; /* progress bar parameters */
+    int numDigits = 7;
+    int magnitude = 0;
     fstream st;
     /* check whether to restart*/
     restart(iStep, advTime, srscd);
@@ -54,7 +58,7 @@ int main() {
         
         if(iStep%PSTEPS == 0)
         {
-            double system_dt = (clock() - prev_time) / (double)CLOCKS_PER_SEC;
+            system_dt = (clock() - prev_time) / (double)CLOCKS_PER_SEC;
             prev_time = clock();
             st.open("st.txt", ios::app);
             st << (float)prev_time/CLOCKS_PER_SEC << "  "<< dpa << endl;
@@ -83,12 +87,12 @@ int main() {
                 
                 if (prev_eta_min != 0)
                 {
-                    eta_min = prev_eta_min + 0.1 * (eta_min - prev_eta_min);
+                    eta_min = prev_eta_min + 0.1 * (eta_min - prev_eta_min); // moving average
 
                     // Print progress bar
                     cout << "[";
-                    int barWidth = 70;
-                    int pos = barWidth * (progress/100.);
+                    barWidth = 70;
+                    pos = barWidth * (progress/100.);
                     for (int i = 0; i < barWidth; i++)
                     {
                         if (i < pos) cout << "=";
@@ -97,8 +101,7 @@ int main() {
                     }
 
                     // Print a set amount of digits
-                    int numDigits = 7;
-                    int magnitude = 0;
+                    magnitude = 0;
                     while ((int)(advTime / pow(10, magnitude)))
                     {
                         magnitude++;
