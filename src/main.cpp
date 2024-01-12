@@ -30,6 +30,7 @@ int main() {
     double write_increment = 0.2;
     double split_index = 0;
     const int num_threads = omp_get_max_threads();
+    double index_increment = (double) POINTS / num_threads;
     fstream st;
     /* check whether to restart*/
     restart(iStep, advTime, master_srscd);
@@ -55,13 +56,9 @@ int main() {
         const int right_neighbor = thread_id + 1;
 
         SCDWrapper* srscd = new SCDWrapper(); /* establish spatially resolved scd for single processor */
-        #pragma omp critical
-        {
-            restart(iStep, advTime, srscd);
-        }
+        restart(iStep, advTime, srscd);
 
         // Split the volume elements among each processor
-        double index_increment = (double) POINTS / num_threads;
         for (int i = 0; i < num_threads; i++)
         {
             if (i == thread_id)
@@ -74,31 +71,30 @@ int main() {
             #pragma omp barrier
         }
 
-        // while (advTime < TOTAL_TIME)
-        // for (int k = 0; k < 6000; k++)
-        while(dpa < totalDPA)
+        while (advTime < TOTAL_TIME)
+        // while(dpa < totalDPA)
         {
             // Find the greatest domain rate, that all the other processors will adopt (Dunn 2016)
-            for (int i = 0; i < num_threads; i++)
+            #pragma omp single
             {
-                if (i == thread_id)
-                {
-                    double localDomainRate = srscd->getAndExamineDomainRate();
-                    if (i == 0)
-                    {
-                        maxDomainRate = localDomainRate;
-                        continue;
-                    }
-                    if (localDomainRate > maxDomainRate)
-                    {
-                        maxDomainRate = localDomainRate;
-                    }
-
-                }
-
-                #pragma omp barrier
+                maxDomainRate = 0;
             }
 
+            #pragma omp barrier
+
+            #pragma omp critical
+            {
+                double localDomainRate = srscd->getAndExamineDomainRate();
+                if (localDomainRate > maxDomainRate)
+                {
+                    maxDomainRate = localDomainRate;
+                }
+            }
+
+            // Wait for all threads to find the global max domain rate
+            #pragma omp barrier
+
+            // Calculate global dt
             #pragma omp single
             {
                 do {
@@ -108,7 +104,6 @@ int main() {
             }
 
             srscd->fillNoneReaction(maxDomainRate); 
-
             hostObject = srscd->selectDomainReaction(theOtherKey, reaction, pointIndex);/* choose an event */
             srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
 
@@ -120,36 +115,35 @@ int main() {
 
             srscd->clearNoneReaction();
 
-            // Communicate boundary events. Write one at a time to not cause data race
-            #pragma omp critical
-            {
-                boundaryChanges[thread_id] = srscd->getTxBoundaryChangeQueue();
-            }
+            // Communicate boundary events.
+            boundaryChanges[thread_id] = srscd->getTxBoundaryChangeQueue();
+
+            // Wait for all threads to finish uploading boundary events
+            #pragma omp barrier 
 
             srscd->clearTxBoundaryChangeQueue();
 
             // Have processor read the boundary changes from its neighbors
             vector<BoundaryChange*> neighborChanges;
-            #pragma omp critical
+            if (left_neighbor >= 0)
             {
-                if (left_neighbor >= 0)
-                {
-                    neighborChanges.insert(
-                        neighborChanges.end(), 
-                        boundaryChanges[left_neighbor].begin(),
-                        boundaryChanges[left_neighbor].end());
-                }
-                if (right_neighbor < num_threads)
-                {
-                    neighborChanges.insert(
-                        neighborChanges.end(),
-                        boundaryChanges[right_neighbor].begin(),
-                        boundaryChanges[right_neighbor].end());
-                }
+                neighborChanges.insert(
+                    neighborChanges.end(), 
+                    boundaryChanges[left_neighbor].begin(),
+                    boundaryChanges[left_neighbor].end());
+            }
+            if (right_neighbor < num_threads)
+            {
+                neighborChanges.insert(
+                    neighborChanges.end(),
+                    boundaryChanges[right_neighbor].begin(),
+                    boundaryChanges[right_neighbor].end());
             }
 
             srscd->implementBoundaryChanges(neighborChanges);
         
+            #pragma omp barrier
+
             if(iStep%PSTEPS == 0)
             {
                 // Keep track of the combined simulation volume for logging
@@ -159,14 +153,13 @@ int main() {
                 }
 
                 #pragma omp barrier
-                for (int i = 0; i < num_threads; i++)
+
+                #pragma omp critical
                 {
-                    if (i == thread_id)
-                    {
-                        processors.push_back(srscd);
-                    }
-                    #pragma omp barrier
+                    processors.push_back(srscd);
                 }
+                
+                #pragma omp barrier
 
                 #pragma omp single
                 {
@@ -251,15 +244,19 @@ int main() {
                 }
             }
 
-            #pragma omp single
-            {
-                ++iStep;
-            }
+            #pragma omp barrier
 
             accTime += dt;
             advTime += dt;
 
-            dpa = 0;
+            #pragma omp single
+            {
+                ++iStep;
+                dpa = 0;
+            }
+
+            #pragma omp barrier
+
             #pragma omp reduction (+:dpa)
             {
                 dpa += srscd->getDomainDpa();
@@ -273,9 +270,10 @@ int main() {
         {
            processors.clear();
         }
-        #pragma omp reduction (+:dpa)
+
+        #pragma omp critical
         {
-            dpa += srscd->getDomainDpa();
+            processors.push_back(srscd);
         }
     }
     master_srscd->combineVolumeElements(processors);
