@@ -43,7 +43,7 @@ int main() {
     // master_srscd->displayDamage();
     master_srscd->displayAllObject();
     master_srscd->drawSpeciesAndReactions(advTime);
-    clock_t prev_time = clock();
+    double prev_time = omp_get_wtime();
     vector<BoundaryChange*> boundaryChanges[num_threads];
     vector<SCDWrapper*> processors;
     //master_srscd->drawHD(advTime);
@@ -166,8 +166,9 @@ int main() {
                     // Keep track of all simulation elements between processors
                     master_srscd->combineVolumeElements(processors);
 
-                    double system_dt = (clock() - prev_time) / (double)CLOCKS_PER_SEC;
-                    prev_time = clock();
+                    double time = omp_get_wtime();
+                    double system_dt = (time - prev_time);
+                    prev_time = time;
                     st.open("st.txt", ios::app);
                     st << (float)prev_time/CLOCKS_PER_SEC << "  "<< dpa << endl;
 
