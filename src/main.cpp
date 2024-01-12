@@ -51,6 +51,7 @@ int main() {
     // Run in parallel with multiple processors
     #pragma omp parallel private(theOtherKey, reaction, pointIndex, hostObject, advTime, accTime)
     {
+        vector<BoundaryChange*> neighborChanges;
         const int thread_id = omp_get_thread_num();
         const int left_neighbor = thread_id - 1;
         const int right_neighbor = thread_id + 1;
@@ -82,9 +83,12 @@ int main() {
 
             #pragma omp barrier
 
+            srscd->clearNoneReaction();
+            srscd->examineDomainRate();
+
             #pragma omp critical
             {
-                double localDomainRate = srscd->getAndExamineDomainRate();
+                double localDomainRate = srscd->getDomainRate();
                 if (localDomainRate > maxDomainRate)
                 {
                     maxDomainRate = localDomainRate;
@@ -113,8 +117,6 @@ int main() {
                 accTime = 0.0;
             }
 
-            srscd->clearNoneReaction();
-
             // Communicate boundary events.
             boundaryChanges[thread_id] = srscd->getTxBoundaryChangeQueue();
 
@@ -124,7 +126,7 @@ int main() {
             srscd->clearTxBoundaryChangeQueue();
 
             // Have processor read the boundary changes from its neighbors
-            vector<BoundaryChange*> neighborChanges;
+            neighborChanges.clear();
             if (left_neighbor >= 0)
             {
                 neighborChanges.insert(
@@ -140,7 +142,10 @@ int main() {
                     boundaryChanges[right_neighbor].end());
             }
 
-            srscd->implementBoundaryChanges(neighborChanges);
+            if (neighborChanges.size() > 0)
+            {
+                srscd->implementBoundaryChanges(neighborChanges);
+            }
         
             #pragma omp barrier
 
@@ -262,8 +267,6 @@ int main() {
             {
                 dpa += srscd->getDomainDpa();
             }
-
-            #pragma omp barrier
         }   
 
         // Keep track of the combined simulation volume for logging

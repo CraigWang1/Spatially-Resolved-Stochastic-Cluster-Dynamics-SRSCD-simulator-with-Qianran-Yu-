@@ -122,7 +122,9 @@ public:
     unordered_map<int64, Object*>* getMobileObjects();
     unordered_map<Object*, Bundle*>* getLinePool();
     const double getAndExamineRate(); /* computes bulk rate and matrix rate and returns bulk rate*/
-    const double getAndExamineDomainRate();
+    const void examineDomainRate();
+    const double getDomainRate();
+
     /* output file functions */
     void displayDamage();
     void displayAllObject();

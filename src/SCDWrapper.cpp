@@ -362,13 +362,17 @@ const double SCDWrapper::getAndExamineRate()
     return bulkRate;
 }
 
-const double SCDWrapper::getAndExamineDomainRate()
+const void SCDWrapper::examineDomainRate()
 {
     for (int i = startIndex; i <= endIndex; i++)
     {
         computeMatrixRate(i);
     }
     computeDomainRate();
+}
+
+const double SCDWrapper::getDomainRate()
+{
     return domainRate;
 }
 
@@ -1594,7 +1598,7 @@ void SCDWrapper::fillNoneReaction(const double& maxDomainRate)
      * (Dunn 2016)
      */
     noneRate = maxDomainRate - domainRate;
-    (void) getAndExamineDomainRate();
+    examineDomainRate(); // recalculate the matrix rates to incorporate the none reaction
 }
 
 void SCDWrapper::clearNoneReaction()
