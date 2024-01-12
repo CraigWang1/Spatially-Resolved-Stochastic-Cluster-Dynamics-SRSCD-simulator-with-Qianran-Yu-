@@ -31,6 +31,7 @@ int main() {
     double write_increment = 0.2;
     double split_index = 0;
     const int num_threads = omp_get_max_threads();
+    double index_increment = (double) POINTS / num_threads;
     fstream st;
     /* check whether to restart*/
     restart(iStep, advTime, master_srscd);
@@ -62,7 +63,6 @@ int main() {
         }
 
         // Split the volume elements among each processor
-        double index_increment = (double) POINTS / num_threads;
         for (int i = 0; i < num_threads; i++)
         {
             if (i == thread_id)
@@ -80,32 +80,30 @@ int main() {
         // while (advTime < TOTAL_TIME)
         // for (int k = 0; k < 6000; k++)
         // while(dpa < totalDPA)
-        for (int k = 0; k < 5; k++)
+        for (int k = 0; k < 100; k++)
         {
+            // #pragma omp single
+            // {
+            //     cout << "-------------------------------------------------\n"; 
+            // }
+
+            // Find the greatest domain rate, that all the other processors will adopt (Dunn 2016)
+            #pragma omp barrier
             #pragma omp single
             {
-            cout << "-------------------------------------------------\n"; 
-
+                maxDomainRate = 0;
             }
-            // Find the greatest domain rate, that all the other processors will adopt (Dunn 2016)
-            for (int i = 0; i < num_threads; i++)
+            #pragma omp critical
             {
-                if (i == thread_id)
+                double localDomainRate = srscd->getAndExamineDomainRate();
+                if (localDomainRate > maxDomainRate)
                 {
-                    double localDomainRate = srscd->getAndExamineDomainRate();
-                    if (i == 0)
-                    {
-                        maxDomainRate = localDomainRate;
-                        continue;
-                    }
-                    if (localDomainRate > maxDomainRate)
-                    {
-                        maxDomainRate = localDomainRate;
-                    }
+                    maxDomainRate = localDomainRate;
                 }
-
-                #pragma omp barrier
             }
+
+            // Wait for all threads to find global max domain rate
+            #pragma omp barrier
 
             #pragma omp single
             {
@@ -116,13 +114,9 @@ int main() {
             }
 
             srscd->fillNoneReaction(maxDomainRate); 
-
             hostObject = srscd->selectDomainReaction(theOtherKey, reaction, pointIndex);/* choose an event */
-            // if (thread_id == 0) 
-            if (0 == 0)
-            {
-                srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
-            }
+            srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
+
             // Assuming you only run either ion or H insertion in one simulation?
             if(reaction == 6 || reaction == 8)
             {
@@ -131,62 +125,50 @@ int main() {
 
             srscd->clearNoneReaction();
 
-            // Communicate boundary events. Write one at a time to not cause data race
-            #pragma omp critical
-            {
-                boundaryChanges[thread_id] = srscd->getTxBoundaryChangeQueue();
-            }
+            // Communicate boundary events. 
+            boundaryChanges[thread_id] = srscd->getTxBoundaryChangeQueue();
+
+            #pragma omp barrier
 
             srscd->clearTxBoundaryChangeQueue();
 
             // Have processor read the boundary changes from its neighbors
             vector<BoundaryChange*> neighborChanges;
-            #pragma omp critical
+            if (left_neighbor >= 0)
             {
-                if (left_neighbor >= 0)
-                {
-                    neighborChanges.insert(
-                        neighborChanges.end(), 
-                        boundaryChanges[left_neighbor].begin(),
-                        boundaryChanges[left_neighbor].end());
-                }
-                if (right_neighbor < num_threads)
-                {
-                    neighborChanges.insert(
-                        neighborChanges.end(),
-                        boundaryChanges[right_neighbor].begin(),
-                        boundaryChanges[right_neighbor].end());
-                }
+                neighborChanges.insert(
+                    neighborChanges.end(), 
+                    boundaryChanges[left_neighbor].begin(),
+                    boundaryChanges[left_neighbor].end());
+            }
+            if (right_neighbor < num_threads)
+            {
+                neighborChanges.insert(
+                    neighborChanges.end(),
+                    boundaryChanges[right_neighbor].begin(),
+                    boundaryChanges[right_neighbor].end());
             }
 
             srscd->implementBoundaryChanges(neighborChanges);
         
+            #pragma omp barrier
+
             if(0 == 0)
             {
-                cout << "yo" << endl;
                 // Keep track of the combined simulation volume for logging
                 #pragma omp single
                 {
                     processors.clear();
                 }
 
-                for (int i = 0; i < num_threads; i++)
+                #pragma omp barrier
+
+                #pragma omp critical
                 {
-                    if (i == thread_id)
-                    {
-                        cout << "k: " << k << endl;
-                        processors.push_back(srscd);
-                        cout << "thread: " << i << endl;
-                        srscd->displayAllObject();
-                    }
-                    #pragma omp barrier
+                    processors.push_back(srscd);
                 }
 
-                #pragma omp single
-                {
-                    ++iStep;
-                }
-
+                #pragma omp barrier
 
                 #pragma omp single
                 {
@@ -220,33 +202,33 @@ int main() {
                     {
                         eta_min = (100 - progress) / ((progress - prev_progress) / system_dt) / 60.;
                         
-                        // if (prev_eta_min != 0)
-                        // {
-                        //     eta_min = prev_eta_min + 0.1 * (eta_min - prev_eta_min);
+                        if (prev_eta_min != 0)
+                        {
+                            eta_min = prev_eta_min + 0.1 * (eta_min - prev_eta_min);
 
-                        //     // Print progress bar
-                        //     cout << "[";
-                        //     int barWidth = 70;
-                        //     int pos = barWidth * (progress/100.);
-                        //     for (int i = 0; i < barWidth; i++)
-                        //     {
-                        //         if (i < pos) cout << "=";
-                        //         else if (i == pos) cout << ">";
-                        //         else cout << " ";
-                        //     }
+                            // Print progress bar
+                            cout << "[";
+                            int barWidth = 70;
+                            int pos = barWidth * (progress/100.);
+                            for (int i = 0; i < barWidth; i++)
+                            {
+                                if (i < pos) cout << "=";
+                                else if (i == pos) cout << ">";
+                                else cout << " ";
+                            }
 
-                        //     // Print a set amount of digits
-                        //     int numDigits = 7;
-                        //     int magnitude = 0;
-                        //     while ((int)(advTime / pow(10, magnitude)))
-                        //     {
-                        //         magnitude++;
-                        //     }
-                        //     cout << "] " << std::fixed << std::setprecision(2) << progress << "%";
-                        //     cout << "   eta: " << std::fixed << std::setprecision(1) << eta_min << " min";
-                        //     cout << "   time: " << std::fixed << std::setprecision(numDigits - magnitude) << advTime << " s            \r";
-                        //     cout.flush();
-                        // }
+                            // Print a set amount of digits
+                            int numDigits = 7;
+                            int magnitude = 0;
+                            while ((int)(advTime / pow(10, magnitude)))
+                            {
+                                magnitude++;
+                            }
+                            cout << "] " << std::fixed << std::setprecision(2) << progress << "%";
+                            cout << "   eta: " << std::fixed << std::setprecision(1) << eta_min << " min";
+                            cout << "   time: " << std::fixed << std::setprecision(numDigits - magnitude) << advTime << " s            \r";
+                            cout.flush();
+                        }
                     }
 
                     prev_eta_min = eta_min;
@@ -271,15 +253,31 @@ int main() {
                 }
             }
 
+            #pragma omp barrier
             accTime += dt;
             advTime += dt;
 
-            dpa = 0;
+            #pragma omp single
+            {
+                ++iStep;
+                dpa = 0;
+            }
+
+            #pragma omp barrier
             #pragma omp reduction (+:dpa)
             {
                 dpa += srscd->getDomainDpa();
             }
 
+            #pragma omp critical
+            {
+                cout << "thread: " << thread_id << " k: " << k << endl;
+            }
+            #pragma omp barrier
+            #pragma omp single
+            {
+                cout << endl;
+            }
             #pragma omp barrier
         }   
 
@@ -291,7 +289,7 @@ int main() {
         // Keep track of the combined simulation volume for logging
         #pragma omp single
         {
-           processors.clear();
+            processors.clear();
             master_srscd->combineVolumeElements(processors);
             master_srscd->drawSpeciesAndReactions(advTime);
             master_srscd->drawDamage(advTime);
