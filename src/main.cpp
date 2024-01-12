@@ -7,6 +7,7 @@
 #include"SCDWrapper.h"
 
 int main() {
+    omp_set_num_threads(2);
     SCDWrapper* master_srscd = new SCDWrapper();  /* keep track of all threads */
     int64 theOtherKey = 0;
     Object* hostObject = nullptr;
@@ -70,14 +71,22 @@ int main() {
                 split_index += index_increment;
                 int endIndex = round(split_index) - 1;
                 srscd->setDomain(startIndex, endIndex);
+                    cout << "thread id: " << thread_id << endl;
+                    srscd->displayAllObject();
             }
             #pragma omp barrier
         }
 
         // while (advTime < TOTAL_TIME)
         // for (int k = 0; k < 6000; k++)
-        while(dpa < totalDPA)
+        // while(dpa < totalDPA)
+        for (int k = 0; k < 5; k++)
         {
+            #pragma omp single
+            {
+            cout << "-------------------------------------------------\n"; 
+
+            }
             // Find the greatest domain rate, that all the other processors will adopt (Dunn 2016)
             for (int i = 0; i < num_threads; i++)
             {
@@ -93,7 +102,6 @@ int main() {
                     {
                         maxDomainRate = localDomainRate;
                     }
-
                 }
 
                 #pragma omp barrier
@@ -110,8 +118,11 @@ int main() {
             srscd->fillNoneReaction(maxDomainRate); 
 
             hostObject = srscd->selectDomainReaction(theOtherKey, reaction, pointIndex);/* choose an event */
-            srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
-
+            // if (thread_id == 0) 
+            if (0 == 0)
+            {
+                srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
+            }
             // Assuming you only run either ion or H insertion in one simulation?
             if(reaction == 6 || reaction == 8)
             {
@@ -150,23 +161,32 @@ int main() {
 
             srscd->implementBoundaryChanges(neighborChanges);
         
-            if(iStep%PSTEPS == 0)
+            if(0 == 0)
             {
+                cout << "yo" << endl;
                 // Keep track of the combined simulation volume for logging
                 #pragma omp single
                 {
                     processors.clear();
                 }
 
-                #pragma omp barrier
                 for (int i = 0; i < num_threads; i++)
                 {
                     if (i == thread_id)
                     {
+                        cout << "k: " << k << endl;
                         processors.push_back(srscd);
+                        cout << "thread: " << i << endl;
+                        srscd->displayAllObject();
                     }
                     #pragma omp barrier
                 }
+
+                #pragma omp single
+                {
+                    ++iStep;
+                }
+
 
                 #pragma omp single
                 {
@@ -200,33 +220,33 @@ int main() {
                     {
                         eta_min = (100 - progress) / ((progress - prev_progress) / system_dt) / 60.;
                         
-                        if (prev_eta_min != 0)
-                        {
-                            eta_min = prev_eta_min + 0.1 * (eta_min - prev_eta_min);
+                        // if (prev_eta_min != 0)
+                        // {
+                        //     eta_min = prev_eta_min + 0.1 * (eta_min - prev_eta_min);
 
-                            // Print progress bar
-                            cout << "[";
-                            int barWidth = 70;
-                            int pos = barWidth * (progress/100.);
-                            for (int i = 0; i < barWidth; i++)
-                            {
-                                if (i < pos) cout << "=";
-                                else if (i == pos) cout << ">";
-                                else cout << " ";
-                            }
+                        //     // Print progress bar
+                        //     cout << "[";
+                        //     int barWidth = 70;
+                        //     int pos = barWidth * (progress/100.);
+                        //     for (int i = 0; i < barWidth; i++)
+                        //     {
+                        //         if (i < pos) cout << "=";
+                        //         else if (i == pos) cout << ">";
+                        //         else cout << " ";
+                        //     }
 
-                            // Print a set amount of digits
-                            int numDigits = 7;
-                            int magnitude = 0;
-                            while ((int)(advTime / pow(10, magnitude)))
-                            {
-                                magnitude++;
-                            }
-                            cout << "] " << std::fixed << std::setprecision(2) << progress << "%";
-                            cout << "   eta: " << std::fixed << std::setprecision(1) << eta_min << " min";
-                            cout << "   time: " << std::fixed << std::setprecision(numDigits - magnitude) << advTime << " s            \r";
-                            cout.flush();
-                        }
+                        //     // Print a set amount of digits
+                        //     int numDigits = 7;
+                        //     int magnitude = 0;
+                        //     while ((int)(advTime / pow(10, magnitude)))
+                        //     {
+                        //         magnitude++;
+                        //     }
+                        //     cout << "] " << std::fixed << std::setprecision(2) << progress << "%";
+                        //     cout << "   eta: " << std::fixed << std::setprecision(1) << eta_min << " min";
+                        //     cout << "   time: " << std::fixed << std::setprecision(numDigits - magnitude) << advTime << " s            \r";
+                        //     cout.flush();
+                        // }
                     }
 
                     prev_eta_min = eta_min;
@@ -251,11 +271,6 @@ int main() {
                 }
             }
 
-            #pragma omp single
-            {
-                ++iStep;
-            }
-
             accTime += dt;
             advTime += dt;
 
@@ -264,24 +279,27 @@ int main() {
             {
                 dpa += srscd->getDomainDpa();
             }
+
+            #pragma omp barrier
         }   
+
+        #pragma omp reduction (+:dpa)
+        {
+            dpa += srscd->getDomainDpa();
+        }
 
         // Keep track of the combined simulation volume for logging
         #pragma omp single
         {
            processors.clear();
-        }
-        #pragma omp reduction (+:dpa)
-        {
-            dpa += srscd->getDomainDpa();
+            master_srscd->combineVolumeElements(processors);
+            master_srscd->drawSpeciesAndReactions(advTime);
+            master_srscd->drawDamage(advTime);
+            master_srscd->writeVacancy();
+            master_srscd->writeSinkFile(advTime, iStep);
+            cout<<"dpa = "<<dpa<<endl;
+            cout << "Finished, Bye" << endl;
         }
     }
-    master_srscd->combineVolumeElements(processors);
-    master_srscd->drawSpeciesAndReactions(advTime);
-    master_srscd->drawDamage(advTime);
-    master_srscd->writeVacancy();
-    master_srscd->writeSinkFile(advTime, iStep);
-    cout<<"dpa = "<<dpa<<endl;
-    cout << "Finished, Bye" << endl;
     return 0;
 }

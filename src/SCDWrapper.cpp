@@ -206,6 +206,21 @@ Object* SCDWrapper::selectDomainReaction(
                                    Reaction& reaction,
                                    int& count)
 {
+    if (this->endIndex == 50)
+    {
+        reaction = COMBINATION;
+        count = 50;
+        theOtherKey = 1;
+        return allObjects[-1000012];
+    }
+    else
+    {
+        reaction = DIFFUSETOF;
+        count = 100;
+        theOtherKey = 69;
+        return allObjects[1];
+    }
+
     ofstream fs;
     fs.open("selectReaction.txt", ios::app);
     int pointIndex;
