@@ -45,7 +45,7 @@ int main() {
     master_srscd->drawSpeciesAndReactions(advTime);
     double prev_time = omp_get_wtime();
     vector<BoundaryChange*> boundaryChanges[num_threads];
-    vector<SCDWrapper*> processors;
+    vector<SCDWrapper*> processors(num_threads);
     //master_srscd->drawHD(advTime);
 
     // Run in parallel with multiple processors
@@ -151,18 +151,7 @@ int main() {
 
             if(iStep%PSTEPS == 0)
             {
-                // Keep track of the combined simulation volume for logging
-                #pragma omp single
-                {
-                    processors.clear();
-                }
-
-                #pragma omp barrier
-
-                #pragma omp critical
-                {
-                    processors.push_back(srscd);
-                }
+                processors[thread_id] = srscd;
                 
                 #pragma omp barrier
 
@@ -270,15 +259,7 @@ int main() {
         }   
 
         // Keep track of the combined simulation volume for logging
-        #pragma omp single
-        {
-           processors.clear();
-        }
-
-        #pragma omp critical
-        {
-            processors.push_back(srscd);
-        }
+        processors[thread_id] = srscd;
     }
     master_srscd->combineVolumeElements(processors);
     master_srscd->drawSpeciesAndReactions(advTime);
