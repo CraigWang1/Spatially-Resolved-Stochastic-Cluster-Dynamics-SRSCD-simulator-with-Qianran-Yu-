@@ -57,10 +57,7 @@ int main() {
         const int right_neighbor = thread_id + 1;
 
         SCDWrapper* srscd = new SCDWrapper(); /* establish spatially resolved scd for single processor */
-        #pragma omp critical
-        {
-            restart(iStep, advTime, srscd);
-        }
+        restart(iStep, advTime, srscd);
 
         // Split the volume elements among each processor
         for (int i = 0; i < num_threads; i++)
