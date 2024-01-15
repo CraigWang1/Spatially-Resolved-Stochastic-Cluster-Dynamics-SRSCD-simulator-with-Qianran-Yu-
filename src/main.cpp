@@ -72,8 +72,8 @@ int main() {
             #pragma omp barrier
         }
 
-        while (advTime < TOTAL_TIME)
-        // while(dpa < totalDPA)
+        // while (advTime < TOTAL_TIME)
+        while(dpa < totalDPA)
         {
             // Find the greatest domain rate, that all the other processors will adopt (Dunn 2016)
             #pragma omp single
