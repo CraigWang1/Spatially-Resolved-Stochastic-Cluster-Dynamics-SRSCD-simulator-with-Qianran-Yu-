@@ -252,10 +252,12 @@ int main() {
 
             #pragma omp barrier
 
-            #pragma omp reduction (+:dpa)
+            #pragma omp critical
             {
                 dpa += srscd->getDomainDpa();
             }
+
+            #pragma omp barrier
         }   
 
         // Keep track of the combined simulation volume for logging
