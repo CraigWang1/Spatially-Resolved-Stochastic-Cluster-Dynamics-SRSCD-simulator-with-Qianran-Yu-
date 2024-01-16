@@ -221,11 +221,12 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int& cou
         diffRToB = 0.0;
     }
     
-    
+    /*
     if (count == POINTS - 1) {
         //objects at bottom is not allowed to diffuse into vacuum
         diffRToB = 0.0;
     }
+    */
     
     /*
     diffRToB = 0.0;
@@ -235,8 +236,8 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int& cou
 
 void OneLine::computeSinkReaction(const Object* const hostObject, const int & count)
 {
-    // sinkR = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSink();
-    sinkR = 0.0;
+    sinkR = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSink();
+    // sinkR = 0.0;
 }
 
 void OneLine::computeDissReaction(
@@ -318,7 +319,7 @@ double OneLine::computeDimensionTerm(
     double hostDiff = hostObject->getDiff(), mobileDiff = mobileObject->getDiff();
     int hostDim = hostObject->getDim(), mobileDim = mobileObject->getDim();
     int hostN = hostObject->getNumber(count), mobileN = mobileObject->getNumber(count);
-    // int dimsum = hostDim + mobileDim; 
+    /* int dimsum = hostDim + mobileDim; */
     int dimsum = 6;
     double alpha_a = -log(PI*PI*pow(r12, 3.0) / VOLUME / hostN);
     double alpha_b = -log(PI*PI*pow(r12, 3.0) / VOLUME / mobileN);
@@ -338,4 +339,3 @@ double OneLine::computeDimensionTerm(
     }
     return term;
 }
-

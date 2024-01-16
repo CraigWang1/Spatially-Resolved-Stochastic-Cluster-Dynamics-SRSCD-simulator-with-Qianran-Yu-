@@ -72,8 +72,9 @@ int main() {
             #pragma omp barrier
         }
 
-        // while (advTime < TOTAL_TIME)
-        while(dpa < totalDPA)
+        while (advTime < 500)
+        // while(dpa < 0.001)
+        // for (int k = 0; k < 100000; k++)
         {
             // Find the greatest domain rate, that all the other processors will adopt (Dunn 2016)
             #pragma omp single
@@ -250,12 +251,17 @@ int main() {
                 dpa = 0;
             }
 
-            #pragma omp barrier
-
-            #pragma omp reduction (+:dpa)
+            #pragma omp critical
             {
                 dpa += srscd->getDomainDpa();
             }
+
+            #pragma omp barrier
+
+            // #pragma omp reduction (+:dpa)
+            // {
+            //     dpa += srscd->getDomainDpa();
+            // }
         }   
 
         // Keep track of the combined simulation volume for logging
