@@ -613,9 +613,15 @@ void SCDWrapper::addNewObjectToMapCheckBoundary(const int64& key, const int& cou
 {
     int relativeChange = 1;
     addNewObjectToMap(key, count);
-    if ((count == startIndex     && count != 0)          ||
-        (count == startIndex - 1 && count != -1)         ||
-        (count == endIndex       && count != POINTS - 1) ||
+
+    // It's only necessary to communicate mobile object changes
+    // in this processor's boundary for the other processor 
+    // to calculate diffusion gradients
+    bool isMobile = allObjects[key]->getDiff() > 0; 
+
+    if ((count == startIndex     && count != 0          && isMobile)   ||
+        (count == endIndex       && count != POINTS - 1 && isMobile)   ||
+        (count == startIndex - 1 && count != -1)                       ||
         (count == endIndex + 1   && count != POINTS))
     {
         TxBoundaryChangeQueue.push_back(
@@ -633,9 +639,11 @@ void SCDWrapper::addNewObjectToMapCheckBoundary(Object* newObject, const int& co
     if (newObject->getKey() != 0)
     {
         addNewObjectToMap(newObject);
-        if ((count == startIndex     && count != 0)          ||
-            (count == startIndex - 1 && count != -1)         ||
-            (count == endIndex       && count != POINTS - 1) ||
+        bool isMobile = newObject->getDiff() > 0;
+
+        if ((count == startIndex     && count != 0          && isMobile)   ||
+            (count == endIndex       && count != POINTS - 1 && isMobile)   ||
+            (count == startIndex - 1 && count != -1)                       ||
             (count == endIndex + 1   && count != POINTS))
         {
             TxBoundaryChangeQueue.push_back(
@@ -742,9 +750,11 @@ void SCDWrapper::removeRateToOther(const int64& deleteKey)
 void SCDWrapper::addNumberCheckBoundary(Object* object, const int& pointIndex, const int& number)
 {
     object->addNumber(pointIndex, number);
-    if ((pointIndex == startIndex     && pointIndex != 0)          ||
-        (pointIndex == startIndex - 1 && pointIndex != -1)         ||
-        (pointIndex == endIndex       && pointIndex != POINTS - 1) ||
+    bool isMobile = object->getDiff() > 0;
+
+    if ((pointIndex == startIndex     && pointIndex != 0          && isMobile)   ||
+        (pointIndex == endIndex       && pointIndex != POINTS - 1 && isMobile)   ||
+        (pointIndex == startIndex - 1 && pointIndex != -1)                       ||
         (pointIndex == endIndex + 1   && pointIndex != POINTS))
     {
         TxBoundaryChangeQueue.push_back(
@@ -756,9 +766,11 @@ void SCDWrapper::reduceNumberCheckBoundary(Object* object, const int& pointIndex
 {
     int relativeChange = -1;
     object->reduceNumber(pointIndex);
-    if ((pointIndex == startIndex     && pointIndex != 0)          ||
-        (pointIndex == startIndex - 1 && pointIndex != -1)         ||
-        (pointIndex == endIndex       && pointIndex != POINTS - 1) ||
+    bool isMobile = object->getDiff() > 0;
+
+    if ((pointIndex == startIndex     && pointIndex != 0          && isMobile)   ||
+        (pointIndex == endIndex       && pointIndex != POINTS - 1 && isMobile)   ||
+        (pointIndex == startIndex - 1 && pointIndex != -1)                       ||
         (pointIndex == endIndex + 1   && pointIndex != POINTS))
     {
         TxBoundaryChangeQueue.push_back(
