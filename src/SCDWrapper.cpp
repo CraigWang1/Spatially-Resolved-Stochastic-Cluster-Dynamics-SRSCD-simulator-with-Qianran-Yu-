@@ -1618,7 +1618,7 @@ void SCDWrapper::implementBoundaryChanges(vector<BoundaryChange*> boundaryChange
             if (allObjects.find(bc->objKey) != allObjects.end()) {
                 /* object found! then number of instances in this element increase */
                 Object* anObject = allObjects[bc->objKey];
-                anObject->addNumber(bc->pointIndex, bc->change); // negative change account for decrease
+                anObject->addNumber(bc->pointIndex, bc->change); // negative change accounts for decrease
                 // cout << "object: " << bc->objKey << " add " << bc->change << " at " << bc->pointIndex << endl;
                 updateObjectInMap(anObject, bc->pointIndex);
             }

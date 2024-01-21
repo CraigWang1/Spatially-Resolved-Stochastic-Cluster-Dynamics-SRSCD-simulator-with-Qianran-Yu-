@@ -6,6 +6,36 @@
 #include<time.h>
 #include"SCDWrapper.h"
 
+double significantFigures(double N, double n) 
+{ 
+    /* Converts inputted number N to number of sig figs n */
+    int h; 
+    double l, a, b, c, d, e, i, j, m, f, g; 
+    b = N; 
+    c = floor(N); 
+  
+    // Counting the no. of digits to the left of decimal point 
+    // in the given no. 
+    for (i = 0; b >= 1; ++i) 
+        b = b / 10; 
+  
+    d = n - i; 
+    b = N; 
+    b = b * pow(10, d); 
+    e = b + 0.5; 
+    if ((float)e == (float)ceil(b)) { 
+        f = (ceil(b)); 
+        h = f - 2; 
+        if (h % 2 != 0) { 
+            e = e - 1; 
+        } 
+    } 
+    j = floor(e); 
+    m = pow(10, d); 
+    j = j / m; 
+    return j;
+} 
+
 int main() {
     SCDWrapper* master_srscd = new SCDWrapper();  /* keep track of all threads */
     int64 theOtherKey = 0;
@@ -210,8 +240,9 @@ int main() {
                             {
                                 magnitude++;
                             }
+                            int numSigFigs = 2;
                             cout << "] " << std::fixed << std::setprecision(2) << progress << "%";
-                            cout << "   eta: " << std::fixed << std::setprecision(1) << eta_min << " min";
+                            cout << "   eta: " << std::fixed << std::setprecision(0) << significantFigures(eta_min, numSigFigs) << " min";
                             cout << "   time: " << std::fixed << std::setprecision(numDigits - magnitude) << advTime << " s            \r";
                             cout.flush();
                         }
