@@ -169,6 +169,60 @@ void OneLine::setOneLine(
         secondR.insert(oneReaction);
     }
     computeTotalRate();
+
+    // Calculate auxiliary values needed for tau leaping (Hoang 2015)
+    double mean = 0;
+    double variance = 0;
+    double speciesChange = 0;
+    g_term = 0;  // stores the highest order number reaction that this species can partake in here
+
+    // Diffusion to front
+    speciesChange = -1;
+    mean += speciesChange * diffRToF;
+    variance += speciesChange * speciesChange * diffRToF;
+    if (diffRToF > 0)
+        g_term = 1;
+
+    // Diffusion to back
+    speciesChange = -1;
+    mean += speciesChange * diffRToB;
+    variance += speciesChange * speciesChange * diffRToB;
+    if (diffRToB > 0)
+        g_term = 1;
+
+    // Sink
+    speciesChange = -1;
+    mean += speciesChange * sinkR;
+    variance += speciesChange * speciesChange * sinkR;
+    if (sinkR > 0)
+        g_term = 1;
+
+    // Dissociation
+    speciesChange = -1;
+    for (int i = 0; i < LEVELS; i++)
+    {
+        mean += speciesChange * dissociationR[i];
+        variance += speciesChange * speciesChange * dissociationR[i];
+        if (dissociationR[i] > 0)
+            g_term = 1;
+    }
+
+    // Combination
+    speciesChange = -1;
+    unordered_map<int64, long double>::iterator rateIter;
+    for (rateIter = secondR.begin(); rateIter != secondR.end(); ++rateIter) {
+        long double combRate = rateIter->second;
+        if (combRate > 0)
+            g_term = 2;
+
+        mean += speciesChange * combRate;
+        variance += speciesChange * speciesChange * combRate;
+    }
+
+    // Calculate the tau leaping time step candidate
+    double tau1 = max(EPSILON * hostObject->getNumber(count) / g_term, 1.) / abs(mean);
+    double tau2 = pow(max(EPSILON * hostObject->getNumber(count) / g_term, 1.), 2) / variance;
+    tau = min(tau1, tau2);
 }
 
 void OneLine::computeDiffReaction(const Object* const hostObject, const int& count)

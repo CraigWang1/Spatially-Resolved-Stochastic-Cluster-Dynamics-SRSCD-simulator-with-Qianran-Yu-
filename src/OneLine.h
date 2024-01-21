@@ -11,6 +11,8 @@ private:
     double diffRToF;            // diffusion rate from jth element to (j-1)th element
     double diffRToB;            // diffusion rate from jth element to (j+1)th latter one
     double sinkR;                 // go to sink reaction rate
+    double g_term;              // order of reactions term for tau leaping (Hoang 2015)
+    double tau;                 // candidate time step for tau leaping from this species in this spatial element
     long double dissociationR[LEVELS];
     // dissociation reaction rate
     long double totalRate;             // totalRate of the line;

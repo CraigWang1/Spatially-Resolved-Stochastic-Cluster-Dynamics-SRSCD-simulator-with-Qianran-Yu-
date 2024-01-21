@@ -54,6 +54,8 @@
 #define LEVELS 3
 #define EXP10 3 // number of 0s assigned to each group in object's key in hash table
 #define POINTS 101       // number of elements: one surface(Point 0), other bulk elements(NO.1,2,3,4...)
+#define EPSILON 0.03         // tolerance for tau leaping (Hoang 2015)
+
 // Auxiliary definitions:
 enum Reaction { DIFFUSETOF, DIFFUSETOB, SINK, DISSOCIATION, COMBINATION, NONE, PARTICLE, HE, H, DISSV, DISSH, ERROR};
 

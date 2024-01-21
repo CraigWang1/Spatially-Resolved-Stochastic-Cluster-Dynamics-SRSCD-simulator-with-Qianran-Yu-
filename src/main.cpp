@@ -7,7 +7,6 @@
 #include"SCDWrapper.h"
 
 int main() {
-    //fork();
     SCDWrapper* srscd = new SCDWrapper(); /* establish spatially resolved scd */
     int64 theOtherKey = 0;
     Object* hostObject = nullptr;
