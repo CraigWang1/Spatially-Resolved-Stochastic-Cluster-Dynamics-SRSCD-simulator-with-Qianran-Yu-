@@ -105,7 +105,9 @@ void Damage::computeDamageZero(const int & n)
         damage[n][0] = 0.0;
     }
     */
+
     //damage[n][0] = DPA_RATE[n] * DENSITY*VOLUME / NRT[n];
+    totalIonRate += damage[n][0];
     totalRate[n] += damage[n][0];
 }
 
@@ -137,6 +139,12 @@ void Damage::computeDamageOther(const int & n, const int & m)
     totalRate[n] += damage[n][m];
 }
 
-double Damage::getDpaRate(const int& n){
+double Damage::getDpaRate(const int& n)
+{
     return DPA_RATE[n];
+}
+
+double Damage::getTotalIonRate()
+{
+    return totalIonRate;
 }

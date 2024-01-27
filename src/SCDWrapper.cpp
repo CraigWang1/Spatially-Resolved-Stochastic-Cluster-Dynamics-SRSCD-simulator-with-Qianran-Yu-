@@ -1128,7 +1128,7 @@ void SCDWrapper::getIonInsertion(const int & n, const double& dt, fstream& fs)
     int64 clusterKey;
     //fstream fk;
     //fk.open("V_insertion.txt", ios::app);
-    doseIon[n] += damage.getDpaRate(n)*dt;
+    doseIon[n] += damage.getDpaRate(n) / damage.getTotalIonRate();
     in_time += dt;
     //fk << damage.getDpaRate(n) << " * " << dt << "  " << in_time << "   ";
     CascadeDamage damage;
