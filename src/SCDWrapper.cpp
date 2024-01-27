@@ -611,16 +611,9 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
 
 void SCDWrapper::addNewObjectToMapCheckBoundary(const int64& key, const int& count)
 {
-    int relativeChange = 1;
     addNewObjectToMap(key, count);
-    if ((count == startIndex     && count != 0)          ||
-        (count == startIndex - 1 && count != -1)         ||
-        (count == endIndex       && count != POINTS - 1) ||
-        (count == endIndex + 1   && count != POINTS))
-    {
-        TxBoundaryChangeQueue.push_back(
-            new BoundaryChange(key, count, relativeChange));
-    }
+    int relativeChange = 1;
+    checkBoundary(allObjects[key], count, relativeChange);
 }
 
 void SCDWrapper::addNewObjectToMapCheckBoundary(Object* newObject, const int& count, const int& number)
@@ -633,14 +626,8 @@ void SCDWrapper::addNewObjectToMapCheckBoundary(Object* newObject, const int& co
     if (newObject->getKey() != 0)
     {
         addNewObjectToMap(newObject);
-        if ((count == startIndex     && count != 0)          ||
-            (count == startIndex - 1 && count != -1)         ||
-            (count == endIndex       && count != POINTS - 1) ||
-            (count == endIndex + 1   && count != POINTS))
-        {
-            TxBoundaryChangeQueue.push_back(
-                new BoundaryChange(newObject->getKey(), count, number));
-        }
+        int relativeChange = number;
+        checkBoundary(newObject, count, relativeChange);
     } 
 }
 
@@ -742,24 +729,32 @@ void SCDWrapper::removeRateToOther(const int64& deleteKey)
 void SCDWrapper::addNumberCheckBoundary(Object* object, const int& pointIndex, const int& number)
 {
     object->addNumber(pointIndex, number);
-    if ((pointIndex == startIndex     && pointIndex != 0)          ||
-        (pointIndex == startIndex - 1 && pointIndex != -1)         ||
-        (pointIndex == endIndex       && pointIndex != POINTS - 1) ||
-        (pointIndex == endIndex + 1   && pointIndex != POINTS))
-    {
-        TxBoundaryChangeQueue.push_back(
-            new BoundaryChange(object->getKey(), pointIndex, number));
-    }
+    int relativeChange = number;
+    checkBoundary(object, pointIndex, relativeChange);
 }
 
 void SCDWrapper::reduceNumberCheckBoundary(Object* object, const int& pointIndex)
 {
-    int relativeChange = -1;
     object->reduceNumber(pointIndex);
-    if ((pointIndex == startIndex     && pointIndex != 0)          ||
-        (pointIndex == startIndex - 1 && pointIndex != -1)         ||
-        (pointIndex == endIndex       && pointIndex != POINTS - 1) ||
-        (pointIndex == endIndex + 1   && pointIndex != POINTS))
+    int relativeChange = -1;
+    checkBoundary(object, pointIndex, relativeChange);
+}
+
+void SCDWrapper::checkBoundary(Object* object, const int& pointIndex, const int& relativeChange)
+{
+    /*
+     * Check whether an object population change occurred along this processor's
+     * boundary or ghost region. If it did, then set up a message to neighbouring processors.
+     */
+    bool isBoundary = (
+            (pointIndex == startIndex && pointIndex != 0) || 
+            (pointIndex == endIndex   && pointIndex != POINTS - 1)
+        );
+    bool isGhost = (
+            (pointIndex == startIndex - 1 && pointIndex != -1) ||
+            (pointIndex == endIndex + 1   && pointIndex != POINTS)
+        );
+    if (isBoundary || isGhost)
     {
         TxBoundaryChangeQueue.push_back(
             new BoundaryChange(object->getKey(), pointIndex, relativeChange));

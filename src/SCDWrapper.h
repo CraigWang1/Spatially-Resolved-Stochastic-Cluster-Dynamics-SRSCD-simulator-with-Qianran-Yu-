@@ -78,6 +78,8 @@ private:
     /* Add the object count by one in that volume element, and check if it's a boundary point */
     void reduceNumberCheckBoundary(Object*, const int&);
     /* Reduce the object count by one in that volume element, and check if it's a boundary point */
+    void checkBoundary(Object*, const int&, const int&);
+    /* Check if this change in object population count occured along the boundary or ghost region of this processor. If it did, add it to the message queue that gets transfered to neighbouring processors */
     void updateSinks(const int, const int*); /* only for restart use */
     /* process event functions */
     void processDiffEvent(Object*, const int&, const char&);     /* process diffusion reactionObject */
