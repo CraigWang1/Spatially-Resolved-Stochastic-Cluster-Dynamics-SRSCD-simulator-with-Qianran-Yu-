@@ -235,8 +235,8 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int& cou
 
 void OneLine::computeSinkReaction(const Object* const hostObject, const int & count)
 {
-    // sinkR = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSink();
-    sinkR = 0.0;
+    sinkR = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSink();
+    // sinkR = 0.0;
 }
 
 void OneLine::computeDissReaction(

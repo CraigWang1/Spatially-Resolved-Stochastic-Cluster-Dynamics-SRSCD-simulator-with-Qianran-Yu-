@@ -60,7 +60,9 @@ int main() {
     double write_increment = 0.2;
     double split_index = 0;
     const int num_threads = omp_get_max_threads();
-    double index_increment = (double) POINTS / num_threads;
+    const double elementsPerThread = (double) POINTS / num_threads;
+    const int blocksPerThread = 2; /* How many blocks (groupings of spatial elements) each processor is responsible for */
+    const double indexIncrement = elementsPerThread / blocksPerThread; /* Each thread supervises groups of elements, each group being far from each other */ 
     fstream st;
     /* check whether to restart*/
     restart(iStep, advTime, master_srscd);
@@ -90,20 +92,24 @@ int main() {
         restart(iStep, advTime, srscd);
 
         // Split the volume elements among each processor
-        for (int i = 0; i < num_threads; i++)
+        for (int i = 0; i < blocksPerThread; i++)
         {
-            if (i == thread_id)
+            for (int j = 0; j < num_threads; j++)
             {
-                int startIndex = round(split_index);
-                split_index += index_increment;
-                int endIndex = round(split_index) - 1;
-                srscd->setDomain(startIndex, endIndex);
+                if (j == thread_id)
+                {
+                    int startIndex = round(split_index);
+                    split_index += indexIncrement;
+                    int endIndex = round(split_index) - 1;
+                    srscd->addDomain(startIndex, endIndex);
+                    cout << startIndex << endl;
+                }
+                #pragma omp barrier
             }
-            #pragma omp barrier
         }
 
-        while (advTime < TOTAL_TIME)
-        // while(dpa < totalDPA)
+        // while (advTime < TOTAL_TIME)
+        while(dpa < totalDPA)
         {
             // Find the greatest domain rate, that all the other processors will adopt (Dunn 2016)
             #pragma omp single

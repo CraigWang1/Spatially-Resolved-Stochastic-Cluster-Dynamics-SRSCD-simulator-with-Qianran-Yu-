@@ -23,10 +23,10 @@ private:
     unordered_map<int64, int> bottom;
     vector<BoundaryChange*> RxBoundaryChangeQueue; // Store changes in processor's boundary volume elements
     vector<BoundaryChange*> TxBoundaryChangeQueue;
+    vector<pair<int, int>> domain;   // vector of (startIndex, endIndex) sections of the simulation volume this processor should focus on */
     Damage damage;
     Cpdf cpdf;
-    int startIndex, endIndex;   // assign this srscd object to a subsection of the volume for parallelization
-    int numVolumeElements;      // ^
+    int numVolumeElements;  // ^
     int sinks[LEVELS+1][POINTS];
     long double sinkDissRate[2][POINTS];
     long double noneRate;       // rate of no reaction happening in this domain (Dunn 2016)
@@ -137,7 +137,7 @@ public:
     friend void restart(long int&, double&, SCDWrapper*);
     /* test functions, don't need in the future */
     void test(const int&); /* count how many vacancies now in the bulk */
-    void setDomain(const int&, const int&);
+    void addDomain(const int&, const int&);
     void fillNoneReaction(const double&);
     void clearNoneReaction();
     void implementBoundaryChanges(vector<BoundaryChange*>);
@@ -153,7 +153,6 @@ public:
     vector<BoundaryChange*> getTxBoundaryChangeQueue();
     void clearTxBoundaryChangeQueue();
     void setRxBoundaryChangeQueue(vector<BoundaryChange*> queue);
-    int getStartIdx();
-    int getEndIdx();
+    vector<pair<int, int>> getDomain();
 };
 

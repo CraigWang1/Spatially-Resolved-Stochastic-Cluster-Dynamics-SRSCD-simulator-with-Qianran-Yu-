@@ -34,6 +34,8 @@ SCDWrapper::SCDWrapper():damage(), cpdf()
     }
     /* initialize sink numbers */
     setSinks();
+    /* initialize number of volume elements this processor has */
+    numVolumeElements = 0;
     /* set format of gs --- species */
     /*
     gs.set_title("Species");
@@ -142,9 +144,14 @@ void SCDWrapper::computeBulkRate()
 void SCDWrapper::computeDomainRate()
 {
     domainRate = 0.0;
-    for (int i = startIndex; i <= endIndex; i++)
+    for (auto block: domain)
     {
-        domainRate += matrixRate[i];
+        int startIndex = block.first;
+        int endIndex = block.second;
+        for (int i = startIndex; i <= endIndex; i++)
+        {
+            domainRate += matrixRate[i];
+        }
     }
 }
 
@@ -215,42 +222,49 @@ Object* SCDWrapper::selectDomainReaction(
     Bundle* tempBundle;
     OneLine* tempLine;
     //fs << "BulkRate = " << bulkRate << "RandRate = " << randRate << endl;
-    for (pointIndex = startIndex; pointIndex <= endIndex; ++pointIndex) {
-        if (matrixRate[pointIndex] < tempRandRate) {
-            tempRandRate -= matrixRate[pointIndex];
-            continue;
-        }/* if the event is not positioned in this element, move on to the next one */
-        else {
-            reaction = NONE;
-            unordered_map<int64, Object*>::iterator iter = allObjects.begin();
-            while (reaction == NONE && iter != allObjects.end()) {
-                tempObject = iter->second;
-                tempBundle = linePool[tempObject];
-                tempLine = tempBundle->lines[pointIndex];
-                if (tempLine != nullptr) {
-                    reaction = tempLine->selectReaction(tempObject, theOtherKey, tempRandRate);
+    for (auto block: domain)
+    {
+        int startIndex = block.first;
+        int endIndex = block.second;
+
+        for (pointIndex = startIndex; pointIndex <= endIndex; ++pointIndex) 
+        {
+            if (matrixRate[pointIndex] < tempRandRate) {
+                tempRandRate -= matrixRate[pointIndex];
+                continue;
+            }/* if the event is not positioned in this element, move on to the next one */
+            else {
+                reaction = NONE;
+                unordered_map<int64, Object*>::iterator iter = allObjects.begin();
+                while (reaction == NONE && iter != allObjects.end()) {
+                    tempObject = iter->second;
+                    tempBundle = linePool[tempObject];
+                    tempLine = tempBundle->lines[pointIndex];
+                    if (tempLine != nullptr) {
+                        reaction = tempLine->selectReaction(tempObject, theOtherKey, tempRandRate);
+                    }
+                    ++iter;
                 }
-                ++iter;
-            }
-            if (reaction == NONE) {
-                reaction = damage.selectDamage(pointIndex, tempRandRate);
-            }
-            if (reaction == NONE){
-                if(sinkDissRate[0][pointIndex] >= tempRandRate){
-                    reaction = DISSV;
-                }else{
-                    tempRandRate -= sinkDissRate[0][pointIndex];
-                    if (sinkDissRate[1][pointIndex] >= tempRandRate){
-                        reaction = DISSH;
+                if (reaction == NONE) {
+                    reaction = damage.selectDamage(pointIndex, tempRandRate);
+                }
+                if (reaction == NONE){
+                    if(sinkDissRate[0][pointIndex] >= tempRandRate){
+                        reaction = DISSV;
+                    }else{
+                        tempRandRate -= sinkDissRate[0][pointIndex];
+                        if (sinkDissRate[1][pointIndex] >= tempRandRate){
+                            reaction = DISSH;
+                        }
                     }
                 }
+                
+                count = pointIndex;
+                if (LOG_REACTIONS)
+                    fs << "Element = " << pointIndex + 1 <<", "<< "Reaction = " << reaction << endl << endl;
+                fs.close();
+                return tempObject;
             }
-            
-            count = pointIndex;
-            if (LOG_REACTIONS)
-                fs << "Element = " << pointIndex + 1 <<", "<< "Reaction = " << reaction << endl << endl;
-            fs.close();
-            return tempObject;
         }
     }
     return tempObject;
@@ -364,10 +378,17 @@ const double SCDWrapper::getAndExamineRate()
 
 const void SCDWrapper::examineDomainRate()
 {
-    for (int i = startIndex; i <= endIndex; i++)
+    for (auto block: domain)
     {
-        computeMatrixRate(i);
+        int startIndex = block.first;
+        int endIndex = block.second;
+
+        for (int i = startIndex; i <= endIndex; i++)
+        {
+            computeMatrixRate(i);
+        }
     }
+
     computeDomainRate();
 }
 
@@ -746,18 +767,23 @@ void SCDWrapper::checkBoundary(Object* object, const int& pointIndex, const int&
      * Check whether an object population change occurred along this processor's
      * boundary or ghost region. If it did, then set up a message to neighbouring processors.
      */
-    bool isBoundary = (
-            (pointIndex == startIndex && pointIndex != 0) || 
-            (pointIndex == endIndex   && pointIndex != POINTS - 1)
-        );
-    bool isGhost = (
-            (pointIndex == startIndex - 1 && pointIndex != -1) ||
-            (pointIndex == endIndex + 1   && pointIndex != POINTS)
-        );
-    if (isBoundary || isGhost)
+    for (auto block: domain)
     {
-        TxBoundaryChangeQueue.push_back(
-            new BoundaryChange(object->getKey(), pointIndex, relativeChange));
+        int startIndex = block.first;
+        int endIndex = block.second;
+        bool isBoundary = (
+                (pointIndex == startIndex && pointIndex != 0) || 
+                (pointIndex == endIndex   && pointIndex != POINTS - 1)
+            ) && object->getDiff() > 0;
+        bool isGhost = (
+                (pointIndex == startIndex - 1 && pointIndex != -1) ||
+                (pointIndex == endIndex + 1   && pointIndex != POINTS)
+            );
+        if (isBoundary || isGhost)
+        {
+            TxBoundaryChangeQueue.push_back(
+                new BoundaryChange(object->getKey(), pointIndex, relativeChange));
+        }
     }
 }
 
@@ -1577,12 +1603,11 @@ void SCDWrapper::test(const int& inputV){
     fo.close();
 }
 
-void SCDWrapper::setDomain(const int& startIndex, const int& endIndex)
+void SCDWrapper::addDomain(const int& startIndex, const int& endIndex)
 {
     /* Which volume elements the processor should focus on (inclusive) */
-    this->startIndex = startIndex;
-    this->endIndex = endIndex;
-    numVolumeElements = endIndex - startIndex + 1;
+    domain.push_back(make_pair(startIndex, endIndex));
+    numVolumeElements += endIndex - startIndex + 1;
 }
 
 void SCDWrapper::fillNoneReaction(const double& maxDomainRate)
@@ -1605,22 +1630,29 @@ void SCDWrapper::implementBoundaryChanges(vector<BoundaryChange*> boundaryChange
 {
     for (BoundaryChange* bc: boundaryChanges)
     {
-        if (bc->pointIndex == startIndex     ||      // go one past the boundary because you need that info for diffusion rates out of the boundary
-            bc->pointIndex == startIndex - 1 ||
-            bc->pointIndex == endIndex       || 
-            bc->pointIndex == endIndex + 1)
+        // Check if a boundary change occured along one of this processor's edges
+        for (auto block: domain)
         {
-            if (allObjects.find(bc->objKey) != allObjects.end()) {
-                /* object found! then number of instances in this element increase */
-                Object* anObject = allObjects[bc->objKey];
-                anObject->addNumber(bc->pointIndex, bc->change); // negative change accounts for decrease
-                // cout << "object: " << bc->objKey << " add " << bc->change << " at " << bc->pointIndex << endl;
-                updateObjectInMap(anObject, bc->pointIndex);
-            }
-            else {
-                /* object didn't find! build new object and insert it into map */
-                Object* anObject = new Object(bc->objKey, bc->pointIndex, bc->change);
-                addNewObjectToMap(anObject);
+            int startIndex = block.first;
+            int endIndex = block.second;
+
+            if (bc->pointIndex == startIndex     ||      // go one past the boundary because you need that info for diffusion rates out of the boundary
+                bc->pointIndex == startIndex - 1 ||
+                bc->pointIndex == endIndex       || 
+                bc->pointIndex == endIndex + 1)
+            {
+                if (allObjects.find(bc->objKey) != allObjects.end()) {
+                    /* object found! then number of instances in this element increase */
+                    Object* anObject = allObjects[bc->objKey];
+                    anObject->addNumber(bc->pointIndex, bc->change); // negative change accounts for decrease
+                    // cout << "object: " << bc->objKey << " add " << bc->change << " at " << bc->pointIndex << endl;
+                    updateObjectInMap(anObject, bc->pointIndex);
+                }
+                else {
+                    /* object didn't find! build new object and insert it into map */
+                    Object* anObject = new Object(bc->objKey, bc->pointIndex, bc->change);
+                    addNewObjectToMap(anObject);
+                }
             }
         }
     }
@@ -1634,29 +1666,33 @@ void SCDWrapper::combineVolumeElements(const vector<SCDWrapper*> &procs)
     linePool.clear();
     for (SCDWrapper* srscd: procs)
     {
-        int startIndex = srscd->getStartIdx();
-        int endIndex = srscd->getEndIdx();
         unordered_map<int64, Object*>* objects = srscd->getAllObjects();
         unordered_map<int64, Object*>::iterator iter;
         for (iter = objects->begin(); iter != objects->end(); ++iter) 
         {
             int64 tempKey = iter->first;
             Object* tempObject = iter->second;
-            for (int i = startIndex; i <= endIndex; i++)
+            for (auto block: srscd->getDomain())
             {
-                int num = tempObject->getNumber(i);
-                if (num > 0)
+                int startIndex = block.first;
+                int endIndex = block.second;
+
+                for (int i = startIndex; i <= endIndex; i++)
                 {
-                    if (allObjects.find(tempKey) != allObjects.end())
+                    int num = tempObject->getNumber(i);
+                    if (num > 0)
                     {
-                        /* Found object, updating the number in this element */
-                        Object* anObject = allObjects[tempKey];
-                        anObject->addNumber(i, num);
-                    }
-                    else
-                    {
-                        /* Couldn't find object, so create a new one */
-                        addNewObjectToMap(new Object(tempKey, i, num));
+                        if (allObjects.find(tempKey) != allObjects.end())
+                        {
+                            /* Found object, updating the number in this element */
+                            Object* anObject = allObjects[tempKey];
+                            anObject->addNumber(i, num);
+                        }
+                        else
+                        {
+                            /* Couldn't find object, so create a new one */
+                            addNewObjectToMap(new Object(tempKey, i, num));
+                        }
                     }
                 }
             }
@@ -1783,10 +1819,17 @@ double SCDWrapper::getTotalDpa(){
 double SCDWrapper::getDomainDpa()
 {
     double dpa = 0;
-    for (int i = startIndex; i <= endIndex; i++)
+    for (auto block: domain)
     {
-        dpa += doseIon[i];
+        int startIndex = block.first;
+        int endIndex = block.second;
+
+        for (int i = startIndex; i <= endIndex; i++)
+        {
+            dpa += doseIon[i];
+        }
     }
+
     return dpa;
 }
 
@@ -1805,12 +1848,7 @@ void SCDWrapper::setRxBoundaryChangeQueue(vector<BoundaryChange*> queue)
     RxBoundaryChangeQueue = queue;
 }
 
-int SCDWrapper::getStartIdx()
+vector<pair<int, int>> SCDWrapper::getDomain()
 {
-    return startIndex;
-}
-
-int SCDWrapper::getEndIdx()
-{
-    return endIndex;
+    return domain;
 }
