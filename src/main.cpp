@@ -114,7 +114,6 @@ int main() {
             #pragma omp barrier
 
             srscd->clearNoneReaction();
-            srscd->examineDomainRate();
 
             #pragma omp critical
             {
