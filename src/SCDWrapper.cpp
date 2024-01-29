@@ -20,6 +20,8 @@ static int dissH = 0; //this only counts number of events
 /* public funciton */
 SCDWrapper::SCDWrapper():damage(), cpdf()
 {
+    noneRate = 0;
+    domainRate = 0;
     for (int i = 0; i < POINTS; ++i) {
         computeMatrixRate(i);
     } /* initialized matrix rate in every element */
@@ -128,7 +130,6 @@ void SCDWrapper::computeMatrixRate(const int & n)
     matrixRate[n] += damage.getTotalDamage(n);
     matrixRate[n] += sinkDissRate[0][n];
     matrixRate[n] += sinkDissRate[1][n];
-    matrixRate[n] += noneRate / numVolumeElements;
 }
 
 void SCDWrapper::computeBulkRate()
@@ -142,9 +143,14 @@ void SCDWrapper::computeBulkRate()
 void SCDWrapper::computeDomainRate()
 {
     domainRate = 0.0;
-    for (int i = startIndex; i <= endIndex; i++)
+    if (startIndex == 0 && endIndex == 0)
+        return;
+    else
     {
-        domainRate += matrixRate[i];
+        for (int i = startIndex; i <= endIndex; i++)
+        {
+            domainRate += matrixRate[i];
+        }
     }
 }
 
@@ -314,6 +320,23 @@ void SCDWrapper::processEvent(
         default:
             break;
     }
+
+    // Keep track of affected reaction rates
+    int affectedStart = n - 1;
+    int affectedEnd = n + 1;
+    if (reaction == DIFFUSETOF)
+        affectedStart -= 1;
+    else if (reaction == DIFFUSETOB)
+        affectedEnd += 1;
+    for (int i = affectedStart; i <= affectedEnd; i++)
+    {
+        if (i >= startIndex && i <= endIndex)
+        {
+            domainRate -= matrixRate[i];
+            computeMatrixRate(i);
+            domainRate += matrixRate[i];
+        }
+    }
     fs.close();
 }
 
@@ -364,11 +387,11 @@ const double SCDWrapper::getAndExamineRate()
 
 const void SCDWrapper::examineDomainRate()
 {
-    for (int i = startIndex; i <= endIndex; i++)
-    {
-        computeMatrixRate(i);
-    }
-    computeDomainRate();
+    // for (int i = startIndex; i <= endIndex; i++)
+    // {
+    //     computeMatrixRate(i);
+    // }
+    // computeDomainRate();
 }
 
 const double SCDWrapper::getDomainRate()
@@ -1593,11 +1616,12 @@ void SCDWrapper::fillNoneReaction(const double& maxDomainRate)
      * (Dunn 2016)
      */
     noneRate = maxDomainRate - domainRate;
-    examineDomainRate(); // recalculate the matrix rates to incorporate the none reaction
+    matrixRate[endIndex] += noneRate; // recalculate the matrix rates to incorporate the none reaction
 }
 
 void SCDWrapper::clearNoneReaction()
 {
+    matrixRate[endIndex] -= noneRate; // store noneRate in last index of processor
     noneRate = 0.0;
 }
 

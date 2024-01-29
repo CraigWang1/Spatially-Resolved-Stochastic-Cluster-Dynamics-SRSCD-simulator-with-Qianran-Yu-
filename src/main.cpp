@@ -98,6 +98,7 @@ int main() {
                 split_index += index_increment;
                 int endIndex = round(split_index) - 1;
                 srscd->setDomain(startIndex, endIndex);
+                srscd->computeDomainRate();
             }
             #pragma omp barrier
         }
@@ -114,7 +115,6 @@ int main() {
             #pragma omp barrier
 
             srscd->clearNoneReaction();
-            srscd->examineDomainRate();
 
             #pragma omp critical
             {
@@ -124,6 +124,8 @@ int main() {
                     maxDomainRate = localDomainRate;
                 }
             }
+
+            cout << srscd->getDomainRate() << endl;
 
             // Wait for all threads to find the global max domain rate
             #pragma omp barrier
