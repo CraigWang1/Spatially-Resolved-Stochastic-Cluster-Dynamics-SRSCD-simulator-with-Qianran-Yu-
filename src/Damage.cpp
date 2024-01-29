@@ -105,6 +105,7 @@ void Damage::computeDamageZero(const int & n)
         damage[n][0] = 0.0;
     }
     */
+
     //damage[n][0] = DPA_RATE[n] * DENSITY*VOLUME / NRT[n];
     totalRate[n] += damage[n][0];
 }

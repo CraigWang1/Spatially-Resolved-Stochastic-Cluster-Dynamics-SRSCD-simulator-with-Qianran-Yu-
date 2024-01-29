@@ -49,7 +49,7 @@
 //#define DPA_RATE 0       //When only H exposure is available. no self-damage at all
 //#define DPA_RATE 3.55e-6   // [dpa/s] Damage rate.
 #define CHANNELS 3         // Irradiation channels used (1:W, 2:He, 3:H,...). the number of different particle insertion(irradiation) process.
-#define PSTEPS 5000 // Print data every so many.
+#define PSTEPS 50000 // Print data every so many.
 #define TSTEPS 50000 // Run these many steps.
 #define LEVELS 3
 #define EXP10 3 // number of 0s assigned to each group in object's key in hash table

@@ -248,6 +248,23 @@ void SCDWrapper::processEvent(
         default:
             break;
     }
+
+    // Keep track of affected reaction rates
+    int affectedStart = n - 1;
+    int affectedEnd = n + 1;
+    if (reaction == DIFFUSETOF)
+        affectedStart -= 1;
+    else if (reaction == DIFFUSETOB)
+        affectedEnd += 1;
+    for (int i = affectedStart; i <= affectedEnd; i++)
+    {
+        if (i >= 0 && i < POINTS)
+        {
+            bulkRate -= matrixRate[i];
+            computeMatrixRate(i);
+            bulkRate += matrixRate[i];
+        }
+    }
     fs.close();
 }
 
@@ -284,12 +301,12 @@ const double SCDWrapper::getAndExamineRate()
 {
     fstream fs;
     //fs.open("Rate.txt",ios::app);
-    int i;
-    for (i = 0; i < POINTS; ++i) {
-        computeMatrixRate(i);
-        //fs << matrixRate[i] <<"        ";
-    }
-    computeBulkRate();
+    // int i;
+    // for (i = 0; i < POINTS; ++i) {
+    //     computeMatrixRate(i);
+    //     //fs << matrixRate[i] <<"        ";
+    // }
+    // computeBulkRate();
     //fs << "BulkRate" << bulkRate << endl<<endl<<endl;
     //fs.close();
 
