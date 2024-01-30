@@ -114,8 +114,6 @@ int main() {
 
             #pragma omp barrier
 
-            srscd->clearNoneReaction();
-
             #pragma omp critical
             {
                 double localDomainRate = srscd->getDomainRate();
@@ -124,8 +122,6 @@ int main() {
                     maxDomainRate = localDomainRate;
                 }
             }
-
-            cout << srscd->getDomainRate() << endl;
 
             // Wait for all threads to find the global max domain rate
             #pragma omp barrier
@@ -141,6 +137,7 @@ int main() {
 
             srscd->fillNoneReaction(maxDomainRate); 
             hostObject = srscd->selectDomainReaction(theOtherKey, reaction, pointIndex);/* choose an event */
+            srscd->clearNoneReaction();
             srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
 
             // Assuming you only run either ion or H insertion in one simulation?

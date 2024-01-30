@@ -259,6 +259,7 @@ Object* SCDWrapper::selectDomainReaction(
             return tempObject;
         }
     }
+    reaction = NONE;
     return tempObject;
 }
 
@@ -1616,13 +1617,13 @@ void SCDWrapper::fillNoneReaction(const double& maxDomainRate)
      * (Dunn 2016)
      */
     noneRate = maxDomainRate - domainRate;
-    matrixRate[endIndex] += noneRate; // recalculate the matrix rates to incorporate the none reaction
+    domainRate += noneRate; // recalculate the matrix rates to incorporate the none reaction
 }
 
 void SCDWrapper::clearNoneReaction()
 {
-    matrixRate[endIndex] -= noneRate; // store noneRate in last index of processor
-    noneRate = 0.0;
+    domainRate -= noneRate;
+    noneRate = 0;
 }
 
 void SCDWrapper::implementBoundaryChanges(vector<BoundaryChange*> boundaryChanges)
@@ -1645,6 +1646,19 @@ void SCDWrapper::implementBoundaryChanges(vector<BoundaryChange*> boundaryChange
                 /* object didn't find! build new object and insert it into map */
                 Object* anObject = new Object(bc->objKey, bc->pointIndex, bc->change);
                 addNewObjectToMap(anObject);
+            }
+
+            // Update our reaction rates to account for the boundary change
+            int affectedStart = bc->pointIndex - 1;
+            int affectedEnd = bc->pointIndex + 1;
+            for (int i = affectedStart; i <= affectedEnd; i++)
+            {
+                if (i >= startIndex && i <= endIndex)
+                {
+                    domainRate -= matrixRate[i];
+                    computeMatrixRate(i);
+                    domainRate += matrixRate[i];
+                }
             }
         }
     }
