@@ -260,9 +260,7 @@ void SCDWrapper::processEvent(
     {
         if (i >= 0 && i < POINTS)
         {
-            bulkRate -= matrixRate[i];
             computeMatrixRate(i);
-            bulkRate += matrixRate[i];
         }
     }
     fs.close();
@@ -306,7 +304,7 @@ const double SCDWrapper::getAndExamineRate()
     //     computeMatrixRate(i);
     //     //fs << matrixRate[i] <<"        ";
     // }
-    // computeBulkRate();
+    computeBulkRate();
     //fs << "BulkRate" << bulkRate << endl<<endl<<endl;
     //fs.close();
 
