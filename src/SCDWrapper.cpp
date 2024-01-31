@@ -1164,7 +1164,6 @@ void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
 }
 
 bool SCDWrapper::recognizeSAV(const Object *const hostObject, const Object *const theOtherObject){
-    return false;
     int hostAttrZero = hostObject->getAttri(0);
     int hostAttrTwo = hostObject->getAttri(2);
     int otherAttrZero = theOtherObject->getAttri(0);

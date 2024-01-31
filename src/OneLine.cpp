@@ -221,11 +221,12 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int& cou
         diffRToB = 0.0;
     }
     
-    
+    /*
     if (count == POINTS - 1) {
         //objects at bottom is not allowed to diffuse into vacuum
         diffRToB = 0.0;
     }
+    */
     
     /*
     diffRToB = 0.0;
@@ -235,8 +236,8 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int& cou
 
 void OneLine::computeSinkReaction(const Object* const hostObject, const int & count)
 {
-    // sinkR = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSink();
-    sinkR = 0.0;
+    sinkR = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSink();
+    // sinkR = 0.0;
 }
 
 void OneLine::computeDissReaction(
