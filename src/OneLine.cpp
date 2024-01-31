@@ -267,7 +267,7 @@ double OneLine::computeCombReaction(
     double dimensionTerm;
     double volume;
     if(count == 0){
-        volume = (VOLUME/36) * SURFACE_THICKNESS;
+        volume = (VOLUME/20) * SURFACE_THICKNESS;
         // volume on surface volume/36nm * 0.54nm
         
     }else{

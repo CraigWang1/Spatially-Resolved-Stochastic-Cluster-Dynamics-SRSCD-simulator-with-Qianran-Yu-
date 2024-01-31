@@ -1093,6 +1093,7 @@ void restart(int & iStep, double & advTime, SCDWrapper *srscd)
 {
     int64 objectKey;
     int number[LEVELS+1] = { 0 };
+    int numberObj[POINTS] = { 0 };
     int step = 0;
     string skip;
     string oneLine;
@@ -1114,7 +1115,7 @@ void restart(int & iStep, double & advTime, SCDWrapper *srscd)
     file.close();
     /* update species informtion */
     ifstream ofile("restart.txt");
-    if (file.good()) {
+    if (ofile.good()) {
         while (getline(ofile, oneLine)) {
             step++;
             lineHold.str(oneLine);
@@ -1134,9 +1135,9 @@ void restart(int & iStep, double & advTime, SCDWrapper *srscd)
             }else{
                 lineHold >> skip >> objectKey;
                 for (int i = 0; i < POINTS; i++) {
-                    lineHold >> number[i];
+                    lineHold >> numberObj[i];
                 }
-                srscd->addNewObjectToMap(objectKey, number);
+                srscd->addNewObjectToMap(objectKey, numberObj);
             }
             lineHold.clear();
         }
@@ -1151,7 +1152,6 @@ bool SCDWrapper::recognizeSAV(const Object *const hostObject, const Object *cons
     int otherAttrZero = theOtherObject->getAttri(0);
     int otherAttrTwo = theOtherObject->getAttri(2);
     if(hostAttrZero < 0 && hostAttrTwo != 0){/* check whether it is a mV-nH cluster */
-        /*
         if(otherAttrZero == 0 && (otherAttrTwo == 1 || otherAttrTwo == 2)){
             //check whether the other cluster is H or 2H
             double ratio = (double)hostAttrTwo/(double)abs(hostAttrZero);
@@ -1186,7 +1186,6 @@ bool SCDWrapper::recognizeSAV(const Object *const hostObject, const Object *cons
             //if not H or 2H code do original combination reactio;
             
         }
-        */
         return false;
         
     }else if(hostAttrZero == 0 && hostAttrTwo != 0){/* check if it is pure nH cluster*/
@@ -1367,7 +1366,7 @@ void SCDWrapper::writeReaction(){
 
 /* test functions */
 void SCDWrapper::countRatioDistribution(double& t){
-    double sW = DENSITY * (VOLUME / 36) * SURFACE_THICKNESS;
+    double sW = DENSITY * (VOLUME / 20) * SURFACE_THICKNESS;
     /*number of surface tungsten */
     int sH = 0; /* number of surface hydrogen*/
     unordered_map<int64, Object*>::iterator iter;
