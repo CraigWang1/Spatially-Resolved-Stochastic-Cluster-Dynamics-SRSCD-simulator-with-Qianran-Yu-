@@ -25,35 +25,35 @@ private:
     
     // private functions
     void setKey(); /* use attributes to get key */
-    void setAttributes(const int64&); /* use key to get attributes */
+    void setAttributes(const int64); /* use key to get attributes */
     void setNumber(); /* set zeros to every element */
     int setDimensionality();
     void computeR1R1e();
     void computeDiffCoeff();
     void computeBindTerm();
     void computeSinks();
-    void setProperties(const int&, const int&);
+    void setProperties(const int, const int);
 public:
-    Object(const int64&, const int&, const int& n=1);  /* constructor one, establishing object by key */
-    Object(const int*, const int&, const int& n=1);/* constructor two, establishing object by arrtibutes */
-    Object(const int64&, const int*); /* designed for restart, add object by knowing numbers in every element*/
-    void addNumber(const int&, const int& n=1); /* default, add 1, but can add whatever n */
-    void reduceNumber(const int&);
-    int signof(const int64&) const;
-    double zero(const int&);
+    Object(const int64, const int, const int n=1);  /* constructor one, establishing object by key */
+    Object(const int*, const int, const int n=1);/* constructor two, establishing object by arrtibutes */
+    Object(const int64, const int*); /* designed for restart, add object by knowing numbers in every element*/
+    void addNumber(const int, const int n=1); /* default, add 1, but can add whatever n */
+    void reduceNumber(const int);
+    int signof(const int64) const;
+    double zero(const int);
     // functions that get access to private data memeber
     int64 getKey() const;  // get access to object key;
     double getDiff() const;  // get access to diffusivity
-    int getNumber(const int&) const;  // get access to the number of object in this element
+    int getNumber(const int) const;  // get access to the number of object in this element
     int getTotalNumber() const;
-    int getAttri(const int&) const;   // get access to one attribute
+    int getAttri(const int) const;   // get access to one attribute
     double getSink() const;  // get access to sink strength
-    long double getBind(const int&) const;  // get access to one bind
+    long double getBind(const int) const;  // get access to one bind
     double getR1()const;  // get access to r1
     double getR1e() const;  // get access to r1e
     int getDim() const;     // get access to dimensionality
     double getBindSH() const; // get binding energy of surface hydrogen
-    void getThreeNumber(const int&, int*) const;// get access to object number (number[POINTS])
+    void getThreeNumber(const int, int*) const;// get access to object number (number[POINTS])
     void display();
 };
 

@@ -45,47 +45,47 @@ private:
     /* a way to get key from attribute */
     int64 attrToKey(const int* const); /* same with Object::setKey() */
     /* decide insertion mode function */
-    int64 atomProperty(InsertStyle, const int&);
+    int64 atomProperty(InsertStyle, const int);
     /* moniter map functions */
-    void addNewObjectToMap(const int64&, const int*);
+    void addNewObjectToMap(const int64, const int*);
     /* add to map by key(increase m to nth element)---> this is created for restart*/
-    void addNewObjectToMap(const int64&, const int&);
+    void addNewObjectToMap(const int64, const int);
     /* add new object to map by key (only increase by 1 to #kth element)*/
     void addNewObjectToMap(Object*);
     /* add new object to map by object pointer(only increase 1 to #nth element) */
-    void updateObjectInMap(Object*, const int&);
-    void removeObjectFromMap(const int64&); /* remove one object from map */
+    void updateObjectInMap(Object*, const int);
+    void removeObjectFromMap(const int64); /* remove one object from map */
     void addReactionToOther(const Object* const);
     /* Impact of one new mobile object to other existing objects */
-    void updateRateToOther(const Object* const, const int&);
+    void updateRateToOther(const Object* const, const int);
     /* when number of this object changes, rates related to this object change also */
-    void removeRateToOther(const int64&);
+    void removeRateToOther(const int64);
     /* when one mobile object has been removed,
      ** rates of this object with other extisting objects should also be removed
      */
     void updateSinks(const int, const int*); /* only for restart use */
     /* process event functions */
-    void processDiffEvent(Object*, const int&, const char&);     /* process diffusion reactionObject */
-    void processSinkEvent(Object*, const int&);     /* process absorption reaction */
-    void processDissoEvent(Object*, const int&, const int64&, fstream& ); /* process dissociation event */
-    void processCombEvent(Object*, const int&, const int64&, fstream& );  /* process combination reaction */
-    void processSinkDissEvent(const int, const int&); /* process dissociation from sink event */
+    void processDiffEvent(Object*, const int, const char);     /* process diffusion reactionObject */
+    void processSinkEvent(Object*, const int);     /* process absorption reaction */
+    void processDissoEvent(Object*, const int, const int64, fstream& ); /* process dissociation event */
+    void processCombEvent(Object*, const int, const int64, fstream& );  /* process combination reaction */
+    void processSinkDissEvent(const int, const int); /* process dissociation from sink event */
     /* get insertion functions */
-    void getElectronInsertion(const int&);
-    void getNeutronInsertion(const int&);
-    void getIonInsertion(const int&, const double&, fstream&);
-    void getParticleInsertion(const int&, const double&, fstream&);    // deal with damage[0]
-    void getHeInsertion(const int&);  // deal with damage[1]
-    void getHInsertion(const int&, const double&, fstream&);   // deal with damage[2]
+    void getElectronInsertion(const int);
+    void getNeutronInsertion(const int);
+    void getIonInsertion(const int, const double, fstream&);
+    void getParticleInsertion(const int, const double, fstream&);    // deal with damage[0]
+    void getHeInsertion(const int);  // deal with damage[1]
+    void getHInsertion(const int, const double, fstream&);   // deal with damage[2]
     /* write file funcitons*/
-    void writeSinkFile(const Object* const, const long int& n, const double&);
+    void writeSinkFile(const Object* const, const long int n, const double);
     /* sinks.out only writes when sink reaction happens, now this function is not "writing things" but only updating sinks[][] */
-    void writeSpeciesFile(const double&, const long int&);
-    void writeClusterFile(const double&, const long int&);
+    void writeSpeciesFile(const double, const long int);
+    void writeClusterFile(const double, const long int);
     /* distinguish reaction type function */
     bool recognizeSAV(const Object* const, const Object* const);
     /* if SAV, return true, if not, return false*/
-    int countDefectNumber(const int &, char*);
+    int countDefectNumber(const int, char*);
     /* this function counts the number of defects(V,SIA,H...) in every element, returns total number of this defect in the bulk */
     void countRatioDistribution(double&);
     /* count ratio of H to V in the bulk and at the same time decide whether to supplement H to system */
@@ -95,10 +95,10 @@ private:
 public:
     SCDWrapper();  // constructor: for start ;
     //SCDWrapper();  // constructor: for restart;
-    void computeMatrixRate(const int& n);  // computes total rate in element n
+    void computeMatrixRate(const int n);  // computes total rate in element n
     void computeBulkRate();
     Object* selectReaction(int64&, Reaction&, int&);  // select reaction
-    void processEvent(const Reaction&, Object*, const int&, const int64&, const double&, const double&);    // deal with reactions
+    void processEvent(const Reaction, Object*, const int, const int64, const double, const double);    // deal with reactions
     ~SCDWrapper();          /* destructor to delete everything newed */
     // get series functions that allow direct manipulation on private data member
     unordered_map<int64, Object*>* getAllObjects();
@@ -108,13 +108,13 @@ public:
     /* output file functions */
     void displayDamage();
     void displayAllObject();
-    void writeFile(const double&, const long int&);
+    void writeFile(const double, const long int);
     /* testing functions which includes display/output file functions that might be used when debugging */
-    void writeSinkFile(const double&, const long int&);
+    void writeSinkFile(const double, const long int);
     void display() const;   // display rateMatrix within in one element
     friend void restart(long int&, double&, SCDWrapper*);
     /* test functions, don't need in the future */
-    void test(const int&); /* count how many vacancies now in the bulk */
+    void test(const int); /* count how many vacancies now in the bulk */
     
     /* draw picture functions */
     void drawSpeciesAndReactions(double&t);

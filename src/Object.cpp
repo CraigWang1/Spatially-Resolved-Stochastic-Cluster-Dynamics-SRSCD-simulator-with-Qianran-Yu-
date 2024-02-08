@@ -4,17 +4,17 @@
 
 /* public method implementations */
 Object::Object(
-               const int64 & key,
-               const int & count,
-               const int& n) :oKey(key), totalNumber(0), bindSH(0.0)
+               const int64 key,
+               const int count,
+               const int n) :oKey(key), totalNumber(0), bindSH(0.0)
 {
     setAttributes(key);
     setProperties(count, n);
 }
 
 Object::Object(const int * attr,
-               const int& count,
-               const int& n): totalNumber(0)
+               const int count,
+               const int n): totalNumber(0)
 {
     for (int i = 0; i < LEVELS; i++) {
         attributes[i] = attr[i];
@@ -24,7 +24,7 @@ Object::Object(const int * attr,
     setProperties(count, n);
 }
 
-Object::Object(const int64 &key, const int *number):oKey(key), totalNumber(0)
+Object::Object(const int64 key, const int *number):oKey(key), totalNumber(0)
 {
     setAttributes(key);
     dimensionality = setDimensionality();
@@ -40,24 +40,24 @@ Object::Object(const int64 &key, const int *number):oKey(key), totalNumber(0)
 }
 
 
-void Object::addNumber(const int & count, const int& n)
+void Object::addNumber(const int count, const int n)
 {
     number[count] += n;
     totalNumber += n;
 }
 
-void Object::reduceNumber(const int & count)
+void Object::reduceNumber(const int count)
 {
     --number[count];
     --totalNumber;
 }
 
-int Object::signof(const int64 & key) const
+int Object::signof(const int64 key) const
 {
     return (key < 0) ? -1 : 1;
 }
 
-double Object::zero(const int & defect)
+double Object::zero(const int defect)
 {
     return (abs(defect) > 1) ? 1.0 : 0.0;
 }
@@ -73,7 +73,7 @@ double Object::getDiff() const
 }
 
 
-int Object::getNumber(const int & count) const
+int Object::getNumber(const int count) const
 {
     return number[count];
 }
@@ -83,7 +83,7 @@ int Object::getTotalNumber() const
     return totalNumber;
 }
 
-int Object::getAttri(const int & index) const
+int Object::getAttri(const int index) const
 {
     return attributes[index];
 }
@@ -93,7 +93,7 @@ double Object::getSink() const
     return sinkStrength;
 }
 
-long double Object::getBind(const int & index) const
+long double Object::getBind(const int index) const
 {
     return bind[index];
 }
@@ -118,7 +118,7 @@ double Object::getBindSH() const
 	return bindSH;
 }
 
-void Object::getThreeNumber(const int & count, int* objectN) const
+void Object::getThreeNumber(const int count, int* objectN) const
 {
     /*
      * objectN[0] = object number in this element
@@ -178,7 +178,7 @@ void Object::setKey()
     oKey *= signof(attributes[0]);
 }
 
-void Object::setAttributes(const int64 & key)
+void Object::setAttributes(const int64 key)
 {
     int64 tempKey = abs(key);
     for (int i = 0; i < LEVELS; i++) {
@@ -703,7 +703,7 @@ void Object::computeSinks()
     sinkStrength = attributes[0] < 0 ? s[0] : s[1];
 }
 
-void Object::setProperties(const int & count, const int & n)
+void Object::setProperties(const int count, const int n)
 {
     setNumber();
     addNumber(count, n);

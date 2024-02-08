@@ -92,7 +92,7 @@ SCDWrapper::SCDWrapper():damage(), cpdf()
     */
 }
 
-void SCDWrapper::computeMatrixRate(const int & n)
+void SCDWrapper::computeMatrixRate(const int n)
 {
     /* Qianran 0925 */
     //cout << "Element " << n + 1 << endl;
@@ -191,12 +191,12 @@ Object* SCDWrapper::selectReaction(
 }
 
 void SCDWrapper::processEvent(
-                              const Reaction& reaction,
+                              const Reaction reaction,
                               Object* hostObject,
-                              const int& n,
-                              const int64& theOtherKey,
-                              const double& time,
-                              const double& dt
+                              const int n,
+                              const int64 theOtherKey,
+                              const double time,
+                              const double dt
                               )
 {
     ++event;
@@ -311,7 +311,7 @@ const double SCDWrapper::getAndExamineRate()
     return bulkRate;
 }
 
-void SCDWrapper::writeSinkFile(const Object * const hostObject, const long int& n, const double& time)
+void SCDWrapper::writeSinkFile(const Object * const hostObject, const long int n, const double time)
 {
     int i;
     for (i = 0; i < LEVELS; i++) {
@@ -329,7 +329,7 @@ void SCDWrapper::writeSinkFile(const Object * const hostObject, const long int& 
     }
 }
 
-void SCDWrapper::writeSpeciesFile(const double& time, const long int& n)
+void SCDWrapper::writeSpeciesFile(const double time, const long int n)
 {
     ofstream fo;
     unordered_map<int64, Object*>::iterator iter;
@@ -352,7 +352,7 @@ void SCDWrapper::writeSpeciesFile(const double& time, const long int& n)
     
 }
 
-void SCDWrapper::writeClusterFile(const double& time, const long int& n)
+void SCDWrapper::writeClusterFile(const double time, const long int n)
 {
     int i;
     ofstream fc;
@@ -398,7 +398,7 @@ void SCDWrapper::writeClusterFile(const double& time, const long int& n)
     fc.close();
 }
 
-void SCDWrapper::writeSinkFile(const double& time, const long int& n)
+void SCDWrapper::writeSinkFile(const double time, const long int n)
 {
     int i, j;
     ofstream fs;
@@ -430,7 +430,7 @@ void SCDWrapper::displayAllObject(){
     }
 }
 
-void SCDWrapper::writeFile(const double& time, const long int & n)
+void SCDWrapper::writeFile(const double time, const long int n)
 {
     writeSpeciesFile(time, n);
     writeSinkFile(time, n);
@@ -482,7 +482,7 @@ int64 SCDWrapper::attrToKey(const int * const attr)
     return key;
 }
 
-int64 SCDWrapper::atomProperty(SCDWrapper::InsertStyle mode, const int& n)
+int64 SCDWrapper::atomProperty(SCDWrapper::InsertStyle mode, const int n)
 {
     if (mode == SUBSTITUTIONAL) {
         return (-1) * ((int64)pow(10.0, (double)EXP10 * (LEVELS - 1)) + (int64)pow(10.0, (double)EXP10 * (LEVELS - n)));
@@ -493,7 +493,7 @@ int64 SCDWrapper::atomProperty(SCDWrapper::InsertStyle mode, const int& n)
     return 0; /* If return 0, means the code is wrong */
 }
 
-void SCDWrapper::addNewObjectToMap(const int64 & key, const int* number)
+void SCDWrapper::addNewObjectToMap(const int64 key, const int* number)
 {
     if (key != 0) {
         Object* newObject = new Object(key, number);
@@ -509,7 +509,7 @@ void SCDWrapper::addNewObjectToMap(const int64 & key, const int* number)
     }/* do this only when the object is a valid one */
 }
 
-void SCDWrapper::addNewObjectToMap(const int64 & key, const int& count)
+void SCDWrapper::addNewObjectToMap(const int64 key, const int count)
 {
     if (key != 0) {
         Object* newObject = new Object(key, count);
@@ -544,7 +544,7 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
     }/* if this object is valid, add it to map */
 }
 
-void SCDWrapper::updateObjectInMap(Object * hostObject, const int & count)
+void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
 {
     OneLine* tempLine = linePool[hostObject]->lines[count];
     double diffusivity = hostObject->getDiff();
@@ -596,7 +596,7 @@ void SCDWrapper::addReactionToOther(Object const * const mobileObject)
     }
 }
 
-void SCDWrapper::updateRateToOther(Object const * const mobileObject, const int & count)
+void SCDWrapper::updateRateToOther(Object const * const mobileObject, const int count)
 {
     unordered_map<Object*, Bundle*>::iterator iter;
     for (iter = linePool.begin(); iter != linePool.end(); ++iter) {
@@ -609,7 +609,7 @@ void SCDWrapper::updateRateToOther(Object const * const mobileObject, const int 
     }
 }
 
-void SCDWrapper::removeObjectFromMap(const int64 & deleteKey)
+void SCDWrapper::removeObjectFromMap(const int64 deleteKey)
 {
     Object* deleteObject = allObjects[deleteKey];
     Bundle* tempBundle = linePool[deleteObject];
@@ -624,7 +624,7 @@ void SCDWrapper::removeObjectFromMap(const int64 & deleteKey)
     }
 }
 
-void SCDWrapper::removeRateToOther(const int64& deleteKey)
+void SCDWrapper::removeRateToOther(const int64 deleteKey)
 {
     unordered_map<int64, Object*>::iterator iter;
     for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
@@ -651,7 +651,7 @@ void SCDWrapper::updateSinks(const int point, const int* number){
 }
 
 /* private function */
-void SCDWrapper::processDiffEvent(Object* hostObject, const int& n, const char& signal)
+void SCDWrapper::processDiffEvent(Object* hostObject, const int n, const char signal)
 {
     hostObject->reduceNumber(n);
     
@@ -695,7 +695,7 @@ void SCDWrapper::processDiffEvent(Object* hostObject, const int& n, const char& 
     updateObjectInMap(hostObject, n); // updated n-1, n, n+1
 }
 
-void SCDWrapper::processSinkEvent(Object * hostObject, const int & n)
+void SCDWrapper::processSinkEvent(Object * hostObject, const int n)
 {
     int64 key = hostObject->getKey();
     ++reactions[2][n];
@@ -717,8 +717,8 @@ void SCDWrapper::processSinkEvent(Object * hostObject, const int & n)
 
 void SCDWrapper::processDissoEvent(
                                    Object * hostObject,
-                                   const int & n,
-                                   const int64 & monomerKey,
+                                   const int n,
+                                   const int64 monomerKey,
                                    fstream& fs)
 {
     ++reactions[3][n];
@@ -781,8 +781,8 @@ void SCDWrapper::processDissoEvent(
 
 void SCDWrapper::processCombEvent(
                                   Object * hostObject,
-                                  const int & n,
-                                  const int64 & theOtherKey,
+                                  const int n,
+                                  const int64 theOtherKey,
                                   fstream& fs)
 {
     ++reactions[4][n];
@@ -904,7 +904,7 @@ void SCDWrapper::processCombEvent(
     }
 
 }
-void SCDWrapper::processSinkDissEvent(const int type, const int& point){
+void SCDWrapper::processSinkDissEvent(const int type, const int point){
     // dissV event
     int64 productKey = 0;
     if(type == 0){
@@ -928,7 +928,7 @@ void SCDWrapper::processSinkDissEvent(const int type, const int& point){
     computeSinkDissRate(type, point);
 }
 
-void SCDWrapper::getElectronInsertion(const int& n)
+void SCDWrapper::getElectronInsertion(const int n)
 {
     /* Insert Frenkel pairs: */
     int64 SIAKey = (int64)pow(10.0, (double)EXP10 * (LEVELS - 1)); /* Key for SIA. */
@@ -951,7 +951,7 @@ void SCDWrapper::getElectronInsertion(const int& n)
     }
 }
 
-void SCDWrapper::getNeutronInsertion(const int & n)
+void SCDWrapper::getNeutronInsertion(const int n)
 {
     double neutronEnergy = 0.0;
     double totalEnergy = (double)Poisson(AVG_NEUTRON_EN);
@@ -991,7 +991,7 @@ void SCDWrapper::getNeutronInsertion(const int & n)
     }
 }
 
-void SCDWrapper::getIonInsertion(const int & n, const double& dt, fstream& fs)
+void SCDWrapper::getIonInsertion(const int n, const double dt, fstream& fs)
 {
     ++reactions[5][n];
     double ionEnergy = 0.0;
@@ -1063,7 +1063,7 @@ void SCDWrapper::getIonInsertion(const int & n, const double& dt, fstream& fs)
     //fk.close();
 }
 
-void SCDWrapper::getParticleInsertion(const int& n, const double& dt, fstream& fs)
+void SCDWrapper::getParticleInsertion(const int n, const double dt, fstream& fs)
 {
 #ifdef ELECTRON
     getElectronInsertion(n);
@@ -1074,7 +1074,7 @@ void SCDWrapper::getParticleInsertion(const int& n, const double& dt, fstream& f
 #endif
 }
 
-void SCDWrapper::getHeInsertion(const int& n)
+void SCDWrapper::getHeInsertion(const int n)
 {
     int channel = 1;
     int64 clusterKey = atomProperty(INTERSTITIAL, channel + 1);
@@ -1088,7 +1088,7 @@ void SCDWrapper::getHeInsertion(const int& n)
     }/* we have this cluster */
 }
 
-void SCDWrapper::getHInsertion(const int& n, const double& dt, fstream& fs)
+void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
 {
     ++reactions[6][n];
     int channel = 2;
@@ -1228,7 +1228,7 @@ bool SCDWrapper::recognizeSAV(const Object *const hostObject, const Object *cons
     return false;
 }
 
-int SCDWrapper::countDefectNumber(const int& count, char* type){
+int SCDWrapper::countDefectNumber(const int count, char* type){
     fstream vd, id, hd;
     fstream v1d, v2d, v3d;
     /**
@@ -1437,7 +1437,7 @@ void SCDWrapper::countRatioDistribution(double& t){
    
 }
 
-void SCDWrapper::test(const int& inputV){
+void SCDWrapper::test(const int inputV){
     ofstream fo;
     fo.open("SAV.txt", ios::app);
     if(start){

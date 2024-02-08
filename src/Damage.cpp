@@ -27,7 +27,7 @@ Damage::Damage()
 }
 
 
-Reaction Damage::selectDamage(const int & n, double & randRate)
+Reaction Damage::selectDamage(const int n, double & randRate)
 {
     int index = 0;
     double tempRate = randRate;
@@ -57,7 +57,7 @@ Reaction Damage::selectDamage(const int & n, double & randRate)
     return NONE;
 }
 
-void Damage::display(const int &count) const
+void Damage::display(const int count) const
 {
     cout << "Damage information in element " << count << endl;
     for (int i = 0; i < CHANNELS; i++) {
@@ -66,7 +66,7 @@ void Damage::display(const int &count) const
     cout << "Total Damage Rate: " << totalRate[count] << endl;
 }
 
-const double Damage::getTotalDamage(const int & n) const
+const double Damage::getTotalDamage(const int n) const
 {
     return totalRate[n];
 }
@@ -88,11 +88,10 @@ void Damage::readFile()
     fd.close();
 }
 
-void Damage::computeDamageZero(const int & n)
+void Damage::computeDamageZero(const int n)
 {
-    damage[n][0] = 0.0; /* after damage */
+    // damage[n][0] = 0.0; /* after damage */
     
-    /*
     if(n != 0){
         if( NRT[n] == 0.0 ){
             
@@ -104,26 +103,25 @@ void Damage::computeDamageZero(const int & n)
     }else{
         damage[n][0] = 0.0;
     }
-    */
 
     //damage[n][0] = DPA_RATE[n] * DENSITY*VOLUME / NRT[n];
     totalRate[n] += damage[n][0];
 }
 
-void Damage::computeDamageOne(const int & n)
+void Damage::computeDamageOne(const int n)
 {
     damage[n][1]= 0.;
     // damage[n][1]= RATIO_HE*1.0e-06*DPA_RATE[n]*DENSITY*VOLUME;
     totalRate[n] += damage[n][1];
 }
 
-void Damage::computeDamageTwo(const int & n)
+void Damage::computeDamageTwo(const int n)
 {
     double volume = VOLUME/20. * SURFACE_THICKNESS;
     double concentration_H = 1.34e+4;
     if (n == 0) {
-        damage[n][2] = concentration_H * FLUX_H * volume; // rate (num hydrogen insertions/s)
-        // damage[n][2] = 0.0; /* no hydrogen insertion */
+        // damage[n][2] = concentration_H * FLUX_H * volume; // rate (num hydrogen insertions/s)
+        damage[n][2] = 0.0; /* no hydrogen insertion */
     }
     else {
         damage[n][2] = 0.0;
@@ -132,12 +130,12 @@ void Damage::computeDamageTwo(const int & n)
     totalRate[n] += damage[n][2];
 }
 
-void Damage::computeDamageOther(const int & n, const int & m)
+void Damage::computeDamageOther(const int n, const int m)
 {
     damage[n][m] = 0.0;
     totalRate[n] += damage[n][m];
 }
 
-double Damage::getDpaRate(const int& n){
+double Damage::getDpaRate(const int n){
     return DPA_RATE[n];
 }

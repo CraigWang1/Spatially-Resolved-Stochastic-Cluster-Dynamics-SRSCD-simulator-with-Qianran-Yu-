@@ -15,15 +15,15 @@ private:
     double totalRate[POINTS];
     // private functions:
     void readFile();
-    void computeDamageZero(const int&);
-    void computeDamageOne(const int&);
-    void computeDamageTwo(const int&);
-    void computeDamageOther(const int&, const int&);
+    void computeDamageZero(const int);
+    void computeDamageOne(const int);
+    void computeDamageTwo(const int);
+    void computeDamageOther(const int, const int);
 public:
     Damage(); // constructor
-    Reaction selectDamage(const int&, double&);
-    void display(const int&) const; // display damage in one element
-    const double getTotalDamage(const int&) const;
-    double getDpaRate(const int&);
+    Reaction selectDamage(const int, double&);
+    void display(const int) const; // display damage in one element
+    const double getTotalDamage(const int) const;
+    double getDpaRate(const int);
 };
 

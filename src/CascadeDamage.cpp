@@ -5,7 +5,7 @@ CascadeDamage::~CascadeDamage()
     cleanDamage();
 }
 
-void CascadeDamage::generateNeutronDamage(const double &energy, int & ndef)
+void CascadeDamage::generateNeutronDamage(const double energy, int & ndef)
 {
     const double fcli = 0.5; // Fraction of interstitials in clusters
     const double fclv = 0.2; // Fraction of vacancies in clusters.
@@ -67,7 +67,7 @@ void CascadeDamage::generateNeutronDamage(const double &energy, int & ndef)
     }
 }
 
-void CascadeDamage::generateIonDamage(const double & energy, int & ndef)
+void CascadeDamage::generateIonDamage(const double energy, int & ndef)
 {
     const double fcli = 0.55; // Fraction of interstitials in clusters
     const double fclv = 0.25; // Fraction of vacancies in clusters, both from: [L Malerba, JNM 351 (2006) 28].
@@ -141,7 +141,7 @@ void CascadeDamage::generateIonDamage(const double & energy, int & ndef)
     }
 }
 
-const int CascadeDamage::getDamage(const int & n, const int & m) const
+const int CascadeDamage::getDamage(const int n, const int m) const
 {
     return damage[n][m];
 }

@@ -16,7 +16,7 @@ private:
     double maxPossibility[POINTS];
 public:
     Cpdf(); /* constructor */
-    double samplePkaEnergy(const double&, const int&) const;
-    double getMaxPossibility(const int&);
+    double samplePkaEnergy(const double, const int) const;
+    double getMaxPossibility(const int);
 };
 

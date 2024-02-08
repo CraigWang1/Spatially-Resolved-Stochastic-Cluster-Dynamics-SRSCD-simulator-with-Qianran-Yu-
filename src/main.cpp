@@ -46,8 +46,8 @@ int main() {
     srscd->drawSpeciesAndReactions(advTime);
     clock_t prev_time = clock();
     //srscd->drawHD(advTime);
-    while (advTime < TOTAL_TIME)
-    // while(dpa < totalDPA)
+    // while (advTime < TOTAL_TIME)
+    while(dpa < totalDPA)
     {
         hostObject = srscd->selectReaction(theOtherKey, reaction, pointIndex);/* choose an event */
         srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */

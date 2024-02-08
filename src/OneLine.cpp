@@ -11,7 +11,7 @@ using namespace std;
 /* Helper class to calculate reaction rates of a species in one spatial element */
 OneLine::OneLine(
                  const Object* const hostObject,
-                 const int & count,
+                 const int count,
                  unordered_map<int64, Object*>& mobileObjects) :totalRate(0.0)
 {
     setOneLine(hostObject, count, mobileObjects);
@@ -76,14 +76,14 @@ Reaction OneLine::selectReaction(
 void OneLine::addReaction(
                           const Object* const hostObject,
                           const Object* const newObject,
-                          const int& count)
+                          const int count)
 {
     double rate = computeCombReaction(hostObject, newObject, count);
     std::pair<int64, double> oneReaction(newObject->getKey(), rate);
     secondR.insert(oneReaction);
 }
 
-void OneLine::removeReaction(const int64 & deleteKey)
+void OneLine::removeReaction(const int64 deleteKey)
 {
     secondR.erase(deleteKey);
 }
@@ -91,7 +91,7 @@ void OneLine::removeReaction(const int64 & deleteKey)
 void OneLine::updateReaction(
                              Object const * const hostObject,
                              Object const * const mobileObject,
-                             const int & n)
+                             const int n)
 {
     double rate = computeCombReaction(hostObject, mobileObject, n);
     secondR[mobileObject->getKey()] = rate;
@@ -99,7 +99,7 @@ void OneLine::updateReaction(
 
 void OneLine::updateLine(
                          const Object* const hostObject,
-                         const int & count,
+                         const int count,
                          unordered_map<int64, Object*>& mobileObjects)
 {
     secondR.clear();
@@ -154,7 +154,7 @@ void OneLine::display(Object const * const hostObject)
 /* private function implementations */
 void OneLine::setOneLine(
                          const Object* const hostObject,
-                         const int & count,
+                         const int count,
                          unordered_map<int64, Object*>& mobileObjects)
 {
     computeDiffReaction(hostObject, count);
@@ -171,7 +171,7 @@ void OneLine::setOneLine(
     computeTotalRate();
 }
 
-void OneLine::computeDiffReaction(const Object* const hostObject, const int& count)
+void OneLine::computeDiffReaction(const Object* const hostObject, const int count)
 {/* by having two diffusion rates, this rate will never be less than 0 */
     /* length measured in cm */
 	double lengthf = 0.0, lengthb = 0.0;
@@ -222,10 +222,12 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int& cou
     }
     
     
+    /*
     if (count == POINTS - 1) {
         //objects at bottom is not allowed to diffuse into vacuum
         diffRToB = 0.0;
     }
+    */
     
     /*
     diffRToB = 0.0;
@@ -233,16 +235,16 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int& cou
     */
 }
 
-void OneLine::computeSinkReaction(const Object* const hostObject, const int & count)
+void OneLine::computeSinkReaction(const Object* const hostObject, const int count)
 {
-    // sinkR = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSink();
-    sinkR = 0.0;
+    sinkR = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSink();
+    // sinkR = 0.0;
 }
 
 void OneLine::computeDissReaction(
                                   const Object* const hostObject,
-                                  const int & index,
-                                  const int& count)
+                                  const int index,
+                                  const int count)
 {
     if (hostObject->getAttri(index) != 0) {
         int attr[LEVELS] = { 0 };
@@ -266,7 +268,7 @@ void OneLine::computeDissReaction(
 double OneLine::computeCombReaction(
                                     const Object* const hostObject,
                                     const Object* const mobileObject,
-                                    const int& count)
+                                    const int count)
 {    
     double concentration;
     double r12;
@@ -309,10 +311,10 @@ double OneLine::computeCombReaction(
 }
 
 double OneLine::computeDimensionTerm(
-                                     const double & r12,
+                                     const double r12,
                                      const Object* const hostObject,
                                      const Object* const mobileObject,
-                                     const int& count)
+                                     const int count)
 {
     double term = 0.0;
     double hostDiff = hostObject->getDiff(), mobileDiff = mobileObject->getDiff();

@@ -39,7 +39,7 @@ Cpdf::Cpdf()
     }
 }
 
-double Cpdf::samplePkaEnergy(const double & xi, const int & n) const
+double Cpdf::samplePkaEnergy(const double xi, const int n) const
 {
     int  i, index = 0;
     double slope;
@@ -58,6 +58,6 @@ double Cpdf::samplePkaEnergy(const double & xi, const int & n) const
     return slope*(xi - cumul[index - 1]) + energy[index - 1];
 }
 
-double Cpdf::getMaxPossibility(const int& n){
+double Cpdf::getMaxPossibility(const int n){
     return maxPossibility[n];
 }
