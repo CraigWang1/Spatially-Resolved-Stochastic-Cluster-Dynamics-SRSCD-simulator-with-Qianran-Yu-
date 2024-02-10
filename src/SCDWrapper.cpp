@@ -1090,6 +1090,20 @@ void SCDWrapper::getHeInsertion(const int n)
 
 void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
 {
+    // Don't insert H if we reached the saturation limit at the frontmost element
+    if (n == 0)
+    {
+        int64 HKey = 1;
+        double surfaceHConcentration = 0;
+        if (allObjects.find(HKey) != allObjects.end())
+            surfaceHConcentration = allObjects[HKey]->getNumber(n) / SURFACE_VOLUME;
+        if (surfaceHConcentration >= H_SATURATION_CONCENTRATION)
+        {
+            if (LOG_REACTIONS)
+                fs << "H insertion: rejected 1 " << HKey <<" in element "<< n <<endl;
+            return;
+        }
+    }
     ++reactions[6][n];
     int channel = 2;
     int64 clusterKey = atomProperty(INTERSTITIAL, channel + 1);
@@ -1540,6 +1554,7 @@ void SCDWrapper::drawHD(double& t){
     countDefectNumber(0, "V");
     countDefectNumber(0, "SIA");
     countDefectNumber(2, "H");
+    // system("python3 plot_hd.py");
     // gh1.cmd("set key bmargin left horizontal Right noreverse enhanced title \"Td= 573K \" box\n");
     // cmdstr1<<"plot \"vd.txt\" using 1:2 with lp title \" t = "<<buffer<<" V \" lw 3, \"id.txt\" using 1:2 with lp title \"SIA\" lw 3, \"hd.txt\" using 1:2 with lp title \"H\" lw 3\n";
     // gh1.cmd(cmdstr1.str());
