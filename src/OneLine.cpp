@@ -176,22 +176,31 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     /* length measured in cm */
 	double lengthf = 0.0, lengthb = 0.0;
 	if(count == 0){
-		lengthf = 2.74e-8; /* thickness of W surface is 0.544nm, this length is centroid to vacuum */
-		lengthb = 1.03e-6; /* surface to first element distance: (10+0.274) nm */
+		// lengthf = 2.74e-8; /* thickness of W surface is 0.544nm, this length is centroid to vacuum */
+		lengthf = 1.03e-6;    /* when H is oversaturated, act as if there is another spatial element to the left that it can diffuse out into */
+        lengthb = 1.03e-6; /* surface to first element distance: (10+0.274) nm */
 	}else if(count == 1){
 		lengthf = 1.03e-6;
 		lengthb = 2.0e-6; /* first element to second element distance (20nm) */
 	}else{
 		lengthf = lengthb = 2.0e-6; /* other element distances */
 	}
+
+    // Scale up frontmost volume species count to be able to compare concentrations
     double ratio  = 20. / SURFACE_THICKNESS;
     double prefactor = 0.0;
-    int objectN[3];
-    hostObject->getThreeNumber(count, objectN);
+    int objectCount[3];   
+    hostObject->getThreeNumber(count, objectCount);
+    double objectN[3];   /* allow for fractional values sometimes for more accurate calculation when scaling up surface element population count */
+    for (int i = 0; i < sizeof(objectCount) / sizeof(int); i++)
+    {
+        objectN[i] = objectCount[i];
+    }
     if(count == 0){
-        objectN[0] = round(objectN[0] * ratio);
+        objectN[0] = objectN[0] * ratio;
+        objectN[1] = H_SATURATION_CONCENTRATION * VOLUME;
     }else if(count == 1){
-        objectN[1] = round(objectN[1] * ratio);
+        objectN[1] = objectN[1] * ratio;
     }
 
     /* 
@@ -204,9 +213,10 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         diffRToF = prefactor*(objectN[0] - objectN[1]);
         //diffRToF = 0.0;
         
-        if(count ==0){
+        int64 HKey = 1;
+        if(count == 0 && hostObject->getKey() != HKey){
             diffRToF = 0.0;
-        } //during damage, surface-->vacuum diffusion closes
+        } // only allow H to diffuse out when it's oversaturated
     }
     else {
         diffRToF = 0.0;
@@ -220,14 +230,12 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     else {
         diffRToB = 0.0;
     }
-    
-    
-    /*
+
+
     if (count == POINTS - 1) {
         //objects at bottom is not allowed to diffuse into vacuum
         diffRToB = 0.0;
     }
-    */
     
     /*
     diffRToB = 0.0;
@@ -237,8 +245,8 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
 
 void OneLine::computeSinkReaction(const Object* const hostObject, const int count)
 {
-    sinkR = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSink();
-    // sinkR = 0.0;
+    // sinkR = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSink();
+    sinkR = 0.0;
 }
 
 void OneLine::computeDissReaction(
@@ -270,6 +278,7 @@ double OneLine::computeCombReaction(
                                     const Object* const mobileObject,
                                     const int count)
 {    
+    return 0;
     double concentration;
     double r12;
     double dimensionTerm;
