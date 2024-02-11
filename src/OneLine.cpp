@@ -176,41 +176,48 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     /* length measured in cm */
 	double lengthf = 0.0, lengthb = 0.0;
 	if(count == 0){
-		// lengthf = 2.74e-8; /* thickness of W surface is 0.544nm, this length is centroid to vacuum */
-		lengthf = 1.03e-6;    /* when H is oversaturated, act as if there is another spatial element to the left that it can diffuse out into */
-        lengthb = 1.03e-6; /* surface to first element distance: (10+0.274) nm */
-	}else if(count == 1){
-		lengthf = 1.03e-6;
-		lengthb = 2.0e-6; /* first element to second element distance (20nm) */
+		// lengthf = 2.74e-8; // thickness of W surface is 0.544nm, this length is centroid to vacuum 
+		lengthf = 2.0e-6 + SURFACE_THICKNESS / 2. * 1e-7;    /* when H is oversaturated, act as if there is another spatial element to the left that it can diffuse out into */
+        lengthb = 2.0e-6 + SURFACE_THICKNESS / 2. * 1e-7; /* surface to first element distance: (10+0.274) nm */
+    }else if(count == 1){
+		lengthf = 2.0e-6 + SURFACE_THICKNESS / 2. * 1e-7;
+		lengthb = 2.0e-6; // first element to second element distance (20nm) 
 	}else{
 		lengthf = lengthb = 2.0e-6; /* other element distances */
 	}
 
-    // Scale up frontmost volume species count to be able to compare concentrations
-    double ratio  = 20. / SURFACE_THICKNESS;
     double prefactor = 0.0;
-    int objectCount[3];   
-    hostObject->getThreeNumber(count, objectCount);
-    double objectN[3];   /* allow for fractional values sometimes for more accurate calculation when scaling up surface element population count */
-    for (int i = 0; i < sizeof(objectCount) / sizeof(int); i++)
+    int objectN[3];   
+    hostObject->getThreeNumber(count, objectN);
+    double volume = VOLUME;
+    double concentration = 0;
+    double frontConcentration = 0;
+    double backConcentration = objectN[2] / VOLUME;
+    if (count == 0)
     {
-        objectN[i] = objectCount[i];
+        volume = FRONTMOST_VOLUME;
+        concentration = objectN[0] / FRONTMOST_VOLUME;
+        frontConcentration = H_SATURATION_CONCENTRATION;
     }
-    if(count == 0){
-        objectN[0] = objectN[0] * ratio;
-        objectN[1] = H_SATURATION_CONCENTRATION * VOLUME;
-    }else if(count == 1){
-        objectN[1] = objectN[1] * ratio;
+    else if (count == 1)
+    {
+        concentration = objectN[0] / VOLUME;
+        frontConcentration = objectN[1] / FRONTMOST_VOLUME;
+    }
+    else
+    {
+        concentration = objectN[0] / VOLUME;
+        frontConcentration = objectN[1] / VOLUME;
     }
 
     /* 
      * 1. compute diffusion rate to the front element 
      * Diffusion goes from area of higher concentration to lower concentration
      */
-    if (objectN[0] > objectN[1]) {
+    if (concentration > frontConcentration) {
         /* if diffusable, surface objects diffusing into vacuum is considered */
-        prefactor = hostObject->getDiff() / lengthf / lengthf;
-        diffRToF = prefactor*(objectN[0] - objectN[1]);
+        prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthf;
+        diffRToF = prefactor*(concentration - frontConcentration);
         //diffRToF = 0.0;
         
         int64 HKey = 1;
@@ -222,10 +229,10 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         diffRToF = 0.0;
     }
     /* 2. compute diffusion rate to the back element*/
-    if (objectN[0] > objectN[2]) {
+    if (concentration > backConcentration) {
         /* if diffusable */
-        prefactor = hostObject->getDiff() / lengthb / lengthb;
-        diffRToB = prefactor*(objectN[0] - objectN[2]);
+        prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthb;
+        diffRToB = prefactor*(concentration - backConcentration);
     }
     else {
         diffRToB = 0.0;
