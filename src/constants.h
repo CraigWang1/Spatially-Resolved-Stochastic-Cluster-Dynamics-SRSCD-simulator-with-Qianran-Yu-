@@ -42,19 +42,20 @@
 #define ION               // Irradiation type.
 #define TOTAL_TIME 2500      // [s] Total simulated time.
 #define VOLUME 1.0e-17    // [cm^3] System volume.
+#define DIVIDING_AREA 5.0e-12
 #define TEMPERATURE 383.0  // [K] System temperature.
 //#define RATIO_HE 1.1       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_HE 0       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_H 0
-#define FLUX_H 4.0e20    // [1/(cm^2*s)]
+#define FLUX_H 4.0e16    // [1/(cm^2*s)]
 //#define DPA_RATE 0       //When only H exposure is available. no self-damage at all
 //#define DPA_RATE 3.55e-6   // [dpa/s] Damage rate.
 #define CHANNELS 3         // Irradiation channels used (1:W, 2:He, 3:H,...). the number of different particle insertion(irradiation) process.
-#define PSTEPS 500 // Print data every so many.
+#define PSTEPS 30000 // Print data every so many.
 #define TSTEPS 50000 // Run these many steps.
 #define LEVELS 3
 #define EXP10 3 // number of 0s assigned to each group in object's key in hash table
-#define POINTS 101       // number of elements: one surface(Point 0), other bulk elements(NO.1,2,3,4...)
+#define POINTS 100       // number of elements: one surface(Point 0), other bulk elements(NO.1,2,3,4,...,100) (front element includes surface element)
 // Auxiliary definitions:
 enum Reaction { DIFFUSETOF, DIFFUSETOB, SINK, DISSOCIATION, COMBINATION, NONE, PARTICLE, HE, H, DISSV, DISSH, ERROR};
 
@@ -73,9 +74,10 @@ enum Reaction { DIFFUSETOF, DIFFUSETOB, SINK, DISSOCIATION, COMBINATION, NONE, P
  ** END: SIGNAL-> non damage been selected, rate index in this element goes to the end
  */
 
-const double AVG_ION_EN[POINTS] = {0, 22342, 21202, 16767, 15427, 19102, 23477, 27934, 25724, 21525, 23409, 26167, 30148, 28405, 28622, 33293, 25380, 28119, 35640, 41737, 36054, 38115, 40023, 43367, 40388, 43523, 46082, 31469, 37833, 40849, 39033, 39739, 37562, 35608, 39525, 35038, 33527, 31842, 28732, 28872, 31789, 26140, 25478, 23078, 18575, 16248, 16883, 13112, 11587, 10769, 9441, 7145, 5443, 4832, 4088, 3359, 2229, 2682, 2621, 1144, 727, 630, 408, 514, 163, 207, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+const double AVG_ION_EN[POINTS] = {22342, 21202, 16767, 15427, 19102, 23477, 27934, 25724, 21525, 23409, 26167, 30148, 28405, 28622, 33293, 25380, 28119, 35640, 41737, 36054, 38115, 40023, 43367, 40388, 43523, 46082, 31469, 37833, 40849, 39033, 39739, 37562, 35608, 39525, 35038, 33527, 31842, 28732, 28872, 31789, 26140, 25478, 23078, 18575, 16248, 16883, 13112, 11587, 10769, 9441, 7145, 5443, 4832, 4088, 3359, 2229, 2682, 2621, 1144, 727, 630, 408, 514, 163, 207, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 const double H_SATURATION_CONCENTRATION = DENSITY * exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
 const double SURFACE_VOLUME = VOLUME / 20. * SURFACE_THICKNESS;
+const double FRONTMOST_VOLUME = VOLUME + SURFACE_VOLUME; // the frontmost element also has a very thin surface layer
 const bool LOG_REACTIONS = false;
 
 //#define AVG_ION_EN 1.71e+6 // (from TRIM) Average ion energy (in eV) expended on damage from 5MeV Cu.

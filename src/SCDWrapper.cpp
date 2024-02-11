@@ -33,6 +33,8 @@ SCDWrapper::SCDWrapper():damage(), cpdf()
     }
     /* initialize sink numbers */
     setSinks();
+
+    lastElemSaturated = false;
     /* set format of gs --- species */
     /*
     gs.set_title("Species");
@@ -199,6 +201,36 @@ void SCDWrapper::processEvent(
                               const double dt
                               )
 {
+    // Check if last element is saturated
+    int HKey = 1;
+    if (!lastElemSaturated)
+    {
+        int lastPos = POINTS - 1;
+        if (allObjects.find(HKey) != allObjects.end())
+        {
+            lastElemSaturated = (allObjects[HKey]->getNumber(lastPos) / VOLUME > H_SATURATION_CONCENTRATION);
+        }
+    }
+
+    // Don't touch H count if H is saturated
+    if (lastElemSaturated)
+    {
+        if (n == POINTS - 1)
+        {
+            if (hostObject->getKey() == HKey || theOtherKey == HKey)
+            {
+                return;
+            }
+        }
+        if (n == POINTS - 2)
+        {
+            if (hostObject->getKey() == HKey && reaction == DIFFUSETOB)
+            {
+                return;
+            }
+        }
+    }
+
     ++event;
     fs.open("Reactions.txt", ios::app);
     switch (reaction) {
@@ -1094,10 +1126,10 @@ void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
     if (n == 0)
     {
         int64 HKey = 1;
-        double surfaceHConcentration = 0;
+        double frontmostHConcentration = 0;
         if (allObjects.find(HKey) != allObjects.end())
-            surfaceHConcentration = allObjects[HKey]->getNumber(n) / SURFACE_VOLUME;
-        if (surfaceHConcentration >= H_SATURATION_CONCENTRATION)
+            frontmostHConcentration = allObjects[HKey]->getNumber(n) / FRONTMOST_VOLUME;
+        if (frontmostHConcentration >= H_SATURATION_CONCENTRATION)
         {
             if (LOG_REACTIONS)
                 fs << "H insertion: rejected 1 " << HKey <<" in element "<< n <<endl;
@@ -1274,7 +1306,7 @@ int SCDWrapper::countDefectNumber(const int count, char* type){
     for(int i=0; i<POINTS; i++){
         double volume;
         if(i==0){
-            volume = (VOLUME/20) * SURFACE_THICKNESS; /* volume on surface */
+            volume = FRONTMOST_VOLUME; /* volume at front incorporates surface layer */
         }else{
             volume = VOLUME;
         }
@@ -1303,33 +1335,15 @@ int SCDWrapper::countDefectNumber(const int count, char* type){
         }
         tndef += ndef[i];
         if(type == "V"){
-            if(i==0){
-                vd << i << "      " << ndef[i]/volume << endl;
-                //v1d << i << "   " << nv1[i]/volume << endl;
-                //v2d << i << "   " << nv2[i]/volume << endl;
-                //v3d << i << "   " << nv3[i]/volume << endl;
-                v += ndef[i]/volume;
-            }else{
-                vd << 10+20*(i-1) << "      "<<ndef[i]/volume<<endl;
-                //v1d << 18+36*(i-1) << "   " << nv1[i]/volume << endl;
-                //v2d << 18+36*(i-1) << "   " << nv2[i]/volume << endl;
-                //v3d << 18+36*(i-1) << "   " << nv3[i]/volume << endl;
-                v += ndef[i]/volume;
-            }
-            
+            vd << 10+20*i << "      "<<ndef[i]/volume<<endl;
+            //v1d << 18+36*(i-1) << "   " << nv1[i]/volume << endl;
+            //v2d << 18+36*(i-1) << "   " << nv2[i]/volume << endl;
+            //v3d << 18+36*(i-1) << "   " << nv3[i]/volume << endl;
+            v += ndef[i]/volume;
          }else if(type == "SIA"){
-            if(i==0){
-                
-                //id << i << "     "<<ndef[i]/volume<<endl;
-            }else{
-                //id<< 18+36*(i-1) << "     "<<ndef[i]/volume<<endl;
-            }
+            //id<< 18+36*(i-1) << "     "<<ndef[i]/volume<<endl;
          }else{
-            if(i==0){
-                hd<< i << "     "<<ndef[i]/volume<<endl;
-            }else{
-                hd<< 10+20*(i-1) << "     "<<ndef[i]/volume<<endl;
-            }
+            hd<< 10+20*(i) << "     " << ndef[i]/volume<<endl;
         }
     }
     
