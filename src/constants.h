@@ -42,6 +42,7 @@
 #define ION               // Irradiation type.
 #define TOTAL_TIME 2500      // [s] Total simulated time.
 #define VOLUME 1.0e-17    // [cm^3] System volume.
+#define DIVIDING_AREA 5.0e-12 // [cm^2] area between two volume elements (20x25 nm)
 #define TEMPERATURE 383.0  // [K] System temperature.
 //#define RATIO_HE 1.1       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_HE 0       // [appm/dpa] He-to-dpa ratio.
