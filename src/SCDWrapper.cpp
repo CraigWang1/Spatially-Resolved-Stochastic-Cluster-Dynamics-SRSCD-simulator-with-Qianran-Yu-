@@ -1037,20 +1037,25 @@ void SCDWrapper::getIonInsertion(const int n, const double dt, fstream& fs)
     in_time += dt;
     //fk << damage.getDpaRate(n) << " * " << dt << "  " << in_time << "   ";
     CascadeDamage damage;
-    while (ionEnergy < totalEnergy) {
+    while (ionEnergy < totalEnergy) 
+    {
         double pkaEnergy = 0.0;
-        while (pkaEnergy < 620.0) {
+        while (pkaEnergy < 620.0) 
+        {
             // Limit to produce a stable Frenkel pair in keV (from Troev et al (2011)).
             double xi = ((double)rand() / RAND_MAX) * cpdf.getMaxPossibility(n);
             ionEnergy += pkaEnergy;
             pkaEnergy = cpdf.samplePkaEnergy(xi, n);
         }
         damage.generateIonDamage(pkaEnergy, ndef);
-        for (i = 0;i < damage.size();++i) {
+        for (i = 0;i < damage.size();++i) 
+        {
             int sign = (i == 0) ? -1 : 1;
-            for (j = 0; j < ndef; ++j) {
+            for (j = 0; j < ndef; ++j) 
+            {
                 const int number = damage.getDamage(i, j);
-                if (number != 0) {
+                if (number != 0) 
+                {
                     clusterKey = (int64)sign*(j + 1)*(pow(10.0, (double)EXP10*(LEVELS - 1)));
                     /*
                     if(clusterKey > 1000){
@@ -1066,19 +1071,23 @@ void SCDWrapper::getIonInsertion(const int n, const double dt, fstream& fs)
                     }//park SIAs
                     */
                     /* generate cluster key */
-                    if (allObjects.find(clusterKey) == allObjects.end()) {
+                    if (allObjects.find(clusterKey) == allObjects.end()) 
+                    {
                         Object* newObject = new Object(clusterKey, n, number);
                         nov = newObject->getAttri(0);
-                        if(nov < 0){
+                        if(nov < 0)
+                        {
                             generationNumber += (-1) * nov * number;
                         }
                         addNewObjectToMap(newObject);
                     } /* we don't have this cluster */
-                    else {
+                    else 
+                    {
                         Object* tempObject = allObjects[clusterKey];
                         tempObject->addNumber(n, number);
                         nov = tempObject->getAttri(0);
-                        if(nov < 0){
+                        if(nov < 0)
+                        {
                             generationNumber += (-1) * nov * number;
                         }
                         updateObjectInMap(tempObject, n);

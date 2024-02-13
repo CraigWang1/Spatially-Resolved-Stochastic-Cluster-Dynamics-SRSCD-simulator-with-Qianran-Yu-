@@ -46,8 +46,8 @@ int main() {
     srscd->drawSpeciesAndReactions(advTime);
     clock_t prev_time = clock();
     //srscd->drawHD(advTime);
-    while (advTime < TOTAL_TIME)
-    // while(dpa < totalDPA)
+    // while (advTime < TOTAL_TIME)
+    while(dpa < totalDPA)
     {
         hostObject = srscd->selectReaction(theOtherKey, reaction, pointIndex);/* choose an event */
         srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
@@ -116,11 +116,11 @@ int main() {
             prev_eta_min = eta_min;
             prev_progress = progress;
              
-            srscd->drawSpeciesAndReactions(advTime);
-            srscd->drawDamage(advTime);
+            // srscd->drawSpeciesAndReactions(advTime);
+            // srscd->drawDamage(advTime);
             srscd->writeFile(advTime, iStep);
-            srscd->writeVacancy();
-            srscd->drawHD(advTime);
+            // srscd->writeVacancy();
+            // srscd->drawHD(advTime);
             st.close();
         }
         // if(iStep % 5 == 0)
