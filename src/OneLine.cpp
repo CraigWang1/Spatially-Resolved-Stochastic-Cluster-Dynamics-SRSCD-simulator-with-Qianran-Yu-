@@ -252,8 +252,12 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
 
 void OneLine::computeSinkReaction(const Object* const hostObject, const int count)
 {
-    sinkR = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSink();
-    // sinkR = 0.0;
+    if (!SINK_ON)
+    {
+        sinkR = 0;
+        return;
+    }
+    sinkR = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSink();  
 }
 
 void OneLine::computeDissReaction(
@@ -261,6 +265,11 @@ void OneLine::computeDissReaction(
                                   const int index,
                                   const int count)
 {
+    if (!DISS_ON)
+    {
+        dissociationR[index] = 0.0;
+        return;
+    }
     if (hostObject->getAttri(index) != 0) {
         int attr[LEVELS] = { 0 };
         attr[index] = hostObject->signof(hostObject->getAttri(index));
@@ -275,9 +284,7 @@ void OneLine::computeDissReaction(
     }
     else {
         dissociationR[index] = 0.0;
-        
     }
-    // dissociationR[index] = 0.0;
 }
 
 double OneLine::computeCombReaction(
@@ -285,6 +292,11 @@ double OneLine::computeCombReaction(
                                     const Object* const mobileObject,
                                     const int count)
 {    
+    if (!COMB_ON)
+    {
+        return 0.0;
+    }
+
     double concentration;
     double r12;
     double dimensionTerm;
@@ -321,8 +333,6 @@ double OneLine::computeCombReaction(
     int64 key1 = hostObject->getKey();
     int64 key2 = mobileObject->getKey();
     return 4.0*PI*concentration*r12*dimensionTerm;
-    
-    // return 0.0;
 }
 
 double OneLine::computeDimensionTerm(

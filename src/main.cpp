@@ -21,7 +21,6 @@ int main() {
     double accTime = 0.0;
     long double bulkRate = 0.0; /* total rate of the whole bulk */
     int inputH = 0;
-    double totalDPA = 0.2;
     double dpa = 0.0;
     double progress = 0.0; /* progress of 50 = 50% done with simulation */
     double eta_min = 0.0;
@@ -32,6 +31,7 @@ int main() {
     int barWidth, pos; /* progress bar parameters */
     int numDigits = 7;
     int magnitude = 0;
+    bool done = false;
     fstream st;
     /* check whether to restart*/
     restart(iStep, advTime, srscd);
@@ -46,8 +46,7 @@ int main() {
     srscd->drawSpeciesAndReactions(advTime);
     clock_t prev_time = clock();
     //srscd->drawHD(advTime);
-    // while (advTime < TOTAL_TIME)
-    while(dpa < totalDPA)
+    while (!done)
     {
         hostObject = srscd->selectReaction(theOtherKey, reaction, pointIndex);/* choose an event */
         srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
@@ -71,9 +70,10 @@ int main() {
             */
 
             // Chose between dpa or time to calculate progress
-            if (dpa != 0)
+            if (IRRADIATION_ON)
             {
-                progress = (dpa / totalDPA) * 100.;
+                progress = (dpa / TOTAL_DPA) * 100.;
+                cout << progress << endl;
             }
             else
             {
@@ -106,9 +106,9 @@ int main() {
                     {
                         magnitude++;
                     }
-                    cout << "] " << std::fixed << std::setprecision(2) << progress << "%";
-                    cout << "   eta: " << std::fixed << std::setprecision(1) << eta_min << " min";
-                    cout << "   time: " << std::fixed << std::setprecision(numDigits - magnitude) << advTime << " s            \r";
+                    cout << "] " << std::fixed << setprecision(2) << progress << "%";
+                    cout << "   eta: " << int(round(eta_min)) << " min";
+                    cout << "   time: " << std::defaultfloat << setprecision(7) << advTime << " s            \r";
                     cout.flush();
                 }
             }
@@ -145,6 +145,15 @@ int main() {
         accTime += dt;
         advTime += dt;
         dpa = srscd->getTotalDpa();
+
+        if (IRRADIATION_ON)
+        {
+            done = (dpa >= TOTAL_DPA);
+        }
+        else
+        {
+            done = (advTime >= TOTAL_TIME);
+        }
     }
     srscd->drawSpeciesAndReactions(advTime);
     srscd->drawDamage(advTime);
