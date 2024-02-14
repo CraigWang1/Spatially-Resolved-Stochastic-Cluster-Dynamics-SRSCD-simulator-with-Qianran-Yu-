@@ -40,9 +40,10 @@
 
 // Run parameters:
 #define ION               // Irradiation type.
-#define TOTAL_TIME 2500      // [s] Total simulated time.
+#define TOTAL_TIME 2500    // [s] Total simulated time.
+#define TOTAL_DPA 2        // Total DPA damage to reach.
 #define VOLUME 1.0e-17    // [cm^3] System volume.
-#define DIVIDING_AREA 5.0e-12
+#define DIVIDING_AREA 5.0e-12  // [cm^2] Area of the surface in between volume elements.
 #define TEMPERATURE 300.0  // [K] System temperature.
 //#define RATIO_HE 1.1       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_HE 0       // [appm/dpa] He-to-dpa ratio.
@@ -79,6 +80,14 @@ const double H_SATURATION_CONCENTRATION = DENSITY * exp(-HEAT_OF_SOLUTION/KB/TEM
 const double SURFACE_VOLUME = VOLUME / 20. * SURFACE_THICKNESS;
 const double FRONTMOST_VOLUME = VOLUME + SURFACE_VOLUME; // the frontmost element also has a very thin surface layer
 const bool LOG_REACTIONS = false;
+
+/* Configure which features to run */
+const bool IRRADIATION_ON = true;
+const bool HYDROGEN_ON = false;
+const bool COMB_ON = true; // combination reaction
+const bool SINK_ON = true; // sink reaction
+const bool DISS_ON = true; // dissociation reaction
+const bool DIFF_ON = true; // diffusion reaction
 
 //#define AVG_ION_EN 1.71e+6 // (from TRIM) Average ion energy (in eV) expended on damage from 5MeV Cu.
 #define AVG_NEUTRON_EN 40.6 // (from SPECTER) Total damage energy in keV produced by a neutron in ITER.

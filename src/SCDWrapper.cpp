@@ -1219,13 +1219,12 @@ void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
 }
 
 bool SCDWrapper::recognizeSAV(const Object *const hostObject, const Object *const theOtherObject){
-    return false;
     int hostAttrZero = hostObject->getAttri(0);
     int hostAttrTwo = hostObject->getAttri(2);
     int otherAttrZero = theOtherObject->getAttri(0);
     int otherAttrTwo = theOtherObject->getAttri(2);
     if(hostAttrZero < 0 && hostAttrTwo != 0){/* check whether it is a mV-nH cluster */
-        
+        /*
         if(otherAttrZero == 0 && (otherAttrTwo == 1 || otherAttrTwo == 2)){
             //check whether the other cluster is H or 2H
             double ratio = (double)hostAttrTwo/(double)abs(hostAttrZero);
@@ -1260,7 +1259,7 @@ bool SCDWrapper::recognizeSAV(const Object *const hostObject, const Object *cons
             //if not H or 2H code do original combination reaction;
             
         }
-        
+        */
         return false;
     
     /* A high concentration of H also will trigger SAV mechanism? */

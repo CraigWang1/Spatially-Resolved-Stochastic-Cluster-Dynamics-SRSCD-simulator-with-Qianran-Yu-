@@ -90,8 +90,12 @@ void Damage::readFile()
 
 void Damage::computeDamageZero(const int n)
 {
-    // damage[n][0] = 0.0; /* after damage */
-    
+    if (!IRRADIATION_ON)
+    {
+        damage[n][0] = 0.0;
+        return;
+    }
+
     if(n != 0){
         if( NRT[n] == 0.0 ){
             
@@ -117,11 +121,16 @@ void Damage::computeDamageOne(const int n)
 
 void Damage::computeDamageTwo(const int n)
 {
+    if (!HYDROGEN_ON)
+    {
+        damage[n][2] = 0.0;
+        return;
+    }
+    
     double volume = VOLUME/20. * SURFACE_THICKNESS;
     double concentration_H = 1.34e+4;
     if (n == 0) {
-        // damage[n][2] = concentration_H * FLUX_H * volume; // rate (num hydrogen insertions/s)
-        damage[n][2] = 0.0; /* no hydrogen insertion */
+        damage[n][2] = concentration_H * FLUX_H * volume; // rate (num hydrogen insertions/s)
     }
     else {
         damage[n][2] = 0.0;
