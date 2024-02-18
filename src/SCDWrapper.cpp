@@ -1131,20 +1131,42 @@ void SCDWrapper::getHeInsertion(const int n)
 
 void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
 {
-    // Don't insert H if we reached the saturation limit at the frontmost element
+    // Maintain H equilibrium (insertion & diffusion) if we reached the saturation limit at the frontmost element
     if (n == 0)
     {
         int64 HKey = 1;
         double frontmostHConcentration = 0;
+        double mean = 1;
+        double stddev = KB * TEMPERATURE / HEAT_OF_SOLUTION;
+        double acceptProbability = 1;
         if (allObjects.find(HKey) != allObjects.end())
+        {
             frontmostHConcentration = allObjects[HKey]->getNumber(n) / FRONTMOST_VOLUME;
-        if (frontmostHConcentration >= H_SATURATION_CONCENTRATION)
+            Object* tempObj = allObjects[HKey];
+            Bundle* bundle = linePool[tempObj];
+            OneLine* tempLine = bundle->lines[n];
+            if (tempLine != nullptr)
+            {
+                if (damage.getDamageTwo(n) != 0)
+                    acceptProbability = tempLine->getDiffRateF() / damage.getDamageTwo(n) + Normal(-stddev, stddev);    
+            }
+
+            // make sure net insertion rate <= diffusion rate to maintain equilibrium around saturation limit
+            // net insertion rate = acceptProbability * (base insertion rate = damagetwo)
+        }
+
+        double thresConcentrationFraction = 0.99;
+        if (frontmostHConcentration/H_SATURATION_CONCENTRATION < thresConcentrationFraction)
+            acceptProbability = abs(Normal(mean, stddev) - frontmostHConcentration / H_SATURATION_CONCENTRATION);
+        
+        if ((double) rand() / RAND_MAX > acceptProbability)
         {
             if (LOG_REACTIONS)
                 fs << "H insertion: rejected 1 " << HKey <<" in element "<< n <<endl;
             return;
         }
     }
+
     ++reactions[6][n];
     int channel = 2;
     int64 clusterKey = atomProperty(INTERSTITIAL, channel + 1);
@@ -1219,6 +1241,7 @@ void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
 }
 
 bool SCDWrapper::recognizeSAV(const Object *const hostObject, const Object *const theOtherObject){
+    return false;
     int hostAttrZero = hostObject->getAttri(0);
     int hostAttrTwo = hostObject->getAttri(2);
     int otherAttrZero = theOtherObject->getAttri(0);

@@ -25,5 +25,6 @@ public:
     void display(const int) const; // display damage in one element
     const double getTotalDamage(const int) const;
     double getDpaRate(const int);
+    double getDamageTwo(const int);
 };
 

@@ -36,7 +36,7 @@
 #define C_DENSITY 10        // [appm] C-atom density
 #define GAMMA 1.0           // Fraction of surface emission.
 #define TDE 90              // [eV] Threshold displacement energy for W.
-#define HEAT_OF_SOLUTION 0.19   // [eV] Heat of solution of H in W.
+#define HEAT_OF_SOLUTION 1.04   // [eV] Heat of solution of H in W.
 
 // Run parameters:
 #define ION               // Irradiation type.
@@ -44,11 +44,11 @@
 #define TOTAL_DPA 2        // Total DPA damage to reach.
 #define VOLUME 1.0e-17    // [cm^3] System volume.
 #define DIVIDING_AREA 5.0e-12  // [cm^2] Area of the surface in between volume elements.
-#define TEMPERATURE 300.0  // [K] System temperature.
+#define TEMPERATURE 1500.0  // [K] System temperature.
 //#define RATIO_HE 1.1       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_HE 0       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_H 0
-#define FLUX_H 4.0e16    // [1/(cm^2*s)]
+#define FLUX_H 4.0e23    // [1/(cm^2*s)]
 //#define DPA_RATE 0       //When only H exposure is available. no self-damage at all
 //#define DPA_RATE 3.55e-6   // [dpa/s] Damage rate.
 #define CHANNELS 3         // Irradiation channels used (1:W, 2:He, 3:H,...). the number of different particle insertion(irradiation) process.
@@ -82,11 +82,11 @@ const double FRONTMOST_VOLUME = VOLUME + SURFACE_VOLUME; // the frontmost elemen
 const bool LOG_REACTIONS = false;
 
 /* Configure which features to run */
-const bool IRRADIATION_ON = true;
-const bool HYDROGEN_ON = false;
-const bool COMB_ON = true; // combination reaction
-const bool SINK_ON = true; // sink reaction
-const bool DISS_ON = true; // dissociation reaction
+const bool IRRADIATION_ON = false;
+const bool HYDROGEN_ON = true;
+const bool COMB_ON = false; // combination reaction
+const bool SINK_ON = false; // sink reaction
+const bool DISS_ON = false; // dissociation reaction
 const bool DIFF_ON = true; // diffusion reaction
 
 //#define AVG_ION_EN 1.71e+6 // (from TRIM) Average ion energy (in eV) expended on damage from 5MeV Cu.
