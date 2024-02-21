@@ -185,11 +185,11 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
 	double lengthf = 0.0, lengthb = 0.0;
 	if(count == 0){
 		// lengthf = 2.74e-8; // thickness of W surface is 0.544nm, this length is centroid to vacuum 
-		lengthf = 2.0e-6 + SURFACE_THICKNESS / 2. * 1e-7;    /* when H is oversaturated, act as if there is another spatial element to the left that it can diffuse out into */
-        // lengthf = SURFACE_THICKNESS / 2. * 1e-7;
-        lengthb = 2.0e-6 + SURFACE_THICKNESS / 2. * 1e-7; /* surface to first element distance */
+		lengthf = 1.0e-6 + SURFACE_THICKNESS / 2. * 1e-7;    /* when H is oversaturated, act as if there is another spatial element to the left that it can diffuse out into */
+        // lengthf = SURFACE_THICKNESS/2.  * 1e-7;
+        lengthb = 1.0e-6 + SURFACE_THICKNESS / 2. * 1e-7; /* surface to first element distance */
     }else if(count == 1){
-		lengthf = 2.0e-6 + SURFACE_THICKNESS / 2. * 1e-7;
+		lengthf = 1.0e-6 + SURFACE_THICKNESS / 2. * 1e-7;
 		lengthb = 2.0e-6; // first element to second element distance (20nm) 
 	}else{
 		lengthf = lengthb = 2.0e-6; /* other element distances */
@@ -252,6 +252,37 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         //objects at bottom is not allowed to diffuse into vacuum
         diffRToB = 0.0;
     }
+
+    if (count == 0 && concentration > H_SATURATION_CONCENTRATION)
+    {
+        // // cout << "num surface: " << objectN[0] << endl;
+        // // cout << frontConcentration << endl;
+        // // diffRToB *= 0.001;
+        // int normalizedFront = 0;
+        // if (objectN[0] > 0)
+        //     normalizedFront = objectN[0] - 1;
+        // double ratio = 1 / SURFACE_THICKNESS * 20.;
+        // double expected = H_SATURATION_CONCENTRATION * VOLUME - ((objectN[0] - 1) * ratio);
+        // int numberTimes = expected/ratio;
+
+        // double multiplier = expected / ratio;
+        // cout << "expected: " << expected << endl;
+        // cout << "multiplier: " << multiplier << endl;
+        // // cout << "multiplier: " << multiplier << endl;
+        // // cout << "current: " << objectN[0] << ", back: " << objectN[2] << endl;
+        // // cout << "frontConcentration: " << scientific << frontConcentration << ", back concentration: " << backConcentration << endl;
+        // // cout << diffRToF << ", " << diffRToB << endl;
+        // double adjustedDiffRToB = diffRToB * multiplier;
+        // if (adjustedDiffRToB >= 0 && adjustedDiffRToB < diffRToB)
+        // {
+        //     // cout << "hi" << endl;
+        //     diffRToB = adjustedDiffRToB;
+        // }
+
+        if (backConcentration >= H_SATURATION_CONCENTRATION)
+            diffRToB = 0;
+        // diffRToB *= (expected / ratio);
+    }
 }
 
 void OneLine::computeSinkReaction(const Object* const hostObject, const int count)
@@ -309,7 +340,7 @@ double OneLine::computeCombReaction(
     double dimensionTerm;
     double volume;
     if(count == 0){
-        volume = SURFACE_VOLUME;
+        volume = FRONTMOST_VOLUME;
         // volume on surface volume/20nm * 0.54nm
         
     }else{

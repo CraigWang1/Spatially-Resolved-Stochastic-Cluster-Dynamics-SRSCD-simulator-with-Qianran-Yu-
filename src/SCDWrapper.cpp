@@ -1132,6 +1132,7 @@ void SCDWrapper::getHeInsertion(const int n)
 void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
 {
     // Maintain H equilibrium (insertion & diffusion) if we reached the saturation limit at the frontmost element
+    cout << H_SATURATION_CONCENTRATION * VOLUME << endl;
     if (n == 0)
     {
         int64 HKey = 1;
@@ -1143,22 +1144,37 @@ void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
         {
             frontmostHConcentration = allObjects[HKey]->getNumber(n) / FRONTMOST_VOLUME;
             Object* tempObj = allObjects[HKey];
+            // cout << tempObj->getTotalNumber() << endl;
             Bundle* bundle = linePool[tempObj];
             OneLine* tempLine = bundle->lines[n];
             if (tempLine != nullptr)
             {
+                int oneAbove = floor(H_SATURATION_CONCENTRATION * FRONTMOST_VOLUME) + 1;
+                // double diffRToF = tempObj->getDiff() * DIVIDING_AREA / (1e-6 + SURFACE_THICKNESS/2. * 1e-7) * (H_SATURATION_CONCENTRATION*1.000001 - H_SATURATION_CONCENTRATION);
+                double diffRToF = tempObj->getDiff() * DIVIDING_AREA / (1e-6 + SURFACE_THICKNESS/2. * 1e-7) * (oneAbove/FRONTMOST_VOLUME - H_SATURATION_CONCENTRATION);
                 if (damage.getDamageTwo(n) != 0)
-                    acceptProbability = tempLine->getDiffRateF() / damage.getDamageTwo(n) + Normal(-stddev, stddev);    
+                    acceptProbability = Normal(diffRToF/2., diffRToF/4.) / damage.getDamageTwo(n);
+                    // acceptProbability = Normal(0, diffRToF / 2.) / damage.getDamageTwo(n);
+                    // acceptProbability = Normal(tempLine->getDiffRateF() / 4., tempLine->getDiffRateF() / 4.) / damage.getDamageTwo(n);
+                    // acceptProbability = tempLine->getDiffRateF() / damage.getDamageTwo(n) + Normal(-stddev, stddev);
+                    // acceptProbability = diffRToF / damage.getDamageTwo(n) + Normal(-stddev, stddev);
+                    // acceptProbability = diffRToF / damage.getDamageTwo(n); 
+                    // acceptProbability = 0;
             }
 
             // make sure net insertion rate <= diffusion rate to maintain equilibrium around saturation limit
             // net insertion rate = acceptProbability * (base insertion rate = damagetwo)
         }
 
-        double thresConcentrationFraction = 0.99;
-        if (frontmostHConcentration/H_SATURATION_CONCENTRATION < thresConcentrationFraction)
-            acceptProbability = abs(Normal(mean, stddev) - frontmostHConcentration / H_SATURATION_CONCENTRATION);
-        
+        double thresConcentrationFraction = 1;
+        if (frontmostHConcentration/H_SATURATION_CONCENTRATION <= thresConcentrationFraction)
+            acceptProbability = 1;
+        // {
+            // acceptProbability = abs(Normal(mean, stddev) - frontmostHConcentration / H_SATURATION_CONCENTRATION);
+        // }
+        // else
+            // acceptProbability = 0;
+            // acceptProbability = abs(Normal(mean, stddev) - frontmostHConcentration / H_SATURATION_CONCENTRATION);
         if ((double) rand() / RAND_MAX > acceptProbability)
         {
             if (LOG_REACTIONS)

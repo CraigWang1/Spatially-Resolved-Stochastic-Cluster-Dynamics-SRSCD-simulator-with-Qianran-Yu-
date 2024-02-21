@@ -107,7 +107,7 @@ int main() {
                         magnitude++;
                     }
                     cout << "] " << std::fixed << std::setprecision(2) << progress << "%";
-                    cout << "   eta: " << int(round(eta_min)) << " min";
+                    cout << "   eta: " << (long int)round(eta_min) << " min";
                     cout << "   time: " << std::fixed << std::setprecision(numDigits - magnitude) << advTime << " s            \r";
                     cout.flush();
                 }
