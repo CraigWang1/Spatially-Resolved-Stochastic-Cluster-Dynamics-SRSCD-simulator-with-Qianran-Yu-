@@ -84,9 +84,9 @@ const bool LOG_REACTIONS = false;
 /* Configure which features to run */
 const bool IRRADIATION_ON = false;
 const bool HYDROGEN_ON = true;
-const bool COMB_ON = false; // combination reaction
+const bool COMB_ON = true; // combination reaction
 const bool SINK_ON = false; // sink reaction
-const bool DISS_ON = false; // dissociation reaction
+const bool DISS_ON = true; // dissociation reaction
 const bool DIFF_ON = true; // diffusion reaction
 
 //#define AVG_ION_EN 1.71e+6 // (from TRIM) Average ion energy (in eV) expended on damage from 5MeV Cu.
