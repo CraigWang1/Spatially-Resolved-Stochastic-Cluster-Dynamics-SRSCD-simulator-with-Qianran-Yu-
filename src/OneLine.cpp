@@ -185,11 +185,11 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
 	double lengthf = 0.0, lengthb = 0.0;
 	if(count == 0){
 		// lengthf = 2.74e-8; // thickness of W surface is 0.544nm, this length is centroid to vacuum 
-		lengthf = 2.0e-6 + SURFACE_THICKNESS / 2. * 1e-7;    /* when H is oversaturated, act as if there is another spatial element to the left that it can diffuse out into */
+		lengthf = 1.0e-6 + SURFACE_THICKNESS / 2. * 1e-7;    /* when H is oversaturated, act as if there is another spatial element to the left that it can diffuse out into */
         // lengthf = SURFACE_THICKNESS / 2. * 1e-7;
-        lengthb = 2.0e-6 + SURFACE_THICKNESS / 2. * 1e-7; /* surface to first element distance */
+        lengthb = 1.0e-6 + SURFACE_THICKNESS / 2. * 1e-7; /* surface to first element distance */
     }else if(count == 1){
-		lengthf = 2.0e-6 + SURFACE_THICKNESS / 2. * 1e-7;
+		lengthf = 1.0e-6 + SURFACE_THICKNESS / 2. * 1e-7;
 		lengthb = 2.0e-6; // first element to second element distance (20nm) 
 	}else{
 		lengthf = lengthb = 2.0e-6; /* other element distances */
@@ -251,6 +251,14 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     if (count == POINTS - 1) {
         //objects at bottom is not allowed to diffuse into vacuum
         diffRToB = 0.0;
+    }
+
+    if (count == 0)
+    {
+        if (backConcentration > H_SATURATION_CONCENTRATION)
+        {
+            diffRToB = 0;
+        }
     }
 }
 
