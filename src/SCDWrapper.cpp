@@ -1164,8 +1164,8 @@ void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
         }
 
         double thresConcentrationFraction = 1;
-        // if (frontmostHConcentration/H_SATURATION_CONCENTRATION <= thresConcentrationFraction)
-            // acceptProbability = 1;
+        if (frontmostHConcentration/H_SATURATION_CONCENTRATION <= thresConcentrationFraction)
+            acceptProbability = 1;
         // {
             // acceptProbability = abs(Normal(mean, stddev) - frontmostHConcentration / H_SATURATION_CONCENTRATION);
         // }
@@ -1254,67 +1254,29 @@ void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
 }
 
 bool SCDWrapper::recognizeSAV(const Object *const hostObject, const Object *const theOtherObject){
-    return false;
     int hostAttrZero = hostObject->getAttri(0);
     int hostAttrTwo = hostObject->getAttri(2);
     int otherAttrZero = theOtherObject->getAttri(0);
     int otherAttrTwo = theOtherObject->getAttri(2);
-    if(hostAttrZero < 0 && hostAttrTwo != 0){/* check whether it is a mV-nH cluster */
-        /*
-        if(otherAttrZero == 0 && (otherAttrTwo == 1 || otherAttrTwo == 2)){
-            //check whether the other cluster is H or 2H
-            double ratio = (double)hostAttrTwo/(double)abs(hostAttrZero);
-            double size = double(abs(hostAttrZero));
-            //double penalty1 = 1.534804 + 0.055303 * ratio - 0.010013*(pow( ratio, 3.0))*acosh(size);
-            double penalty1 = 2.7013 + 3.41884/(pow(size,2.0) - 2.9719) - 0.00071*size*pow(ratio, 4.0);
-            double penalty2 = 2.6859 - 2.0824/(4.9933 - 2.7605*size)- 0.02148*pow(ratio,3.0);
-            //symbolic regression function of reaction "mV-nH + 2H"
-            if(otherAttrTwo == 1){
-                // reaction 1
-                if(penalty1 < 0){
-                    return true;
-                    
-                }else{
-                    return false;
-                    
-                }
-                
-            }else if(otherAttrTwo == 2){
-                if(penalty2 < 0){
-                    return true;
-                    
-                }else{
-                    return false;
-                    
-                }
-                
-            }
-            
-        }else{
-            return false;
-            //if not H or 2H code do original combination reaction;
-            
-        }
-        */
+    double maxH = 4.75 + hostAttrZero * 4;
+
+    // Check for mV-nH cluster 
+    if (hostAttrZero < 0 && hostAttrTwo > 0 && otherAttrZero == 0 && otherAttrTwo > 0)
+    {
+        if (hostAttrTwo + otherAttrTwo > maxH)
+            return true;
         return false;
-    
-    /* A high concentration of H also will trigger SAV mechanism? */
-    }else if(hostAttrZero == 0 && hostAttrTwo != 0){/* check if it is pure nH cluster*/
-        if(otherAttrZero == 0 && (otherAttrTwo == 1 || otherAttrTwo == 2)){
-            // check whether the other cluster is H or 2H
-            if(hostAttrTwo > 1){
-                return true;
-            }else{
-                return false;
-            }
-            
-        }else{
-            return false;
-        }
-        //return false;
-    }else{
-        return false; /* if not, return false, code do original combination reaction */
     }
+
+    // Check for pure nH cluster
+    if (hostAttrZero == 0 && hostAttrTwo > 0 && otherAttrZero == 0 && otherAttrTwo > 0)
+    {
+        if (hostAttrTwo + otherAttrTwo > maxH)
+            return true;
+        return false;
+    }
+
+    /* if not, return false, code do original combination reaction */
     return false;
 }
 
