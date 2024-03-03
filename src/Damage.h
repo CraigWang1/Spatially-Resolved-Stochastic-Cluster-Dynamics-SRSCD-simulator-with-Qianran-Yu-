@@ -26,5 +26,6 @@ public:
     const double getTotalDamage(const int) const;
     double getDpaRate(const int);
     double getDamageTwo(const int);
+    void setDamageTwo(const int, const double);
 };
 

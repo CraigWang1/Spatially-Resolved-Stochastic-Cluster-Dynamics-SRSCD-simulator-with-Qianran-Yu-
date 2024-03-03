@@ -187,6 +187,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
 		// lengthf = 2.74e-8; // thickness of W surface is 0.544nm, this length is centroid to vacuum 
 		lengthf = 1.0e-6 + SURFACE_THICKNESS / 2. * 1e-7;    /* when H is oversaturated, act as if there is another spatial element to the left that it can diffuse out into */
         // lengthf = SURFACE_THICKNESS / 2. * 1e-7;
+        // lengthf = SURFACE_THICKNESS * 1e-7;
         lengthb = 1.0e-6 + SURFACE_THICKNESS / 2. * 1e-7; /* surface to first element distance */
     }else if(count == 1){
 		lengthf = 1.0e-6 + SURFACE_THICKNESS / 2. * 1e-7;
@@ -206,7 +207,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     {
         volume = FRONTMOST_VOLUME;
         concentration = objectN[0] / FRONTMOST_VOLUME;
-        frontConcentration = H_SATURATION_CONCENTRATION;
+        frontConcentration = Normal(H_SATURATION_CONCENTRATION, 0.01*H_SATURATION_CONCENTRATION);
     }
     else if (count == 1)
     {
@@ -253,13 +254,13 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         diffRToB = 0.0;
     }
 
-    if (count == 0)
-    {
-        if (backConcentration > H_SATURATION_CONCENTRATION)
-        {
-            diffRToB = 0;
-        }
-    }
+    // if (count == 0)
+    // {
+    //     if (backConcentration > H_SATURATION_CONCENTRATION)
+    //     {
+    //         diffRToB = 0;
+    //     }
+    // }
 }
 
 void OneLine::computeSinkReaction(const Object* const hostObject, const int count)

@@ -130,8 +130,8 @@ void Damage::computeDamageTwo(const int n)
     double volume = VOLUME/20. * SURFACE_THICKNESS;
     double concentration_H = 1.34e+4;
     if (n == 0) {
-        damage[n][2] = concentration_H * FLUX_H * volume; // rate (num hydrogen insertions/s)
-        // cout << "damage2: " << damage[n][2] << endl;
+        // damage[n][2] = concentration_H * FLUX_H * volume; // rate (num hydrogen insertions/s)
+        damage[n][2] = 0.0;
     }
     else {
         damage[n][2] = 0.0;
@@ -153,4 +153,11 @@ double Damage::getDpaRate(const int n){
 double Damage::getDamageTwo(const int n)
 {
     return damage[n][2];
+}
+
+void Damage::setDamageTwo(const int n, const double rate)
+{
+    totalRate[n] -= damage[n][2];
+    damage[n][2] = rate;
+    totalRate[n] += damage[n][2];
 }

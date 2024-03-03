@@ -126,6 +126,23 @@ void SCDWrapper::computeMatrixRate(const int n)
             //tempLine->display(tempObject);/* Qianran 0925 */
         }
     }
+
+    if (n == 0)
+    {
+        double diff = 0.000228382;
+        // double lengthb = SURFACE_THICKNESS * 1.0e-7;
+        double lengthb = 1.0e-6 + SURFACE_THICKNESS/2. * 1.0e-7;
+        double concentration = 0;
+        int HKey = 1;
+        if (allObjects.find(HKey) != allObjects.end())
+            concentration = allObjects[HKey]->getNumber(n) / SURFACE_VOLUME;
+        double rate = diff * DIVIDING_AREA / lengthb * (Normal(H_SATURATION_CONCENTRATION, 0.01*H_SATURATION_CONCENTRATION) - concentration);
+        if (rate < 0)
+            rate = 0;
+        cout << rate << endl;
+        damage.setDamageTwo(n, rate);
+    }
+
     matrixRate[n] += damage.getTotalDamage(n);
     matrixRate[n] += sinkDissRate[0][n];
     matrixRate[n] += sinkDissRate[1][n];

@@ -3,6 +3,7 @@
 #include<iostream>
 #include<unordered_map>
 #include"Object.h"
+#include "rvgs.h"
 
 class OneLine {
 private:
