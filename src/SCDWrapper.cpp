@@ -129,7 +129,7 @@ void SCDWrapper::computeMatrixRate(const int n)
 
     if (n == 0)
     {
-        double diff = 0.000228382;
+        double diff = 0.000198912;
         // double lengthb = SURFACE_THICKNESS * 1.0e-7;
         double lengthb = 1.0e-6 + SURFACE_THICKNESS/2. * 1.0e-7;
         double concentration = 0;
@@ -139,7 +139,6 @@ void SCDWrapper::computeMatrixRate(const int n)
         double rate = diff * DIVIDING_AREA / lengthb * (Normal(H_SATURATION_CONCENTRATION, 0.01*H_SATURATION_CONCENTRATION) - concentration);
         if (rate < 0)
             rate = 0;
-        cout << rate << endl;
         damage.setDamageTwo(n, rate);
     }
 
@@ -299,19 +298,19 @@ void SCDWrapper::processEvent(
     }
 
     // Keep track of affected reaction rates
-    int affectedStart = n - 1;
-    int affectedEnd = n + 1;
-    if (reaction == DIFFUSETOF)
-        affectedStart -= 1;
-    else if (reaction == DIFFUSETOB)
-        affectedEnd += 1;
-    for (int i = affectedStart; i <= affectedEnd; i++)
-    {
-        if (i >= 0 && i < POINTS)
-        {
-            computeMatrixRate(i);
-        }
-    }
+    // int affectedStart = n - 1;
+    // int affectedEnd = n + 1;
+    // if (reaction == DIFFUSETOF)
+    //     affectedStart -= 1;
+    // else if (reaction == DIFFUSETOB)
+    //     affectedEnd += 1;
+    // for (int i = affectedStart; i <= affectedEnd; i++)
+    // {
+    //     if (i >= 0 && i < POINTS)
+    //     {
+    //         computeMatrixRate(i);
+    //     }
+    // }
     fs.close();
 }
 
@@ -348,11 +347,11 @@ const double SCDWrapper::getAndExamineRate()
 {
     fstream fs;
     //fs.open("Rate.txt",ios::app);
-    // int i;
-    // for (i = 0; i < POINTS; ++i) {
-    //     computeMatrixRate(i);
-    //     //fs << matrixRate[i] <<"        ";
-    // }
+    int i;
+    for (i = 0; i < POINTS; ++i) {
+        computeMatrixRate(i);
+        //fs << matrixRate[i] <<"        ";
+    }
     computeBulkRate();
     //fs << "BulkRate" << bulkRate << endl<<endl<<endl;
     //fs.close();
@@ -1180,8 +1179,8 @@ void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
             // net insertion rate = acceptProbability * (base insertion rate = damagetwo)
         }
 
-        double thresConcentrationFraction = 1;
-        if (frontmostHConcentration/H_SATURATION_CONCENTRATION <= thresConcentrationFraction)
+        // double thresConcentrationFraction = 1;
+        // if (frontmostHConcentration/H_SATURATION_CONCENTRATION <= thresConcentrationFraction)
             acceptProbability = 1;
         // {
             // acceptProbability = abs(Normal(mean, stddev) - frontmostHConcentration / H_SATURATION_CONCENTRATION);
