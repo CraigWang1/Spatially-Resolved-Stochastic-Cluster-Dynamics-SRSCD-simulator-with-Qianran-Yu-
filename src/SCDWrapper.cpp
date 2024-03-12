@@ -1142,36 +1142,15 @@ void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
         if (allObjects.find(HKey) != allObjects.end())
         {
             frontmostHConcentration = allObjects[HKey]->getNumber(n) / FRONTMOST_VOLUME;
-            Object* tempObj = allObjects[HKey];
-            Bundle* bundle = linePool[tempObj];
-            OneLine* tempLine = bundle->lines[n];
-            if (tempLine != nullptr)
-            {
-                int oneAbove = floor(H_SATURATION_CONCENTRATION * FRONTMOST_VOLUME) + 1;
-                double diffRToF = tempObj->getDiff() * DIVIDING_AREA / (1e-6 + SURFACE_THICKNESS/2. * 1e-7) * (oneAbove/FRONTMOST_VOLUME - H_SATURATION_CONCENTRATION);
-                if (damage.getDamageTwo(n) != 0)
-                    acceptProbability = Normal(diffRToF/2., diffRToF/6.) / damage.getDamageTwo(n);
-                    // acceptProbability = Normal(0, diffRToF / 2.) / damage.getDamageTwo(n);
-                    // acceptProbability = Normal(tempLine->getDiffRateF() / 4., tempLine->getDiffRateF() / 4.) / damage.getDamageTwo(n);
-                    // acceptProbability = tempLine->getDiffRateF() / damage.getDamageTwo(n) + Normal(-stddev, stddev);
-                    // acceptProbability = diffRToF / damage.getDamageTwo(n) + Normal(-stddev, stddev);
-                    // acceptProbability = diffRToF / damage.getDamageTwo(n); 
-                    // acceptProbability = 0;
-            }
-
-            // make sure net insertion rate <= diffusion rate to maintain equilibrium around saturation limit
-            // net insertion rate = acceptProbability * (base insertion rate = damagetwo)
         }
 
-        double thresConcentrationFraction = 1;
-        if (frontmostHConcentration < H_SATURATION_CONCENTRATION)
+        acceptProbability = Normal(mean, stddev) - frontmostHConcentration / H_SATURATION_CONCENTRATION;
+
+        if (acceptProbability < 0)
+            acceptProbability = 0;
+        else if (acceptProbability > 1)
             acceptProbability = 1;
-        // {
-            // acceptProbability = abs(Normal(mean, stddev) - frontmostHConcentration / H_SATURATION_CONCENTRATION);
-        // }
-        // else
-            // acceptProbability = 0;
-            // acceptProbability = abs(Normal(mean, stddev) - frontmostHConcentration / H_SATURATION_CONCENTRATION);
+
         if ((double) rand() / RAND_MAX > acceptProbability)
         {
             if (LOG_REACTIONS)
@@ -1272,7 +1251,10 @@ bool SCDWrapper::recognizeSAV(const Object *const hostObject, const Object *cons
     if (hostAttrZero == 0 && hostAttrTwo > 0 && otherAttrZero == 0 && otherAttrTwo > 0)
     {
         if (hostAttrTwo + otherAttrTwo > maxH)
+        {
+            cout << hostAttrTwo + otherAttrTwo << endl;
             return true;
+        }
         return false;
     }
 

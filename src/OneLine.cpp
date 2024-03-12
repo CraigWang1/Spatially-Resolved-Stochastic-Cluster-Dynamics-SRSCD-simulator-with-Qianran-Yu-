@@ -184,15 +184,13 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     /* length measured in cm */
 	double lengthf = 0.0, lengthb = 0.0;
 	if(count == 0){
-		// lengthf = 2.74e-8; // thickness of W surface is 0.544nm, this length is centroid to vacuum 
-		lengthf = 1.0e-6 + SURFACE_THICKNESS / 2. * 1e-7;    /* when H is oversaturated, act as if there is another spatial element to the left that it can diffuse out into */
-        // lengthf = SURFACE_THICKNESS / 2. * 1e-7;
-        lengthb = 1.0e-6 + SURFACE_THICKNESS / 2. * 1e-7; /* surface to first element distance */
+		lengthf = SURFACE_THICKNESS / 2. * NM_TO_CM; // thickness of W surface is 0.544nm, this length is centroid to vacuum 
+        lengthb =  (ELEMENT_THICKNESS / 2. + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
     }else if(count == 1){
-		lengthf = 1.0e-6 + SURFACE_THICKNESS / 2. * 1e-7;
-		lengthb = 2.0e-6; // first element to second element distance (20nm) 
+        lengthf =  (ELEMENT_THICKNESS / 2. + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
+		lengthb = ELEMENT_THICKNESS * NM_TO_CM; // first element to second element distance (20nm) 
 	}else{
-		lengthf = lengthb = 2.0e-6; /* other element distances */
+		lengthf = lengthb = ELEMENT_THICKNESS * NM_TO_CM; /* other element distances */
 	}
 
     double prefactor = 0.0;
@@ -227,12 +225,11 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         /* if diffusable, surface objects diffusing into vacuum is considered */
         prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthf;
         diffRToF = prefactor*(concentration - frontConcentration);
-        //diffRToF = 0.0;
         
         int64 HKey = 1;
         if(count == 0 && hostObject->getKey() != HKey){
             diffRToF = 0.0;
-        } // only allow H to diffuse out when it's oversaturated
+        } // single H is the only species that can diffuse out when it's oversaturated
     }
     else {
         diffRToF = 0.0;
@@ -255,9 +252,15 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
 
     if (count == 0)
     {
+        // If bulk is saturated, no more diffusion into it allowed
         if (backConcentration > H_SATURATION_CONCENTRATION)
         {
             diffRToB = 0;
+        }
+        // H not allowed to leave if bulk is unsaturated
+        else if (backConcentration < H_SATURATION_CONCENTRATION)
+        {
+            diffRToF = 0;
         }
     }
 }

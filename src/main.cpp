@@ -47,6 +47,7 @@ int main() {
     srscd->drawSpeciesAndReactions(advTime);
     clock_t prev_time = clock();
     //srscd->drawHD(advTime);
+    cout << H_SATURATION_CONCENTRATION * VOLUME << endl;
     while(!done)
     {
         hostObject = srscd->selectReaction(theOtherKey, reaction, pointIndex);/* choose an event */
@@ -107,7 +108,7 @@ int main() {
                         magnitude++;
                     }
                     cout << "] " << std::fixed << std::setprecision(2) << progress << "%";
-                    cout << "   eta: " << int(round(eta_min)) << " min";
+                    cout << "   eta: " << (long int) round(eta_min) << " min";
                     cout << "   time: " << std::fixed << std::setprecision(numDigits - magnitude) << advTime << " s            \r";
                     cout.flush();
                 }
