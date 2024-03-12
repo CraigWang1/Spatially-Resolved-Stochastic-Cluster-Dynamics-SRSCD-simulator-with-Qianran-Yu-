@@ -185,7 +185,8 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
 	double lengthf = 0.0, lengthb = 0.0;
 	if(count == 0){
 		// lengthf = 2.74e-8; // thickness of W surface is 0.544nm, this length is centroid to vacuum 
-		lengthf = 2.0e-6 + SURFACE_THICKNESS / 2. * 1e-7;    /* when H is oversaturated, act as if there is another spatial element to the left that it can diffuse out into */
+		lengthf = 1.0e-6 + SURFACE_THICKNESS / 2. * 1e-7;
+        // lengthf = 2.0e-6 + SURFACE_THICKNESS / 2. * 1e-7;    /* when H is oversaturated, act as if there is another spatial element to the left that it can diffuse out into */
         // lengthf = SURFACE_THICKNESS / 2. * 1e-7;
         lengthb = 2.0e-6 + SURFACE_THICKNESS / 2. * 1e-7; /* surface to first element distance */
     }else if(count == 1){
@@ -198,13 +199,11 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     double prefactor = 0.0;
     int objectN[3];   
     hostObject->getThreeNumber(count, objectN);
-    double volume = VOLUME;
     double concentration = 0;
     double frontConcentration = 0;
     double backConcentration = objectN[2] / VOLUME;
     if (count == 0)
     {
-        volume = FRONTMOST_VOLUME;
         concentration = objectN[0] / FRONTMOST_VOLUME;
         frontConcentration = H_SATURATION_CONCENTRATION;
     }
@@ -309,9 +308,8 @@ double OneLine::computeCombReaction(
     double dimensionTerm;
     double volume;
     if(count == 0){
-        volume = SURFACE_VOLUME;
-        // volume on surface volume/20nm * 0.54nm
-        
+        volume = FRONTMOST_VOLUME;
+        // thin surface element + first bulk element are merged
     }else{
         volume = VOLUME;
     }
@@ -337,8 +335,6 @@ double OneLine::computeCombReaction(
     }
     r12 = hostObject->getR1() + mobileObject->getR1();
     dimensionTerm = computeDimensionTerm(r12, hostObject, mobileObject, count);
-    int64 key1 = hostObject->getKey();
-    int64 key2 = mobileObject->getKey();
     return 4.0*PI*concentration*r12*dimensionTerm;
 }
 

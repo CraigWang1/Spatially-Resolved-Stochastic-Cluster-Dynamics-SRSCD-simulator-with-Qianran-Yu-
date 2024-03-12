@@ -8,6 +8,7 @@
 
 int main() {
     //fork();
+    cout << H_SATURATION_CONCENTRATION * VOLUME << endl;
     SCDWrapper* srscd = new SCDWrapper(); /* establish spatially resolved scd */
     int64 theOtherKey = 0;
     Object* hostObject = nullptr;
@@ -107,7 +108,7 @@ int main() {
                         magnitude++;
                     }
                     cout << "] " << std::fixed << std::setprecision(2) << progress << "%";
-                    cout << "   eta: " << int(round(eta_min)) << " min";
+                    cout << "   eta: " << (long int) round(eta_min) << " min";
                     cout << "   time: " << std::fixed << std::setprecision(numDigits - magnitude) << advTime << " s            \r";
                     cout.flush();
                 }

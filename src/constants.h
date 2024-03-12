@@ -31,6 +31,7 @@
 //#define GRAIN_SIZE 0.01    // [cm] Typical grain size.
 #define GRAIN_SIZE 0.0002 //[cm]
 #define FOIL_THICKNESS 0.0002 //[cm] Foil thickness from UCSD (2000nm)
+#define ELEMENT_THICKNESS 20.0 // [nm] thickness of a normal bulk element
 #define SURFACE_THICKNESS 0.544 //[nm] thickness of surface (conrresponds to two monolayers of tungsten)
 #define NU0 6.1e+12           // [Hz] Attempt frequency.
 #define C_DENSITY 10        // [appm] C-atom density
@@ -44,11 +45,11 @@
 #define TOTAL_DPA 2        // Total DPA damage to reach.
 #define VOLUME 1.0e-17    // [cm^3] System volume.
 #define DIVIDING_AREA 5.0e-12  // [cm^2] Area of the surface in between volume elements.
-#define TEMPERATURE 1500.0  // [K] System temperature.
+#define TEMPERATURE 1950.0  // [K] System temperature.
 //#define RATIO_HE 1.1       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_HE 0       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_H 0
-#define FLUX_H 4.0e23    // [1/(cm^2*s)]
+#define FLUX_H 4.0e19    // [1/(cm^2*s)]
 //#define DPA_RATE 0       //When only H exposure is available. no self-damage at all
 //#define DPA_RATE 3.55e-6   // [dpa/s] Damage rate.
 #define CHANNELS 3         // Irradiation channels used (1:W, 2:He, 3:H,...). the number of different particle insertion(irradiation) process.
@@ -84,9 +85,9 @@ const bool LOG_REACTIONS = false;
 /* Configure which features to run */
 const bool IRRADIATION_ON = false;
 const bool HYDROGEN_ON = true;
-const bool COMB_ON = false; // combination reaction
+const bool COMB_ON = true; // combination reaction
 const bool SINK_ON = false; // sink reaction
-const bool DISS_ON = false; // dissociation reaction
+const bool DISS_ON = true; // dissociation reaction
 const bool DIFF_ON = true; // diffusion reaction
 
 //#define AVG_ION_EN 1.71e+6 // (from TRIM) Average ion energy (in eV) expended on damage from 5MeV Cu.
