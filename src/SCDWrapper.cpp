@@ -282,8 +282,8 @@ void SCDWrapper::processEvent(
     }
 
     // Keep track of affected reaction rates
-    int affectedStart = n - 1;
-    int affectedEnd = n + 1;
+    int affectedStart = n - 2;
+    int affectedEnd = n + 2;
     if (reaction == DIFFUSETOF)
         affectedStart -= 1;
     else if (reaction == DIFFUSETOB)

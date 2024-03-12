@@ -319,12 +319,21 @@ double OneLine::computeCombReaction(
         
     }else {
         concentration = hostObject->getNumber(count)*(hostObject->getNumber(count) - 1) / volume;
-        
     }
 
     // H+H-->2H
     if(count != 0 && hostObject->getKey() == 1 && mobileObject->getKey() == 1){
         return 0.0;
+    }
+
+    // Since H+H->2H can only happen on the thin surface element,
+    // temporarily "unmerge" the first bulk and surface element to process this.
+    // (First bulk and surface element are merged otherwise for more stable diffusion processing)
+    if (count == 0 && hostObject->getKey() == 1 && mobileObject->getKey() == 1){
+        // Assume uniform concentration between among surface and first bulk element
+        double ratio = SURFACE_THICKNESS / ELEMENT_THICKNESS;
+        int numSurfaceH = round(hostObject->getNumber(count) * ratio);
+        concentration = numSurfaceH*(numSurfaceH - 1) / SURFACE_VOLUME;
     }
     
     if(hostObject->getKey() == 1 && mobileObject->getKey() == 2){
