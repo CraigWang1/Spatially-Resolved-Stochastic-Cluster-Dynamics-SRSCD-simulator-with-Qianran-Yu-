@@ -9,6 +9,7 @@
 // #include"gnuplot_i.h"
 #include <string>
 #include <iomanip>
+#include <cassert>
 
 class SCDWrapper {
 private:
@@ -86,7 +87,7 @@ private:
     /* distinguish reaction type function */
     bool recognizeSAV(const Object* const, const Object* const);
     /* if SAV, return true, if not, return false*/
-    int countDefectNumber(const int, char*);
+    int countDefectNumber(const int, string);
     /* this function counts the number of defects(V,SIA,H...) in every element, returns total number of this defect in the bulk */
     void countRatioDistribution(double&);
     /* count ratio of H to V in the bulk and at the same time decide whether to supplement H to system */
@@ -98,6 +99,7 @@ public:
     //SCDWrapper();  // constructor: for restart;
     void computeMatrixRate(const int n);  // computes total rate in element n
     void computeBulkRate();
+    long double getBulkRate();
     Object* selectReaction(int64&, Reaction&, int&);  // select reaction
     void processEvent(const Reaction, Object*, const int, const int64, const double, const double);    // deal with reactions
     ~SCDWrapper();          /* destructor to delete everything newed */
@@ -105,7 +107,7 @@ public:
     unordered_map<int64, Object*>* getAllObjects();
     unordered_map<int64, Object*>* getMobileObjects();
     unordered_map<Object*, Bundle*>* getLinePool();
-    const double getAndExamineRate(); /* computes bulk rate and matrix rate and returns bulk rate*/
+    void examineRate(); /* computes matrix rate in all points*/
     /* output file functions */
     void displayDamage();
     void displayAllObject();

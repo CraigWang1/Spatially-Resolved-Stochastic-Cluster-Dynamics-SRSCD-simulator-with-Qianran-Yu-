@@ -13,7 +13,6 @@ void CascadeDamage::generateNeutronDamage(const double energy, int & ndef)
     const double fmd = 1.0; // kMC escape probabilty.
     const int types = 2; // Only vacancies and SIAs in a cascade.
     
-    double nrt, eta;
     double psia, pv;
     int n = 0;
     int i, j, k = 0;
@@ -149,7 +148,7 @@ const int CascadeDamage::getDamage(const int n, const int m) const
 void CascadeDamage::cleanDamage()
 {
     if (!damage.empty()) {
-        for (int i = 0; i < damage.size(); ++i) {
+        for (size_t i = 0; i < damage.size(); ++i) {
             delete[] damage[i];
         }
         damage.clear();

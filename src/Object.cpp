@@ -320,7 +320,7 @@ void Object::computeDiffCoeff()
 void Object::computeBindTerm()
 {
     long double energy_d[LEVELS] = { 0.0 };
-    long double energy_b = 0.0, energy_m = 0.0;
+    long double energy_b = 0.0;
     double attfreq = 1.0;
     double efi = 9.96, emi = 0.013; // Ab initio migration and formation energies of V and SIA in pure W.
     double efv = 3.23, emv = 1.66;
@@ -343,7 +343,6 @@ void Object::computeBindTerm()
     // Pure defect clusters:
     if (!check_all) {
         if (attributes[0]>0) { // SIAs
-            energy_m = emi;
             if (abs(attributes[0]) == 1) { // 1I
                 attfreq = 0.0;
             }
@@ -369,7 +368,6 @@ void Object::computeBindTerm()
                 energy_b = efi + (eb2i - efi)*(pow(fabs((double)attributes[0]), 0.6666667) - pow((fabs((double)attributes[0]) - 1.0), 0.6666667)) / 0.5847;
         }
         else if (attributes[0]<0) { // Vacancies.
-            energy_m = emv;
             if (abs(attributes[0]) == 1) { // 1V
                 attfreq = 0.0;
             }
@@ -397,7 +395,7 @@ void Object::computeBindTerm()
             else if (abs(attributes[0])>8) // > 8V
                 energy_b = efv + (eb2v - efv)*(pow(fabs((double)attributes[0]), 0.6666667) - pow((fabs((double)attributes[0]) - 1.0), 0.6666667)) / 0.5874;
         }
-        energy_d[0] = energy_b; // + energy_m
+        energy_d[0] = energy_b;
         bind[0] = attfreq*exp(-energy_d[0] / KB / TEMPERATURE);
     }
     // He-defect clusters:
@@ -672,8 +670,8 @@ void Object::computeSinks()
     double Zdv = 1.0, Zdi = 1.1;
     double Zodsv = 0.0, Zodsi = 0.0;
     double Zgbv = 1.0, Zgbi = 1.0;
-    double Zsv = 1.0, Zsi = 1.1;
-    double Sd, Sods, Sgbv, Sgbi, Sf;
+    // double Zsv = 1.0, Zsi = 1.1;
+    double Sd, Sods, Sgbv, Sgbi;
     double s[2] = { 0 };
     /* 1. Dislocation sink strength: */
     Sd = DISLOCATION*exp(-1*KB*(TEMPERATURE - 300));
@@ -690,7 +688,7 @@ void Object::computeSinks()
     Sgbv = 24 / GRAIN_SIZE / GRAIN_SIZE;
     
     /* 4. Thin foil/interface: */
-    // Sf = (2*sqrt(Zdi*5d + Zodsi*Sods)/FOIL_THICKNESS)*coth(sqrt(Zdi*5d + Zodsi*Sods)*FOIL_THINKNESS/4); */
+    // double Sf = (2*sqrt(Zdi*5d + Zodsi*Sods)/FOIL_THICKNESS)*coth(sqrt(Zdi*5d + Zodsi*Sods)*FOIL_THINKNESS/4); */
     /* When internal sinks are weak */
     //Sf = 8 / FOIL_THICKNESS / FOIL_THICKNESS;
     //s[0] = Zdv * Sd + Zgbv * Sgbv + Zodsv * Sods + Zsv * Sf;

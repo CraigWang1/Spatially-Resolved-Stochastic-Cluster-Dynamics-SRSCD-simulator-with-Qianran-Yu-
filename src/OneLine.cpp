@@ -196,20 +196,18 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     double prefactor = 0.0;
     int objectN[3];   
     hostObject->getThreeNumber(count, objectN);
-    double volume = VOLUME;
     double concentration = 0;
     double frontConcentration = 0;
     double backConcentration = objectN[2] / VOLUME;
     if (count == 0)
     {
-        volume = FRONTMOST_VOLUME;
-        concentration = objectN[0] / FRONTMOST_VOLUME;
+        concentration = objectN[0] / SURFACE_VOLUME;
         frontConcentration = H_SATURATION_CONCENTRATION;
     }
     else if (count == 1)
     {
         concentration = objectN[0] / VOLUME;
-        frontConcentration = objectN[1] / FRONTMOST_VOLUME;
+        frontConcentration = objectN[1] / SURFACE_VOLUME;
     }
     else
     {
@@ -348,8 +346,6 @@ double OneLine::computeCombReaction(
     }
     r12 = hostObject->getR1() + mobileObject->getR1();
     dimensionTerm = computeDimensionTerm(r12, hostObject, mobileObject, count);
-    int64 key1 = hostObject->getKey();
-    int64 key2 = mobileObject->getKey();
     return 4.0*PI*concentration*r12*dimensionTerm;
 }
 

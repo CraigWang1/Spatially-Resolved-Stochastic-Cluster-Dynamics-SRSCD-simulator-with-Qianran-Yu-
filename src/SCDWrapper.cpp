@@ -8,12 +8,12 @@ static double in_time = 0.0;
 static double doseIon[POINTS] = {0.0};
 static int annilV = 0;
 static int start = 1;
-static int plotTime = 1;
-static int plotTime1 = 1;
-static int plotTime2 = 1;
+// static int plotTime = 1;
+// static int plotTime1 = 1;
+// static int plotTime2 = 1;
 static int event = 0;
 static int sinkV = 0;
-static int sinkH = 0;
+// static int sinkH = 0;
 static int generationNumber = 0;
 static int dissV = 0; //this only counts number of events
 static int dissH = 0; //this only counts number of events
@@ -137,6 +137,11 @@ void SCDWrapper::computeBulkRate()
     for (int i = 0; i < POINTS; ++i) {
         bulkRate += matrixRate[i];
     }
+}
+
+long double SCDWrapper::getBulkRate()
+{
+    return bulkRate;
 }
 
 Object* SCDWrapper::selectReaction(
@@ -295,6 +300,7 @@ void SCDWrapper::processEvent(
             computeMatrixRate(i);
         }
     }
+    computeBulkRate();
     fs.close();
 }
 
@@ -327,20 +333,17 @@ unordered_map<Object*, Bundle*>* SCDWrapper::getLinePool()
     return &linePool;
 }
 
-const double SCDWrapper::getAndExamineRate()
+void SCDWrapper::examineRate()
 {
     fstream fs;
     //fs.open("Rate.txt",ios::app);
-    // int i;
-    // for (i = 0; i < POINTS; ++i) {
-    //     computeMatrixRate(i);
-    //     //fs << matrixRate[i] <<"        ";
-    // }
+    for (int i = 0; i < POINTS; ++i) {
+        computeMatrixRate(i);
+        //fs << matrixRate[i] <<"        ";
+    }
     computeBulkRate();
     //fs << "BulkRate" << bulkRate << endl<<endl<<endl;
     //fs.close();
-
-    return bulkRate;
 }
 
 void SCDWrapper::writeSinkFile(const Object * const hostObject, const long int n, const double time)
@@ -487,7 +490,7 @@ void SCDWrapper::setSinks()
 void SCDWrapper::computeSinkDissRate(const int type, const int point)
 {
     double b = 2.8e-8; //burger's vector 2.8e-8 cm
-    double nu = 1e+13; // attempt frequency s^-1 averaged with dt
+    // double nu = 1e+13; // attempt frequency s^-1 averaged with dt
     double ebH = 0.6, emH = 0.25; //binding and migration energy of hydrogen
     double ebV = 1.0, emV = 1.29; //binding and migration energy of vacancy
     double prefactor = 1.58e-3;
@@ -729,7 +732,6 @@ void SCDWrapper::processDiffEvent(Object* hostObject, const int n, const char si
 
 void SCDWrapper::processSinkEvent(Object * hostObject, const int n)
 {
-    int64 key = hostObject->getKey();
     ++reactions[2][n];
     hostObject->reduceNumber(n);
     /*
@@ -791,7 +793,7 @@ void SCDWrapper::processDissoEvent(
     }
     else {
         /* cluster didn't find! build new object and insert it into map */
-        Object* anObject = new Object(theOtherKey, n, number);
+        Object* anObject = new Object(theOtherAttr, n, number);
         addNewObjectToMap(anObject);
     }
     /* 3) deal with the host object */
@@ -896,13 +898,13 @@ void SCDWrapper::processCombEvent(
             /* add product to map */
             addNewObjectToMap(productObject);
         }
-        
     }
     /* update reactant */
     hostObject->reduceNumber(n);
     updateObjectInMap(hostObject, n);
     theOtherObject->reduceNumber(n);
     updateObjectInMap(theOtherObject, n);
+
     int attrZeroA = hostObject->getAttri(0);
     int attrZeroB = theOtherObject -> getAttri(0);
     if(attrZeroA * attrZeroB < 0){
@@ -1131,20 +1133,20 @@ void SCDWrapper::getHeInsertion(const int n)
 
 void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
 {
-    // Maintain H equilibrium (insertion & diffusion) if we reached the saturation limit at the frontmost element
+    // Maintain H equilibrium (insertion & diffusion) if we reached the saturation limit at the surface element
     if (n == 0)
     {
         int64 HKey = 1;
-        double frontmostHConcentration = 0;
+        double surfaceHConcentration = 0;
         double mean = 1;
         double stddev = KB * TEMPERATURE / HEAT_OF_SOLUTION;
         double acceptProbability = 1;
         if (allObjects.find(HKey) != allObjects.end())
         {
-            frontmostHConcentration = allObjects[HKey]->getNumber(n) / FRONTMOST_VOLUME;
+            surfaceHConcentration = allObjects[HKey]->getNumber(n) / SURFACE_VOLUME;
         }
 
-        acceptProbability = Normal(mean, stddev) - frontmostHConcentration / H_SATURATION_CONCENTRATION;
+        acceptProbability = Normal(mean, stddev) - surfaceHConcentration / H_SATURATION_CONCENTRATION;
 
         if (acceptProbability < 0)
             acceptProbability = 0;
@@ -1233,36 +1235,21 @@ void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
 }
 
 bool SCDWrapper::recognizeSAV(const Object *const hostObject, const Object *const theOtherObject){
-    int hostAttrZero = hostObject->getAttri(0);
-    int hostAttrTwo = hostObject->getAttri(2);
-    int otherAttrZero = theOtherObject->getAttri(0);
-    int otherAttrTwo = theOtherObject->getAttri(2);
-    double maxH = 4.75 + hostAttrZero * 4;
-
-    // Check for mV-nH cluster 
-    if (hostAttrZero < 0 && hostAttrTwo > 0 && otherAttrZero == 0 && otherAttrTwo > 0)
-    {
-        if (hostAttrTwo + otherAttrTwo > maxH)
-            return true;
+    // For mV-nH + mSIA -> n*H reactions, don't count this as SAV because
+    //     the nH cluster splits into n individual H atoms, so no H cluster, so
+    //     no SAV can occur.
+    if (hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && theOtherObject->getAttri(0)>0 && theOtherObject->getAttri(2)==0 && abs(hostObject->getAttri(0)) == theOtherObject->getAttri(0))
         return false;
-    }
 
-    // Check for pure nH cluster
-    if (hostAttrZero == 0 && hostAttrTwo > 0 && otherAttrZero == 0 && otherAttrTwo > 0)
-    {
-        if (hostAttrTwo + otherAttrTwo > maxH)
-        {
-            cout << hostAttrTwo + otherAttrTwo << endl;
-            return true;
-        }
-        return false;
-    }
+    int prodV = hostObject->getAttri(0) + theOtherObject->getAttri(0);
+    int prodH = hostObject->getAttri(2) + theOtherObject->getAttri(2);
 
-    /* if not, return false, code do original combination reaction */
-    return false;
+    double maxH = 4.75 + abs(prodV) * 4;
+
+    return (prodV <= 0 && prodH > maxH);
 }
 
-int SCDWrapper::countDefectNumber(const int count, char* type){
+int SCDWrapper::countDefectNumber(const int count, string type){
     fstream vd, id, hd;
     fstream v1d, v2d, v3d;
     /**
@@ -1288,13 +1275,12 @@ int SCDWrapper::countDefectNumber(const int count, char* type){
     /* this file work after damage*/
     
     int ndef[POINTS] = {0}; /* number of this object in every element*/
-    int nv1[POINTS] = {0}, nv2[POINTS] = {0}, nv3[POINTS] = {0};
     int tndef = 0; /*number of this kind of defect in total */
     unordered_map<int64, Object*>::iterator iter;
     for(int i=0; i<POINTS; i++){
         double volume;
         if(i==0){
-            volume = FRONTMOST_VOLUME; /* volume at front incorporates surface layer */
+            volume = SURFACE_VOLUME; /* volume at front is thin surface layer */
         }else{
             volume = VOLUME;
         }
@@ -1305,17 +1291,7 @@ int SCDWrapper::countDefectNumber(const int count, char* type){
             if(count == 0){
                 if(attribute>0 && type=="SIA"){
                     ndef[i] += totalNumber * abs(attribute);
-                }else if(attribute<0 && type =="V"){
-                    ndef[i] += totalNumber * abs(attribute);
-                    if(attribute == -1){
-                        nv1[i] = totalNumber;
-                    }else if(attribute == -2){
-                        nv2[i] = totalNumber;
-                    }else if(attribute == -3){
-                        nv3[i] = totalNumber;
-                    }
                 }
-                
             }else{
                 ndef[i] += totalNumber * abs(attribute);
                 
@@ -1324,9 +1300,6 @@ int SCDWrapper::countDefectNumber(const int count, char* type){
         tndef += ndef[i];
         if(type == "V"){
             vd << 10+20*i << "      "<<ndef[i]/volume<<endl;
-            //v1d << 18+36*(i-1) << "   " << nv1[i]/volume << endl;
-            //v2d << 18+36*(i-1) << "   " << nv2[i]/volume << endl;
-            //v3d << 18+36*(i-1) << "   " << nv3[i]/volume << endl;
             v += ndef[i]/volume;
          }else if(type == "SIA"){
             //id<< 18+36*(i-1) << "     "<<ndef[i]/volume<<endl;
@@ -1403,7 +1376,7 @@ void SCDWrapper::writeReaction(){
 
 /* test functions */
 void SCDWrapper::countRatioDistribution(double& t){
-    double sW = DENSITY * (VOLUME / 20) * SURFACE_THICKNESS;
+    // double sW = DENSITY * (VOLUME / 20) * SURFACE_THICKNESS;
     /*number of surface tungsten */
     int sH = 0; /* number of surface hydrogen*/
     unordered_map<int64, Object*>::iterator iter;
@@ -1587,5 +1560,3 @@ double SCDWrapper::getTotalDpa(){
     }
     return dpa;
 }
-
-

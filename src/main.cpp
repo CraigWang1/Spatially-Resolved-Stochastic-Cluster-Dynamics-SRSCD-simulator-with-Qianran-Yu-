@@ -4,6 +4,7 @@
 #include<ctime>
 #include<unistd.h>
 #include<time.h>
+#include <cassert>
 #include"SCDWrapper.h"
 
 int main() {
@@ -20,7 +21,6 @@ int main() {
     double system_dt = 0.0;
     double accTime = 0.0;
     long double bulkRate = 0.0; /* total rate of the whole bulk */
-    int inputH = 0;
     double totalDPA = 0.2;
     double dpa = 0.0;
     double progress = 0.0; /* progress of 50 = 50% done with simulation */
@@ -38,7 +38,7 @@ int main() {
     restart(iStep, advTime, srscd);
     while (advTime > write_time)
         write_time += write_increment;
-    srscd->getAndExamineRate();
+    srscd->examineRate();
     /* check ended */
     srand(time(0));
     /*display damage*/
@@ -48,6 +48,7 @@ int main() {
     clock_t prev_time = clock();
     //srscd->drawHD(advTime);
     cout << H_SATURATION_CONCENTRATION * VOLUME << endl;
+
     while(!done)
     {
         hostObject = srscd->selectReaction(theOtherKey, reaction, pointIndex);/* choose an event */
@@ -57,6 +58,16 @@ int main() {
             accTime = 0.0;
         }
         
+        bulkRate = srscd->getBulkRate(); /* calculate the bulk rate */
+        ++iStep;
+        do {
+            random = (double)rand() / RAND_MAX;
+        } while (random == 0);
+        dt = (-1) / bulkRate*log(random);
+        accTime += dt;
+        advTime += dt;
+        dpa = srscd->getTotalDpa();
+
         if(iStep%PSTEPS == 0)
         {
             system_dt = (clock() - prev_time) / (double)CLOCKS_PER_SEC;
@@ -136,16 +147,6 @@ int main() {
             // srscd->writeFile(advTime, iStep);
             write_time += write_increment;
         }
-
-        bulkRate = srscd->getAndExamineRate(); /* calculate the bulk rate */
-        ++iStep;
-        do {
-            random = (double)rand() / RAND_MAX;
-        } while (random == 0);
-        dt = (-1) / bulkRate*log(random);
-        accTime += dt;
-        advTime += dt;
-        dpa = srscd->getTotalDpa();
 
         if (IRRADIATION_ON)
         {

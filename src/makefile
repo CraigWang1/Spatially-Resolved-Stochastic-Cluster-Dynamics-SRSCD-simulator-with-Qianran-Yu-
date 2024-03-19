@@ -2,7 +2,7 @@
 CXX= g++
 
 # Use CXXFLAGS to specify additional compiler options to use:
-CXXFLAGS = -Wall -std=c++0x
+CXXFLAGS = -Wall -std=c++0x -g
 
 # Define variables:
 EXE_FILE= scdexe 
