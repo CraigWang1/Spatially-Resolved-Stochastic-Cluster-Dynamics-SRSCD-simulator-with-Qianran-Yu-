@@ -21,10 +21,10 @@ OneLine::OneLine(
 Reaction OneLine::selectReaction(
                                  const Object* const hostObject,
                                  int64& theOtherKey,
-                                 double& randRate)
+                                 long double& randRate)
 {
     int index = 0;
-    double tempRate = randRate;
+    long double tempRate = randRate;
     std::unordered_map<int64, long double>::iterator iter = secondR.begin();
     if (totalRate < tempRate) {
         randRate -= totalRate;
@@ -123,12 +123,12 @@ const long double OneLine::computeTotalRate()
     return totalRate;
 }
 
-const double OneLine::getDiffRateF() const
+const long double OneLine::getDiffRateF() const
 {
     return diffRToF;
 }
 
-const double OneLine::getDiffRateB() const
+const long double OneLine::getDiffRateB() const
 {
     return diffRToB;
 }

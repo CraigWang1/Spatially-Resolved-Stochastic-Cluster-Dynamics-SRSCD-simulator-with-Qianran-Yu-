@@ -21,7 +21,7 @@ private:
     void computeDamageOther(const int, const int);
 public:
     Damage(); // constructor
-    Reaction selectDamage(const int, double&);
+    Reaction selectDamage(const int, long double&);
     void display(const int) const; // display damage in one element
     const double getTotalDamage(const int) const;
     double getDpaRate(const int);

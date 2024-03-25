@@ -7,8 +7,8 @@
 #include <cassert>
 #include"SCDWrapper.h"
 
-int main() {
-    //fork();
+int main() 
+{
     SCDWrapper* srscd = new SCDWrapper(); /* establish spatially resolved scd */
     int64 theOtherKey = 0;
     Object* hostObject = nullptr;
@@ -41,12 +41,9 @@ int main() {
     srscd->examineRate();
     /* check ended */
     srand(time(0));
-    /*display damage*/
-    // srscd->displayDamage();
     srscd->displayAllObject();
     srscd->drawSpeciesAndReactions(advTime);
     clock_t prev_time = clock();
-    //srscd->drawHD(advTime);
     cout << H_SATURATION_CONCENTRATION * VOLUME << endl;
 
     while(!done)
@@ -74,13 +71,6 @@ int main() {
             prev_time = clock();
             st.open("st.txt", ios::app);
             st << (float)prev_time/CLOCKS_PER_SEC << "  "<< dpa << endl;
-            
-            /*
-            cout << "\nt = " << advTime << endl;
-            cout <<"iStep = "<< iStep << endl;
-            cout<<"dt= " << dt <<endl;
-            cout<<"BulkRate = "<<bulkRate<<endl;
-            */
 
             // Chose between dpa or time to calculate progress
             if (IRRADIATION_ON)
@@ -127,25 +117,8 @@ int main() {
 
             prev_eta_min = eta_min;
             prev_progress = progress;
-             
-            // srscd->drawSpeciesAndReactions(advTime);
-            // srscd->drawDamage(advTime);
             srscd->writeFile(advTime, iStep);
-            // srscd->writeVacancy();
-            // srscd->drawHD(advTime);
             st.close();
-        }
-        // if(iStep % 5 == 0)
-        if(iStep % PSTEPS == 0)
-        {
-            // srscd->drawHD(advTime);
-            // srscd->countDefectNumber(2, "H");
-        }
-
-        if (advTime / write_time >= 1)
-        {
-            // srscd->writeFile(advTime, iStep);
-            write_time += write_increment;
         }
 
         if (IRRADIATION_ON)

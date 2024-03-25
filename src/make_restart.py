@@ -3,7 +3,7 @@ LENGTH = 20
 SURFACE_LEN = 0.544
 SURFACE_VOLUME = VOLUME / LENGTH * SURFACE_LEN
 
-num = 200
+num = 202
 num_surface = round(num / VOLUME * SURFACE_VOLUME)
 
 
@@ -14,6 +14,19 @@ with open('restart.txt', 'w') as f:
     f.write(f"object 1    {num_surface}")
     for i in range(100):
         f.write(f"    {num}")
+    f.write("\n")
+
+    """
+    f.write(f"object 50000000    1")
+    for i in range(100):
+        f.write(f"    0")
+    f.write("\n")
+
+    f.write(f"object -510000100    1")
+    for i in range(100):
+        f.write(f"    0")
+    """
+    
 
     # Now write hydrogen release
     # f.write("\n")

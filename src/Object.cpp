@@ -186,6 +186,10 @@ void Object::setAttributes(const int64 key)
         tempKey -= ((int64)attributes[i])*((int64)pow(10.0, (double)EXP10*(LEVELS - 1 - i)));
     }
     attributes[0] *= signof(key);
+
+    // For now, assume we are not working with He, so assume the digit is for H
+    attributes[2] += attributes[1] * 1000;
+    attributes[1] = 0;
 }
 
 void Object::setNumber()

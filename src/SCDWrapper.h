@@ -94,7 +94,7 @@ private:
     void sizeDistribution(); /* get size distribution */
     void writeReaction(); /* take down reactions for drawing */
     
-public:
+public:  
     SCDWrapper();  // constructor: for start ;
     //SCDWrapper();  // constructor: for restart;
     void computeMatrixRate(const int n);  // computes total rate in element n

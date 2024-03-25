@@ -27,10 +27,10 @@ Damage::Damage()
 }
 
 
-Reaction Damage::selectDamage(const int n, double & randRate)
+Reaction Damage::selectDamage(const int n, long double & randRate)
 {
     int index = 0;
-    double tempRate = randRate;
+    long double tempRate = randRate;
 
     if (totalRate[n] < randRate) {
         randRate -= totalRate[n];

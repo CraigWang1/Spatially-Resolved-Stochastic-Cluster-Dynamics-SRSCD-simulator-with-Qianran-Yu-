@@ -153,7 +153,7 @@ Object* SCDWrapper::selectReaction(
     fs.open("selectReaction.txt", ios::app);
     int pointIndex;
     long double randRate = ((double)rand() / RAND_MAX)*bulkRate;
-    double tempRandRate = randRate;
+    long double tempRandRate = randRate;
     Object* tempObject = nullptr;
     Bundle* tempBundle;
     OneLine* tempLine;
@@ -194,6 +194,8 @@ Object* SCDWrapper::selectReaction(
             return tempObject;
         }
     }
+    cout << "returned nullptr" << endl;
+    cout << randRate << " " << bulkRate << endl;
     return tempObject;
 }
 
@@ -300,6 +302,7 @@ void SCDWrapper::processEvent(
             computeMatrixRate(i);
         }
     }
+    // examineRate();
     computeBulkRate();
     fs.close();
 }
@@ -341,7 +344,7 @@ void SCDWrapper::examineRate()
         computeMatrixRate(i);
         //fs << matrixRate[i] <<"        ";
     }
-    computeBulkRate();
+    // computeBulkRate();
     //fs << "BulkRate" << bulkRate << endl<<endl<<endl;
     //fs.close();
 }
@@ -613,6 +616,12 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
         if(tempLine != nullptr){
             tempLine->updateLine(hostObject, count + 1, mobileObjects);
         }
+    }
+
+    if (hostObject->getTotalNumber() <= 0)
+    {
+        removeObjectFromMap(hostObject->getKey());
+        return;
     }
 }
 
@@ -887,7 +896,40 @@ void SCDWrapper::processCombEvent(
             /* add product to map */
             addNewObjectToMap(productObject);
         }
-    }else{
+    }
+    else if(hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && theOtherObject->getAttri(0)>0 && theOtherObject->getAttri(2)==0 && productAttr[0] < 0 && productAttr[2] > 4.75 + 4*abs(productAttr[0])){
+        /* Vn-Hm + SIAx -> V(n-x)-Hm (n, m, and x are not zero) */
+        /* change above reaction to Vn-Hm + SIAx -> V(n-x)-H(max) + (excess)*H */
+        int maxH = int(4.75 + abs(productAttr[0]) * 4);
+        int excessH = productAttr[2] - maxH;
+        productAttr[2] = maxH;
+        productKey = attrToKey(productAttr);
+
+        // Create the new V(n-x)-H(max) object (eject the excess H above vacancy containment limit)
+        if (allObjects.find(productKey) != allObjects.end()) {/* we have this product */
+            Object* productObject = allObjects[productKey];
+            productObject->addNumber(n, number);
+            updateObjectInMap(productObject, n);
+        }
+        else { /* we don't have this object */
+            Object* productObject = new Object(productAttr, n, number);
+            /* add product to map */
+            addNewObjectToMap(productObject);
+        }
+
+        // Create (excess)*H object
+        if (allObjects.find(HKey) != allObjects.end()) {/* we have this product */
+            Object* productObject = allObjects[HKey];
+            productObject->addNumber(n, excessH);
+            updateObjectInMap(productObject, n);
+        }
+        else { /* we don't have this object */
+            Object* productObject = new Object(HKey, n, excessH);
+            /* add product to map */
+            addNewObjectToMap(productObject);
+        }
+    }
+    else{
         if (allObjects.find(productKey) != allObjects.end()) {/* we have this product */
             Object* productObject = allObjects[productKey];
             productObject->addNumber(n, number);
@@ -1246,6 +1288,10 @@ bool SCDWrapper::recognizeSAV(const Object *const hostObject, const Object *cons
 
     double maxH = 4.75 + abs(prodV) * 4;
 
+    // Leave this reaction for processCombEvent to handle
+    if (hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && theOtherObject->getAttri(0)>0 && theOtherObject->getAttri(2)==0 && prodV < 0 && prodH > maxH)
+        return false;
+
     return (prodV <= 0 && prodH > maxH);
 }
 
@@ -1292,9 +1338,12 @@ int SCDWrapper::countDefectNumber(const int count, string type){
                 if(attribute>0 && type=="SIA"){
                     ndef[i] += totalNumber * abs(attribute);
                 }
+                else if (attribute < 0 && type == "V")
+                {
+                    ndef[i] += totalNumber * abs(attribute);
+                }
             }else{
                 ndef[i] += totalNumber * abs(attribute);
-                
             }
         }
         tndef += ndef[i];

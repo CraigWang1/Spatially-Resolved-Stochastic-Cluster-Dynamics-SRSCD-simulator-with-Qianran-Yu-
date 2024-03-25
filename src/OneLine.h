@@ -8,9 +8,9 @@ class OneLine {
 private:
     // private data member
     int sinks[LEVELS+1][POINTS];
-    double diffRToF;            // diffusion rate from jth element to (j-1)th element
-    double diffRToB;            // diffusion rate from jth element to (j+1)th latter one
-    double sinkR;                 // go to sink reaction rate
+    long double diffRToF;            // diffusion rate from jth element to (j-1)th element
+    long double diffRToB;            // diffusion rate from jth element to (j+1)th latter one
+    long double sinkR;                 // go to sink reaction rate
     long double dissociationR[LEVELS];
     // dissociation reaction rate
     long double totalRate;             // totalRate of the line;
@@ -26,13 +26,13 @@ private:
     
 public:
     OneLine(const Object* const, const int, unordered_map<int64, Object*>&);
-    Reaction selectReaction(const Object* const,int64&, double&);
+    Reaction selectReaction(const Object* const,int64&, long double&);
     void addReaction(const Object* const, const Object* const, const int); /* add one reaction when a new object is been created */
     void removeReaction(const int64); /* delete one reaction when an object is deleted */
     void updateReaction(const Object* const, const Object* const, const int);/* when the number of another object has changed, one rate in this line should be changed */
     void updateLine(const Object* const, const int, unordered_map<int64, Object*>&); /* when number of this object has changed, rates in this line should be updated */
     const long double computeTotalRate();
-    const double getDiffRateF() const;
-    const double getDiffRateB() const;
+    const long double getDiffRateF() const;
+    const long double getDiffRateB() const;
     void display(const Object* const);
 };
