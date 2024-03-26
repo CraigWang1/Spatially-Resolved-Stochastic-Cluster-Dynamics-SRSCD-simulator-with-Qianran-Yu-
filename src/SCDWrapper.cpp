@@ -131,6 +131,60 @@ void SCDWrapper::computeMatrixRate(const int n)
     matrixRate[n] += sinkDissRate[1][n];
 }
 
+void SCDWrapper::updateMatrixRate(const int n, const Reaction reaction)
+{
+    /* Qianran 0925 */
+    int affectedStart = n - 1;
+    int affectedEnd = n + 1;
+    if (reaction == DIFFUSETOF)
+        affectedStart -= 1;
+    else if (reaction == DIFFUSETOB)
+        affectedEnd += 1;
+    if (affectedStart < 0)
+        affectedStart = 0;
+    if (affectedEnd >= POINTS)
+        affectedEnd = POINTS - 1;
+
+    for (int i = affectedStart; i <= affectedEnd; i++) {
+        matrixRate[i] = 0;
+        matrixRate[i] += damage.getTotalDamage(i);
+        matrixRate[i] += sinkDissRate[0][i];
+        matrixRate[i] += sinkDissRate[1][i];
+    }
+
+    unordered_map<int64, Object*>::iterator iter;
+    for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
+        int64 tempKey = iter->first;
+        Object* tempObject = iter->second;
+        int totalNumber = tempObject->getTotalNumber();
+        while(totalNumber == 0) {
+            iter++;
+            removeObjectFromMap(tempKey);
+            if (iter != allObjects.end()) {
+                tempObject = iter->second;
+                tempKey = iter->first;
+                totalNumber = tempObject->getTotalNumber();
+            }
+            else {
+                break;
+            }
+        }
+        if (iter == allObjects.end()) {
+            break;
+        }
+
+        for (int i = affectedStart; i <= affectedEnd; i++) {
+            Bundle* tempBundle = linePool[tempObject];
+            OneLine* tempLine = tempBundle->lines[i];
+            if (tempLine != nullptr) {
+                matrixRate[i] += tempLine->computeTotalRate();
+                //tempLine->display(tempObject);/* Qianran 0925 */
+            }
+        }
+
+    }
+}
+
 void SCDWrapper::computeBulkRate()
 {
     bulkRate = 0.0;
@@ -289,20 +343,7 @@ void SCDWrapper::processEvent(
     }
 
     // Keep track of affected reaction rates
-    int affectedStart = n - 1;
-    int affectedEnd = n + 1;
-    if (reaction == DIFFUSETOF)
-        affectedStart -= 1;
-    else if (reaction == DIFFUSETOB)
-        affectedEnd += 1;
-    for (int i = affectedStart; i <= affectedEnd; i++)
-    {
-        if (i >= 0 && i < POINTS)
-        {
-            computeMatrixRate(i);
-        }
-    }
-    // examineRate();
+    updateMatrixRate(n, reaction);
     computeBulkRate();
     fs.close();
 }

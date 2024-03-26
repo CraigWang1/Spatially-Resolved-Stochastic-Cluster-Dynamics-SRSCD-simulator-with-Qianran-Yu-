@@ -98,6 +98,7 @@ public:
     SCDWrapper();  // constructor: for start ;
     //SCDWrapper();  // constructor: for restart;
     void computeMatrixRate(const int n);  // computes total rate in element n
+    void updateMatrixRate(const int n, const Reaction reaction); // computes total rate in elements that are affected by reaction
     void computeBulkRate();
     long double getBulkRate();
     Object* selectReaction(int64&, Reaction&, int&);  // select reaction
