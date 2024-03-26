@@ -658,12 +658,6 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
             tempLine->updateLine(hostObject, count + 1, mobileObjects);
         }
     }
-
-    if (hostObject->getTotalNumber() <= 0)
-    {
-        removeObjectFromMap(hostObject->getKey());
-        return;
-    }
 }
 
 void SCDWrapper::addReactionToOther(Object const * const mobileObject)
