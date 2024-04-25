@@ -3,6 +3,6 @@
 #include"OneLine.h"
 struct Bundle {
     OneLine* lines[POINTS];  /* pointers that point to line */
-    Bundle(const Object* const, unordered_map<int64, Object*>&);/* constructor */
+    Bundle(const Object* const, unordered_map<int64, Object*>&, const Object* const);/* constructor */
     ~Bundle();               /* destructor */
 };

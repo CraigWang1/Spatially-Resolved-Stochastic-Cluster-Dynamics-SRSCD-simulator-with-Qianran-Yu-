@@ -12,9 +12,10 @@ using namespace std;
 OneLine::OneLine(
                  const Object* const hostObject,
                  const int count,
-                 unordered_map<int64, Object*>& mobileObjects) :totalRate(0.0)
+                 unordered_map<int64, Object*>& mobileObjects,
+                 const Object* const allH) :totalRate(0.0)
 {
-    setOneLine(hostObject, count, mobileObjects);
+    setOneLine(hostObject, count, mobileObjects, allH);
     
 }
 
@@ -100,10 +101,11 @@ void OneLine::updateReaction(
 void OneLine::updateLine(
                          const Object* const hostObject,
                          const int count,
-                         unordered_map<int64, Object*>& mobileObjects)
+                         unordered_map<int64, Object*>& mobileObjects,
+                         const Object* const allH)
 {
     secondR.clear();
-    setOneLine(hostObject, count, mobileObjects);
+    setOneLine(hostObject, count, mobileObjects, allH);
 }
 
 const long double OneLine::computeTotalRate()
@@ -155,9 +157,10 @@ void OneLine::display(Object const * const hostObject)
 void OneLine::setOneLine(
                          const Object* const hostObject,
                          const int count,
-                         unordered_map<int64, Object*>& mobileObjects)
+                         unordered_map<int64, Object*>& mobileObjects,
+                         const Object* const allH)
 {
-    computeDiffReaction(hostObject, count);
+    computeDiffReaction(hostObject, count, allH);
     computeSinkReaction(hostObject, count);
     for (int index = 0; index < LEVELS; index++) {
         computeDissReaction(hostObject, index, count);
@@ -171,9 +174,10 @@ void OneLine::setOneLine(
     computeTotalRate();
 }
 
-void OneLine::computeDiffReaction(const Object* const hostObject, const int count)
+void OneLine::computeDiffReaction(const Object* const hostObject, const int count, const Object* const allH)
 {
-    if (!DIFF_ON)
+    // For now assume all H diffusion is through the 1H object for diffusion accounting for all H in every object
+    if (!DIFF_ON || hostObject->getKey() == 2)
     {
         diffRToF = 0.0;
         diffRToB = 0.0;
@@ -195,7 +199,10 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
 
     double prefactor = 0.0;
     int objectN[3];   
-    hostObject->getThreeNumber(count, objectN);
+    if (hostObject->getKey() == 1)
+        allH->getThreeNumber(count, objectN);  // for H diffusion, account for all H not just free H
+    else
+        hostObject->getThreeNumber(count, objectN);
     double concentration = 0;
     double frontConcentration = 0;
     double backConcentration = objectN[2] / VOLUME;
@@ -289,13 +296,7 @@ void OneLine::computeDissReaction(
         int attr[LEVELS] = { 0 };
         attr[index] = hostObject->signof(hostObject->getAttri(index));
         Object tempObject(attr, count);
-        if(count == 0 && hostObject->getKey() == 2){
-            dissociationR[index] = 4.0 * PI * hostObject->getR1e() / avol * tempObject.getDiff() * hostObject->getBindSH() * hostObject->getNumber(count);
-            
-        }else{
-            dissociationR[index] = 4.0 * PI * hostObject->getR1e() / avol * tempObject.getDiff() * hostObject->getBind(index) * hostObject->getNumber(count);
-            
-        }
+        dissociationR[index] = 4.0 * PI * hostObject->getR1e() / avol * tempObject.getDiff() * hostObject->getBind(index) * hostObject->getNumber(count);
     }
     else {
         dissociationR[index] = 0.0;
@@ -334,6 +335,7 @@ double OneLine::computeCombReaction(
     }
 
     // H+H-->2H
+    /*
     if(count != 0 && hostObject->getKey() == 1 && mobileObject->getKey() == 1){
         return 0.0;
     }
@@ -344,6 +346,7 @@ double OneLine::computeCombReaction(
     if(hostObject->getKey() == 2 && mobileObject->getKey() == 1){
         return 0.0;
     }
+    */
     r12 = hostObject->getR1() + mobileObject->getR1();
     dimensionTerm = computeDimensionTerm(r12, hostObject, mobileObject, count);
     return 4.0*PI*concentration*r12*dimensionTerm;

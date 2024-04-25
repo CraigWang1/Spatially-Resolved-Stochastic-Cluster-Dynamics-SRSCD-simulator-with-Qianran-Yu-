@@ -17,20 +17,20 @@ private:
     std::unordered_map<int64, long double> secondR;  // second reaction rate
     
     // private functions
-    void setOneLine(const Object* const, const int, unordered_map<int64, Object*>&); // build one line
-    void computeDiffReaction(const Object* const, const int);  // compute diffusion rate
+    void setOneLine(const Object* const, const int, unordered_map<int64, Object*>&, const Object* const); // build one line
+    void computeDiffReaction(const Object* const, const int, const Object* const);  // compute diffusion rate
     void computeSinkReaction(const Object* const, const int);         // compute absorption reaction rate
     void computeDissReaction(const Object* const, const int, const int); // compute dissociation reaction rate
     double computeCombReaction(const Object* const, const Object* const, const int);  // compute 2nd order reaction rate
     double computeDimensionTerm(const double, const Object* const, const Object* const, const int);
     
 public:
-    OneLine(const Object* const, const int, unordered_map<int64, Object*>&);
+    OneLine(const Object* const, const int, unordered_map<int64, Object*>&, const Object* const);
     Reaction selectReaction(const Object* const,int64&, long double&);
     void addReaction(const Object* const, const Object* const, const int); /* add one reaction when a new object is been created */
     void removeReaction(const int64); /* delete one reaction when an object is deleted */
     void updateReaction(const Object* const, const Object* const, const int);/* when the number of another object has changed, one rate in this line should be changed */
-    void updateLine(const Object* const, const int, unordered_map<int64, Object*>&); /* when number of this object has changed, rates in this line should be updated */
+    void updateLine(const Object* const, const int, unordered_map<int64, Object*>&, const Object* const); /* when number of this object has changed, rates in this line should be updated */
     const long double computeTotalRate();
     const long double getDiffRateF() const;
     const long double getDiffRateB() const;

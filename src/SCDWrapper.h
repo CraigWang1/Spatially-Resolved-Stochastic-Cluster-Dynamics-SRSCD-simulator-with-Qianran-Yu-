@@ -19,6 +19,7 @@ private:
     unordered_map<Object*, Bundle*> linePool;
     unordered_map<int64, int> surface;
     unordered_map<int64, int> bottom;
+    Object* allH;  // track all hydrogen, not just free hydrogen
     Damage damage;
     Cpdf cpdf;
     int sinks[LEVELS+1][POINTS];
@@ -49,10 +50,14 @@ private:
     /* decide insertion mode function */
     int64 atomProperty(InsertStyle, const int);
     /* moniter map functions */
-    void addNewObjectToMap(const int64, const int*);
-    /* add to map by key(increase m to nth element)---> this is created for restart*/
-    void addNewObjectToMap(const int64, const int);
-    /* add new object to map by key (only increase by 1 to #kth element)*/
+    void addToObjectMap(int64 key, const int, const int number=1);
+    /* Add a number of instances to the object in the nth mesh element */
+    void reduceFromObjectMap(const int64, const int);
+    /* Reduce one instance from that object in the nth mesh element */
+    void addNumberToObject(Object* hostObject, const int, const int number=1);
+    /* add a number of instances to the Object in the nth mesh element */
+    void reduceNumberToObject(Object* hostObject, const int);
+    /* reduce the number of instances of that Object in the nth mesh element by 1 */
     void addNewObjectToMap(Object*);
     /* add new object to map by object pointer(only increase 1 to #nth element) */
     void updateObjectInMap(Object*, const int);
