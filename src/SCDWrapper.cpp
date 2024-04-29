@@ -20,6 +20,8 @@ static int dissH = 0; //this only counts number of events
 /* public funciton */
 SCDWrapper::SCDWrapper():damage(), cpdf()
 {
+    formationE[1] = V1_FORMATION_ENERGY; 
+
     for (int i = 0; i < POINTS; ++i) {
         computeMatrixRate(i);
     } /* initialized matrix rate in every element */
@@ -269,7 +271,8 @@ void SCDWrapper::processEvent(
         int lastPos = POINTS - 1;
         if (allObjects.find(HKey) != allObjects.end())
         {
-            lastElemSaturated = (allObjects[HKey]->getNumber(lastPos) / VOLUME > H_SATURATION_CONCENTRATION);
+            double saturation_concentration = getHSaturationLimit(getMaxVNum());
+            lastElemSaturated = (allObjects[HKey]->getNumber(lastPos) / VOLUME > saturation_concentration);
         }
     }
 
@@ -1643,4 +1646,55 @@ double SCDWrapper::getTotalDpa(){
         dpa += doseIon[i];
     }
     return dpa;
+}
+
+
+double SCDWrapper::getHSaturationLimit(int m)
+{
+   double sum = 0;
+   for (int i = 1; i <= m; i++)
+   {   
+        sum += 4 * i * exp(-getVFreeFormationE(i) / KB / TEMPERATURE);
+   }
+   return H_SATURATION_CONCENTRATION + DENSITY * sum;
+}
+
+
+double SCDWrapper::getVFreeFormationE(int m)
+{
+
+    if (formationE.find(m) == formationE.end())
+    {
+        double value = V1_FORMATION_ENERGY + formationE[m-1] - getVMonomerBindingE(m - 1);
+        formationE[m] = value;
+    }
+        
+    return formationE[m];
+}
+
+
+double SCDWrapper::getVMonomerBindingE(int m)
+{
+    if (m <= 8)
+        return V_MONOMER_BINDING_ENERGY[m-2];
+    else
+        return V_MONOMER_BINDING_ENERGY[7];
+        // return V1_FORMATION_ENERGY + (-0.1 - V1_FORMATION_ENERGY) * pow(m, 2.0/3.0) - 1.71 * pow(m-1, 2.0/3.0);        
+        // wrong approximation function
+        // but probably does not worth the effort to implement -> extremely small value for Saturation Limit
+}
+
+int SCDWrapper::getMaxVNum()
+{
+    int64 max = 0;
+    unordered_map<int64, Object*>::iterator iter;
+    for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
+        int64 vNum = iter->first / 1000000;
+        if (vNum < 0) // actually a vacancy / vacancy cluster objects
+        {
+            if (-vNum > max)
+                max = -vNum;
+        }
+    }
+    return static_cast<int>(max);
 }

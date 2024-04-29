@@ -19,6 +19,8 @@ private:
     unordered_map<Object*, Bundle*> linePool;
     unordered_map<int64, int> surface;
     unordered_map<int64, int> bottom;
+    unordered_map<int, double> formationE; 
+
     Damage damage;
     Cpdf cpdf;
     int sinks[LEVELS+1][POINTS];
@@ -93,7 +95,13 @@ private:
     /* count ratio of H to V in the bulk and at the same time decide whether to supplement H to system */
     void sizeDistribution(); /* get size distribution */
     void writeReaction(); /* take down reactions for drawing */
-    
+
+    double getHSaturationLimit(int m); /*calculate the saturation limit for H with correction terms based on Max vacancy cluter V number*/
+    double getVMonomerBindingE(int m); /*helper funciton for HSatE*/
+    double getVFreeFormationE(int m); /*helper funciton for HSatE*/
+   
+    int getMaxVNum(); /* retrieve the biggest number of V among all VmHn objects*/
+
 public:  
     SCDWrapper();  // constructor: for start ;
     //SCDWrapper();  // constructor: for restart;
