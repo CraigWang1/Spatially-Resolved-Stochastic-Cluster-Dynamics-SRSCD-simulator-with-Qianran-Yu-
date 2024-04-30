@@ -1678,7 +1678,7 @@ double SCDWrapper::getVMonomerBindingE(int m)
     if (m <= 8)
         return V_MONOMER_BINDING_ENERGY[m-2];
     else
-        return V_MONOMER_BINDING_ENERGY[7];
+        return V_MONOMER_BINDING_ENERGY[6];
         // return V1_FORMATION_ENERGY + (-0.1 - V1_FORMATION_ENERGY) * pow(m, 2.0/3.0) - 1.71 * pow(m-1, 2.0/3.0);        
         // wrong approximation function
         // but probably does not worth the effort to implement -> extremely small value for Saturation Limit
