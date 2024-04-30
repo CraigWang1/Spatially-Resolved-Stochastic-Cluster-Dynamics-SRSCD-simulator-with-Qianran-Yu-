@@ -1226,7 +1226,8 @@ void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
             surfaceHConcentration = allObjects[HKey]->getNumber(n) / SURFACE_VOLUME;
         }
 
-        acceptProbability = Normal(mean, stddev) - surfaceHConcentration / H_SATURATION_CONCENTRATION;
+        double saturation_concentration = getHSaturationLimit(getMaxVNum());
+        acceptProbability = Normal(mean, stddev) - surfaceHConcentration / saturation_concentration;
 
         if (acceptProbability < 0)
             acceptProbability = 0;
@@ -1668,6 +1669,11 @@ double SCDWrapper::getVFreeFormationE(int m)
 {
     if (formationE.find(m) == formationE.end())
     {
+        if (formationE.find(m-1) == formationE.end())
+        {
+            cerr << "Free Formation E Error!";
+            exit(1);
+        }
         double value = V1_FORMATION_ENERGY + formationE[m-1] - getVMonomerBindingE(m - 1);
         formationE[m] = value;
     }
