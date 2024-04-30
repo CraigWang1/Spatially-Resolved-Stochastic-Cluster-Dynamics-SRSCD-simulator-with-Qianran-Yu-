@@ -1651,18 +1651,21 @@ double SCDWrapper::getTotalDpa(){
 
 double SCDWrapper::getHSaturationLimit(int m)
 {
-   double sum = 0;
-   for (int i = 1; i <= m; i++)
-   {   
-        sum += 4 * i * exp(-getVFreeFormationE(i) / KB / TEMPERATURE);
-   }
-   return H_SATURATION_CONCENTRATION + DENSITY * sum;
+    if(HSaturationLimit.find(m) == HSaturationLimit.end())
+    {
+        double sum = 0;
+        for (int i = 1; i <= m; i++)
+        {   
+                sum += 4 * i * exp(-getVFreeFormationE(i) / KB / TEMPERATURE);
+        }
+        HSaturationLimit[m] =  H_SATURATION_CONCENTRATION + DENSITY * sum;
+    }
+    return HSaturationLimit[m];
 }
 
 
 double SCDWrapper::getVFreeFormationE(int m)
 {
-
     if (formationE.find(m) == formationE.end())
     {
         double value = V1_FORMATION_ENERGY + formationE[m-1] - getVMonomerBindingE(m - 1);
@@ -1678,10 +1681,7 @@ double SCDWrapper::getVMonomerBindingE(int m)
     if (m <= 8)
         return V_MONOMER_BINDING_ENERGY[m-2];
     else
-        return V_MONOMER_BINDING_ENERGY[6];
-        // return V1_FORMATION_ENERGY + (-0.1 - V1_FORMATION_ENERGY) * pow(m, 2.0/3.0) - 1.71 * pow(m-1, 2.0/3.0);        
-        // wrong approximation function
-        // but probably does not worth the effort to implement -> extremely small value for Saturation Limit
+        return 0.6158 * pow(m - 2.1, 0.3) - 0.00366;
 }
 
 int SCDWrapper::getMaxVNum()

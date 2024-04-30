@@ -20,6 +20,7 @@ private:
     unordered_map<int64, int> surface;
     unordered_map<int64, int> bottom;
     unordered_map<int, double> formationE; 
+    unordered_map<int, double> HSaturationLimit; // look up table for HSaturationLimit
 
     Damage damage;
     Cpdf cpdf;
