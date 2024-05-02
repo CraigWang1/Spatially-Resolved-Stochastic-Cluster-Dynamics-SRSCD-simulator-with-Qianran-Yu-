@@ -9,11 +9,12 @@ Cpdf::Cpdf()
     for(int i=0; i<POINTS; i++){
         maxPossibility[i] = 0;
     }
-    for(int fileNumber = 1; fileNumber < POINTS; fileNumber++){
+    for(int fileNumber = 1; fileNumber <= POINTS; fileNumber++){
     	/* first point is surface */
         vector<double> tempEnergy, tempCumul;
         double energy= 0.0 , cumul = 0.0;
-        sprintf(cpdf,"cpdf%d.txt",fileNumber);  // points are zero-indexed, while cpdf files are 1-indexed
+        int pointIndex = fileNumber - 1;  // points are zero-indexed, while cpdf files are 1-indexed
+        sprintf(cpdf,"cpdf%d.txt",fileNumber); 
         fc.open(cpdf);
         string oneLine;
         stringstream lineHold;
@@ -29,8 +30,8 @@ Cpdf::Cpdf()
         recoilEnergy.insert(newNodeOne);
         cumulPossibility.insert(newNodeTwo);
         /* add new nodes to members */
-        size[fileNumber] = (int)tempEnergy.size();
-        maxPossibility[fileNumber] = tempCumul[(int)tempEnergy.size()-1];
+        size[pointIndex] = (int)tempEnergy.size();
+        maxPossibility[pointIndex] = tempCumul[(int)tempEnergy.size()-1];
         /* store size and possibility for SCD usage in case */
         tempEnergy.clear();
         tempCumul.clear();

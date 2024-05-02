@@ -176,8 +176,10 @@ void OneLine::setOneLine(
 
 void OneLine::computeDiffReaction(const Object* const hostObject, const int count, const Object* const allH)
 {
+    const int64 HKey = 1;
+
     // For now assume all H diffusion is through the 1H object for diffusion accounting for all H in every object
-    if (!DIFF_ON || hostObject->getKey() == 2)
+    if (!DIFF_ON || (hostObject->getKey() >= 2 && hostObject->getKey() < 100))
     {
         diffRToF = 0.0;
         diffRToB = 0.0;
@@ -188,10 +190,10 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     /* length measured in cm */
 	double lengthf = 0.0, lengthb = 0.0;
 	if(count == 0){
-		lengthf = SURFACE_THICKNESS / 2. * NM_TO_CM; // thickness of W surface is 0.544nm, this length is centroid to vacuum 
-        lengthb =  (ELEMENT_THICKNESS / 2. + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
+		lengthf = (SURFACE_THICKNESS + ELEMENT_THICKNESS) / 2. * NM_TO_CM; // thickness of W surface is 0.544nm, this length is centroid to vacuum 
+        lengthb = (ELEMENT_THICKNESS + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
     }else if(count == 1){
-        lengthf =  (ELEMENT_THICKNESS / 2. + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
+        lengthf = (ELEMENT_THICKNESS + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
 		lengthb = ELEMENT_THICKNESS * NM_TO_CM; // first element to second element distance (20nm) 
 	}else{
 		lengthf = lengthb = ELEMENT_THICKNESS * NM_TO_CM; /* other element distances */
@@ -203,18 +205,19 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         allH->getThreeNumber(count, objectN);  // for H diffusion, account for all H not just free H
     else
         hostObject->getThreeNumber(count, objectN);
+
     double concentration = 0;
     double frontConcentration = 0;
     double backConcentration = objectN[2] / VOLUME;
     if (count == 0)
     {
-        concentration = objectN[0] / SURFACE_VOLUME;
+        concentration = objectN[0] / FRONTMOST_VOLUME;
         frontConcentration = H_SATURATION_CONCENTRATION;
     }
     else if (count == 1)
     {
         concentration = objectN[0] / VOLUME;
-        frontConcentration = objectN[1] / SURFACE_VOLUME;
+        frontConcentration = objectN[1] / FRONTMOST_VOLUME;
     }
     else
     {
@@ -231,7 +234,6 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthf;
         diffRToF = prefactor*(concentration - frontConcentration);
         
-        int64 HKey = 1;
         if(count == 0 && hostObject->getKey() != HKey){
             diffRToF = 0.0;
         } // single H is the only species that can diffuse out when it's oversaturated
@@ -255,6 +257,17 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         diffRToB = 0.0;
     }
 
+    // If there's no free H in this element, can't diffuse
+    //     This happens now since we count all H for calculating diffusion gradient,
+    //     even H trapped in vacancy clusters. So handle the case where diffusion
+    //     gradient is calculated but there's no free H to diffuse. 
+    if (hostObject->getKey() == HKey && hostObject->getNumber(count) <= 0)
+    {
+        diffRToF = 0.0;
+        diffRToB = 0.0;
+    }
+
+    /*
     if (count == 0)
     {
         // If bulk is saturated, no more diffusion into it allowed
@@ -268,6 +281,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
             diffRToF = 0;
         }
     }
+    */
 }
 
 void OneLine::computeSinkReaction(const Object* const hostObject, const int count)
@@ -319,7 +333,7 @@ double OneLine::computeCombReaction(
     double dimensionTerm;
     double volume;
     if(count == 0){
-        volume = SURFACE_VOLUME;
+        volume = FRONTMOST_VOLUME;
         // volume on surface volume/20nm * 0.54nm
         
     }else{

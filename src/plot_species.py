@@ -60,18 +60,18 @@ def vacancies_per_cluster(obj_key):
 	else:
 		return 0
 
-out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 20.0, (640,480))
+out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 40.0, (640,480))
 
 positions = [10.272*10**-9 + i*20*10**-9 for i in range(100)]
 positions.insert(0, 0)
 dpi = 100
 count = 0
 
-for filename in tqdm(sorted(os.listdir(f"{TEMPERATURE}K"), key=lambda x:float(re.findall("(\d+)",x)[0]))):
+for filename in tqdm(sorted(os.listdir("1700K AllH"), key=lambda x:float(re.findall("(\d+)",x)[0]))):
 	count += 1
-	if count > 600:
+	if count > 1200:
 		break
-	with open(f"1700K New/{filename}") as f:
+	with open(f"1700K AllH/{filename}") as f:
 		hydrogen_c = np.zeros(POINTS)
 		vacancy_c = np.zeros(POINTS)
 		plot_h = False
@@ -83,8 +83,8 @@ for filename in tqdm(sorted(os.listdir(f"{TEMPERATURE}K"), key=lambda x:float(re
 			line_hold = line_hold.split()
 			obj_key = int(line_hold[1])
 			h_per_cluster = hydrogen_per_cluster(line_hold[1])
-			# if h_per_cluster > 0:
-			if obj_key > 0 and obj_key < 1000000:
+			if h_per_cluster > 0:    # for plotting all H
+			# if obj_key > 0 and obj_key < 1000000:  # for only plotting free H
 				hydrogen_c += np.array(line_hold[2:]).astype(float) * h_per_cluster
 				plot_h = True
 
@@ -100,9 +100,9 @@ for filename in tqdm(sorted(os.listdir(f"{TEMPERATURE}K"), key=lambda x:float(re
 		plt.figure(figsize=(640/dpi, 480/dpi), dpi=dpi)
 		plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Hydrogen Saturation Limit")
 		if plot_h:
-			plt.plot(positions, hydrogen_c, label="Free Hydrogen Concentration")
-		# if plot_v:
-			# plt.plot(positions, vacancy_c, label="Vacancy Concentration", color='r')
+			plt.plot(positions, hydrogen_c, label="Hydrogen Concentration")
+		if plot_v:
+			plt.plot(positions, vacancy_c, label="Vacancy Concentration", color='r')
 		plt.title(f"Free Hydrogen Concentration vs. Position\n$T = {TEMPERATURE} K, t = {round(time*1e6, 1)} \mu s$")
 		plt.xlabel("Position $[m]$")
 		plt.ylabel("Concentration $[m^{-3}]$")

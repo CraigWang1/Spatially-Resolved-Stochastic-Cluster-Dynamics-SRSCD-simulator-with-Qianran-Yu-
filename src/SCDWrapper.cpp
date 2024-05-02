@@ -584,23 +584,28 @@ void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
         /* object found! then number of instances in this element increases by number*/
         anObject = allObjects[key];
         anObject->addNumber(n, number);
+
+        /* Keep track of all H, not just free H for calculating diffusion gradient */
+        if (anObject->getAttri(2) > 0)
+        {
+            allH->addNumber(n, number * anObject->getAttri(2));
+        }
         updateObjectInMap(anObject, n);
     }
     else if (number > 0)
     {
         /* object wasn't found! build new object and insert it into map */
         anObject = new Object(key, n, number);
+        if (anObject->getAttri(2) > 0)
+        {
+            allH->addNumber(n, number * anObject->getAttri(2));
+        }
+
         addNewObjectToMap(anObject);
     }
     else
     {
         return; // didn't find object, and number <= 0, doesn't make sense
-    }
-
-    /* Keep track of all H, not just free H */
-    if (anObject->getAttri(2) > 0)
-    {
-        allH->addNumber(n, number * anObject->getAttri(2));
     }
 }
 
@@ -1079,7 +1084,7 @@ void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
         double acceptProbability = 1;
         if (allObjects.find(HKey) != allObjects.end())
         {
-            surfaceHConcentration = allObjects[HKey]->getNumber(n) / SURFACE_VOLUME;
+            surfaceHConcentration = allObjects[HKey]->getNumber(n) / FRONTMOST_VOLUME;
         }
 
         acceptProbability = Normal(mean, stddev) - surfaceHConcentration / H_SATURATION_CONCENTRATION;
@@ -1213,7 +1218,7 @@ int SCDWrapper::countDefectNumber(const int count, string type){
     for(int i=0; i<POINTS; i++){
         double volume;
         if(i==0){
-            volume = SURFACE_VOLUME; /* volume at front is thin surface layer */
+            volume = FRONTMOST_VOLUME; /* volume at front is bulk layer + thin surface layer */
         }else{
             volume = VOLUME;
         }

@@ -127,10 +127,9 @@ void Damage::computeDamageTwo(const int n)
         return;
     }
 
-    double volume = VOLUME/20. * SURFACE_THICKNESS;
     double concentration_H = 1.34e+4;
     if (n == 0) {
-        damage[n][2] = concentration_H * FLUX_H * volume; // rate (num hydrogen insertions/s)
+        damage[n][2] = concentration_H * FLUX_H * SURFACE_VOLUME; // rate (num hydrogen insertions/s)
         // cout << "damage2: " << damage[n][2] << endl;
     }
     else {
