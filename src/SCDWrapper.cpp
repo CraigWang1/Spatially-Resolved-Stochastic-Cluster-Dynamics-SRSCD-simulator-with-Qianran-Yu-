@@ -20,6 +20,8 @@ static int dissH = 0; //this only counts number of events
 /* public funciton */
 SCDWrapper::SCDWrapper():damage(), cpdf()
 {
+    formationE[1] = V1_FORMATION_ENERGY; 
+
     for (int i = 0; i < POINTS; ++i) {
         computeMatrixRate(i);
     } /* initialized matrix rate in every element */
@@ -269,7 +271,8 @@ void SCDWrapper::processEvent(
         int lastPos = POINTS - 1;
         if (allObjects.find(HKey) != allObjects.end())
         {
-            lastElemSaturated = (allObjects[HKey]->getNumber(lastPos) / VOLUME > H_SATURATION_CONCENTRATION);
+            double saturation_concentration = getHSaturationLimit(getMaxVNum());
+            lastElemSaturated = (allObjects[HKey]->getNumber(lastPos) / VOLUME > saturation_concentration);
         }
     }
 
@@ -1224,7 +1227,8 @@ void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
             surfaceHConcentration = allObjects[HKey]->getNumber(n) / SURFACE_VOLUME;
         }
 
-        acceptProbability = Normal(mean, stddev) - surfaceHConcentration / H_SATURATION_CONCENTRATION;
+        double saturation_concentration = getHSaturationLimit(getMaxVNum());
+        acceptProbability = Normal(mean, stddev) - surfaceHConcentration / saturation_concentration;
 
         if (acceptProbability < 0)
             acceptProbability = 0;
@@ -1644,4 +1648,60 @@ double SCDWrapper::getTotalDpa(){
         dpa += doseIon[i];
     }
     return dpa;
+}
+
+
+double SCDWrapper::getHSaturationLimit(int m)
+{
+    if(HSaturationLimit.find(m) == HSaturationLimit.end())
+    {
+        double sum = 0;
+        for (int i = 1; i <= m; i++)
+        {   
+                sum += 4 * i * exp(-getVFreeFormationE(i) / KB / TEMPERATURE);
+        }
+        HSaturationLimit[m] =  H_SATURATION_CONCENTRATION + DENSITY * sum;
+    }
+    return HSaturationLimit[m];
+}
+
+
+double SCDWrapper::getVFreeFormationE(int m)
+{
+    if (formationE.find(m) == formationE.end())
+    {
+        if (formationE.find(m-1) == formationE.end())
+        {
+            cerr << "Free Formation E Error!";
+            exit(1);
+        }
+        double value = V1_FORMATION_ENERGY + formationE[m-1] - getVMonomerBindingE(m - 1);
+        formationE[m] = value;
+    }
+        
+    return formationE[m];
+}
+
+
+double SCDWrapper::getVMonomerBindingE(int m)
+{
+    if (m <= 8)
+        return V_MONOMER_BINDING_ENERGY[m-2];
+    else
+        return 0.6158 * pow(m - 2.1, 0.3) - 0.00366;
+}
+
+int SCDWrapper::getMaxVNum()
+{
+    int64 max = 0;
+    unordered_map<int64, Object*>::iterator iter;
+    for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
+        int64 vNum = iter->first / 1000000;
+        if (vNum < 0) // actually a vacancy / vacancy cluster objects
+        {
+            if (-vNum > max)
+                max = -vNum;
+        }
+    }
+    return static_cast<int>(max);
 }
