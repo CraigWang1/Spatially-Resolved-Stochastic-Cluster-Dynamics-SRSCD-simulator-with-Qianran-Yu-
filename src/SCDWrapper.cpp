@@ -348,6 +348,7 @@ void SCDWrapper::processEvent(
     // Keep track of affected reaction rates
     updateMatrixRate(n, reaction);
     computeBulkRate();
+
     fs.close();
 }
 

@@ -184,10 +184,10 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     /* length measured in cm */
 	double lengthf = 0.0, lengthb = 0.0;
 	if(count == 0){
-		lengthf = SURFACE_THICKNESS / 2. * NM_TO_CM; // thickness of W surface is 0.544nm, this length is centroid to vacuum 
-        lengthb =  (ELEMENT_THICKNESS / 2. + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
+		lengthf = (ELEMENT_THICKNESS + SURFACE_THICKNESS) / 2. * NM_TO_CM; // thickness of W surface is 0.544nm, this length is centroid to vacuum 
+        lengthb =  (ELEMENT_THICKNESS + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
     }else if(count == 1){
-        lengthf =  (ELEMENT_THICKNESS / 2. + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
+        lengthf =  (ELEMENT_THICKNESS + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
 		lengthb = ELEMENT_THICKNESS * NM_TO_CM; // first element to second element distance (20nm) 
 	}else{
 		lengthf = lengthb = ELEMENT_THICKNESS * NM_TO_CM; /* other element distances */
@@ -247,20 +247,6 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         //objects at bottom is not allowed to diffuse into vacuum
         diffRToB = 0.0;
     }
-
-    if (count == 0)
-    {
-        // If bulk is saturated, no more diffusion into it allowed
-        if (backConcentration > H_SATURATION_CONCENTRATION)
-        {
-            diffRToB = 0;
-        }
-        // H not allowed to leave if bulk is unsaturated
-        else if (backConcentration < H_SATURATION_CONCENTRATION)
-        {
-            diffRToF = 0;
-        }
-    }
 }
 
 void OneLine::computeSinkReaction(const Object* const hostObject, const int count)
@@ -289,13 +275,13 @@ void OneLine::computeDissReaction(
         int attr[LEVELS] = { 0 };
         attr[index] = hostObject->signof(hostObject->getAttri(index));
         Object tempObject(attr, count);
-        if(count == 0 && hostObject->getKey() == 2){
-            dissociationR[index] = 4.0 * PI * hostObject->getR1e() / avol * tempObject.getDiff() * hostObject->getBindSH() * hostObject->getNumber(count);
+        // if(count == 0 && hostObject->getKey() == 2){
+            // dissociationR[index] = 4.0 * PI * hostObject->getR1e() / avol * tempObject.getDiff() * hostObject->getBindSH() * hostObject->getNumber(count);
             
-        }else{
+        // }else{
             dissociationR[index] = 4.0 * PI * hostObject->getR1e() / avol * tempObject.getDiff() * hostObject->getBind(index) * hostObject->getNumber(count);
             
-        }
+        // }
     }
     else {
         dissociationR[index] = 0.0;
@@ -319,7 +305,7 @@ double OneLine::computeCombReaction(
     double volume;
     if(count == 0){
         volume = SURFACE_VOLUME;
-        // volume on surface volume/20nm * 0.54nm
+        // volume on surface layer = volume/20nm * 0.54nm
         
     }else{
         volume = VOLUME;
@@ -334,16 +320,19 @@ double OneLine::computeCombReaction(
     }
 
     // H+H-->2H
+    /*
     if(count != 0 && hostObject->getKey() == 1 && mobileObject->getKey() == 1){
         return 0.0;
     }
-    
+
     if(hostObject->getKey() == 1 && mobileObject->getKey() == 2){
         return 0.0;
     }
     if(hostObject->getKey() == 2 && mobileObject->getKey() == 1){
         return 0.0;
     }
+    */
+
     r12 = hostObject->getR1() + mobileObject->getR1();
     dimensionTerm = computeDimensionTerm(r12, hostObject, mobileObject, count);
     return 4.0*PI*concentration*r12*dimensionTerm;
