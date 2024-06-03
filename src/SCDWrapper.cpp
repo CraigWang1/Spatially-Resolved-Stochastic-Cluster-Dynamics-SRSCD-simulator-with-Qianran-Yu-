@@ -1658,7 +1658,7 @@ double SCDWrapper::getHSaturationLimit(int m)
         double sum = 0;
         for (int i = 1; i <= m; i++)
         {   
-                sum += 4 * i * exp(-getVFreeFormationE(i) / KB / TEMPERATURE);
+            sum += 4 * i * exp(-getVFreeFormationE(i) / KB / TEMPERATURE);
         }
         HSaturationLimit[m] =  H_SATURATION_CONCENTRATION + DENSITY * sum;
     }
@@ -1688,7 +1688,8 @@ double SCDWrapper::getVMonomerBindingE(int m)
     if (m <= 8)
         return V_MONOMER_BINDING_ENERGY[m-2];
     else
-        return 0.6158 * pow(m - 2.1, 0.3) - 0.00366;
+        return V1_FORMATION_ENERGY + (getVMonomerBindingE(2)-V1_FORMATION_ENERGY)*pow(m, 2./3) - 1.71*pow(m-1, 2./3);// Table A1 in paper
+        // return 0.6158 * pow(m - 2.1, 0.3) - 0.00366;
 }
 
 int SCDWrapper::getMaxVNum()
@@ -1696,12 +1697,12 @@ int SCDWrapper::getMaxVNum()
     int64 max = 0;
     unordered_map<int64, Object*>::iterator iter;
     for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
-        int64 vNum = iter->first / 1000000;
+        int vNum = iter->second->getAttri(0);
         if (vNum < 0) // actually a vacancy / vacancy cluster objects
         {
             if (-vNum > max)
                 max = -vNum;
         }
     }
-    return static_cast<int>(max);
+    return max;
 }
