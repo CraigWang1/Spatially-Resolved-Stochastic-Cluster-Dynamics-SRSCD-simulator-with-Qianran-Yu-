@@ -587,29 +587,30 @@ void Object::computeBindTerm()
             }
 
         }else if (attributes[0]== 0) { // nH clusters, this is binding energy of nH cluster dissociating 1 H from Qin(2015)
-            /*
-             if (attr[2]==1) { // H
-             energy_b = 0;
-             } else if (attr[2]==2) { // 2H
-             energy_b = 0.02;
-             } else if (attr[2]==3) { // 3H
-             energy_b = 0.08;
-             } else if (attr[2]==4) { // 4H
-             energy_b = 0.20;
-             } else if (attr[2]==5) { // 5H
-             energy_b = 0.27;
-             }
-             energy_d[2] = energy_b + emh;
-             if (attr[2] > 5) // nH(n>5) or higher
-             energy_d[2] = 0.0;
-             */
+            if (attributes[2]==1) { // H
+                energy_b = 0;
+            } else if (attributes[2]==2) { // 2H
+                energy_b = 0.02;
+            } else if (attributes[2]==3) { // 3H
+                energy_b = 0.08;
+            } else if (attributes[2]==4) { // 4H
+                energy_b = 0.20;
+            } else if (attributes[2]==5) { // 5H
+                energy_b = 0.27;
+            }
+            energy_d[2] = energy_b + emh;
+            if (attributes[2] > 5) // nH(n>5) or higher
+                energy_d[2] = 0.0;
             bind[0] = 0; //because there's no V/SIA in cluster
+            energy_d[2] = energy_b + emh;
+            bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
+            /*
             if (attributes[2]==1) { // H   data from Xiaochun Li(2015)
                 bind[2] = 0;
                 
             } else if (attributes[2]==2) { // 2H
                 bindSH = attfreq * exp(-(0.01 + emh)/KB/TEMPERATURE);
-            		/* on average, binding energy at surface is 0.01 eV*/
+            		// on average, binding energy at surface is 0.01 eV
                 energy_b = -0.12;
                 energy_d[2] = energy_b + emh;
                 bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
@@ -650,7 +651,7 @@ void Object::computeBindTerm()
                 bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
                 
             }else if(attributes[2]==10){
-                energy_b = -1.0; /* at this point SAV happen */
+                energy_b = -1.0; // at this point SAV happen 
                 energy_d[2] = energy_b + emh;
                 bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
                 
@@ -659,9 +660,10 @@ void Object::computeBindTerm()
                 energy_b = 0.119 + 0.0407/(sin(7.94*a)) + 0.004*a*a*sin(7.93*a) - 0.104*a*sin(7.99*a)*sin(7.94*a);
                 energy_d[2] = energy_b + emh;
                 bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                /*extrapolation*/
+                //extrapolation
                 
             }
+            */
             
         }
     }
