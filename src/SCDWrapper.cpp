@@ -1214,6 +1214,8 @@ void SCDWrapper::getHeInsertion(const int n)
 
 void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
 {
+    fluenceH += FLUX_H*dt; /* 4.00e+16 is H flux */
+
     // Maintain H equilibrium (insertion & diffusion) if we reached the saturation limit at the surface element
     if (n == 0)
     {
@@ -1256,7 +1258,6 @@ void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
     }/* we have this cluster */
     if (LOG_REACTIONS)
         fs << "H insertion: get 1 " << clusterKey <<" in element "<< n <<endl;
-    fluenceH += FLUX_H*dt; /* 4.00e+16 is H flux */
 }
 
 void restart(long int & iStep, double & advTime, SCDWrapper *srscd)

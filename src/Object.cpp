@@ -601,9 +601,9 @@ void Object::computeBindTerm()
             energy_d[2] = energy_b + emh;
             if (attributes[2] > 5) // nH(n>5) or higher
                 energy_d[2] = 0.0;
-            bind[0] = 0; //because there's no V/SIA in cluster
-            energy_d[2] = energy_b + emh;
+
             bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
+            bind[0] = 0; //because there's no V/SIA in cluster
             /*
             if (attributes[2]==1) { // H   data from Xiaochun Li(2015)
                 bind[2] = 0;
@@ -664,7 +664,6 @@ void Object::computeBindTerm()
                 
             }
             */
-            
         }
     }
 }
