@@ -12,6 +12,7 @@ private:
     long double diffRToB;            // diffusion rate from jth element to (j+1)th latter one
     long double sinkR;                 // go to sink reaction rate
     long double dissociationR[LEVELS];
+    long double SAVR;                // super abundant vacancy reaction rate
     // dissociation reaction rate
     long double totalRate;             // totalRate of the line;
     std::unordered_map<int64, long double> secondR;  // second reaction rate
@@ -21,6 +22,7 @@ private:
     void computeDiffReaction(const Object* const, const int);  // compute diffusion rate
     void computeSinkReaction(const Object* const, const int);         // compute absorption reaction rate
     void computeDissReaction(const Object* const, const int, const int); // compute dissociation reaction rate
+    void computeSAVReaction(const Object* const, const int);   // compute super-abundant-vacancy rate
     double computeCombReaction(const Object* const, const Object* const, const int);  // compute 2nd order reaction rate
     double computeDimensionTerm(const double, const Object* const, const Object* const, const int);
     

@@ -39,6 +39,7 @@
 #define TDE 90              // [eV] Threshold displacement energy for W.
 #define HEAT_OF_SOLUTION 1.04   // [eV] Heat of solution of H in W.
 #define V1_FORMATION_ENERGY 3.23 // [eV] formation energy of V1
+#define SAV_ENERGY 0.95          // [eV] energy that controls SAV rate
 // Run parameters:
 #define ION               // Irradiation type.
 #define TOTAL_TIME 2500    // [s] Total simulated time.
@@ -59,7 +60,7 @@
 #define EXP10 3 // number of 0s assigned to each group in object's key in hash table
 #define POINTS 100       // number of elements: one surface(Point 0), other bulk elements(NO.1,2,3,4,...,99)
 // Auxiliary definitions:
-enum Reaction { DIFFUSETOF, DIFFUSETOB, SINK, DISSOCIATION, COMBINATION, NONE, PARTICLE, HE, H, DISSV, DISSH, ERROR};
+enum Reaction { DIFFUSETOF, DIFFUSETOB, SINK, DISSOCIATION, COMBINATION, SAV, NONE, PARTICLE, HE, H, DISSV, DISSH, ERROR};
 
 /*
  ** Reaction Types:
@@ -90,6 +91,7 @@ const bool COMB_ON = true; // combination reaction
 const bool SINK_ON = false; // sink reaction
 const bool DISS_ON = true; // dissociation reaction
 const bool DIFF_ON = true; // diffusion reaction
+const bool SAV_ON = true;  // super abundant vacancy reaction
 
 /* Unit conversion factors */
 const double NM_TO_CM = 1.0e-7;

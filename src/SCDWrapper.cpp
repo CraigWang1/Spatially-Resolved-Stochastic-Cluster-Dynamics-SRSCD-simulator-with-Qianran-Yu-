@@ -208,7 +208,22 @@ Object* SCDWrapper::selectReaction(
     ofstream fs;
     fs.open("selectReaction.txt", ios::app);
     int pointIndex;
-    long double randRate = ((double)rand() / RAND_MAX)*bulkRate;
+
+    // Generate a random number
+    // Create a random device to seed the random number engine
+    std::random_device rd;
+
+    // Initialize the random number engine with the seed
+    std::default_random_engine engine(rd());
+
+    // Create a uniform real distribution that produces values in the range [0.0, 1.0)
+    std::uniform_real_distribution<long double> distribution(0.0L, 1.0L);
+
+    // Generate a random long double
+    long double randomNum = distribution(engine);
+
+    long double randRate = randomNum * bulkRate;
+    // long double randRate = ((double)rand() / (RAND_MAX+1.0))*bulkRate; // add 1 to make the random rate [0, 1)
     long double tempRandRate = randRate;
     Object* tempObject = nullptr;
     Bundle* tempBundle;
@@ -250,8 +265,12 @@ Object* SCDWrapper::selectReaction(
             return tempObject;
         }
     }
+    // Sometimes there is a case where randRate == bulkRate, which might result in a 
+    // tiny bit of leftover number (eg. doing 9e14-9e14 gives 0.0001 when it should give 0)
+    // causing the program to think that no event was selected
     cout << "returned nullptr" << endl;
-    cout << randRate << " " << bulkRate << endl;
+    cout << randRate << " " << bulkRate << " " << tempRandRate << endl;
+    cout << "trying again" << endl; 
     return tempObject;
 }
 
@@ -317,10 +336,15 @@ void SCDWrapper::processEvent(
         case DISSOCIATION:
             processDissoEvent(hostObject, n, theOtherKey, fs);
             if (LOG_REACTIONS)
-                fs << hostObject->getKey() <<"   experiences a dissociation." << endl;
+                fs << hostObject->getKey() <<"  experiences a dissociation." << endl;
             break;
         case COMBINATION:
             processCombEvent(hostObject, n, theOtherKey, fs);
+            break;
+        case SAV:
+            processSAVEvent(hostObject, n);
+            if (LOG_REACTIONS)
+                fs << hostObject->getKey() << "  in element " << n << " experiences SAV (ejects interstitial)" << endl;
             break;
         case PARTICLE:
             getParticleInsertion(n, dt, fs);
@@ -878,24 +902,10 @@ void SCDWrapper::processCombEvent(
     for (int i = 0; i < LEVELS; ++i) {/* 2. get the attributes of the product */
         productAttr[i] = hostObject->getAttri(i) + theOtherObject->getAttri(i);
     } /* now I have the attribute of the product object */
-    if(recognizeSAV(hostObject, theOtherObject)){
-        ++reactions[7][n];
-        // cout<<"SAV"<<endl;
-        productAttr[0] -= 1; /* generate 1 vacancy */
-        if (allObjects.find(SIAKey) != allObjects.end()) {
-            /* we have SIA */
-            Object* SIA = allObjects[SIAKey];
-            SIA->addNumber(n);
-            updateObjectInMap(SIA, n);
-        }
-        else { /* we don't have this object */
-            Object* SIA = new Object(SIAKey, n);
-            /* add SIA to map */
-            addNewObjectToMap(SIA);
-        }/* produce one SIA */
-    }
     productKey = attrToKey(productAttr);
     if(hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && productAttr[0] > 0 && productAttr[2] == 0 && (productAttr[0]+hostObject->getAttri(0))>0){
+        /* Vn-Hm + xxx -> SIAp-Hq (n, m are not zero) */
+        /* change above reaction to Vn-Hm + xxx -> SIAp + q*H */
         productKey = HKey;
         number = productAttr[2];
         if (allObjects.find(productKey) != allObjects.end()) {/* we have this product */
@@ -1008,7 +1018,6 @@ void SCDWrapper::processCombEvent(
             fs6<<"Combination Reaction: "<< hostObject->getKey()<<" + "<<theOtherKey<<" -> " << productKey << endl;
         }
     }
-    */
     if (LOG_REACTIONS)
     {
         if(recognizeSAV(hostObject, theOtherObject)){
@@ -1017,9 +1026,54 @@ void SCDWrapper::processCombEvent(
             fs<<"Combination Reaction: "<< hostObject->getKey()<<" + "<<theOtherKey<<" -> "<<productKey<<" in element "<< n <<endl;
         }
     }
+    */
 
 }
-void SCDWrapper::processSinkDissEvent(const int type, const int point){
+
+void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
+{
+    /* Superabundant vacancy mechanism.
+     * Eject an interstitial (which increases vacancy by 1)
+     */
+
+    // Eject interstitial
+    int64 SIAKey = (int64)pow(10.0, (double)EXP10 * (LEVELS - 1)); /* Key for SIA. */
+    if (allObjects.find(SIAKey) != allObjects.end()) {/* we have this product */
+        Object* SIA = allObjects[SIAKey];
+        SIA->addNumber(n);
+        updateObjectInMap(SIA, n);
+    }
+    else { /* we don't have this object */
+        Object* SIA = new Object(SIAKey, n);
+        /* add product to map */
+        addNewObjectToMap(SIA);
+    }
+
+    // Generate 1 vacancy
+    int productAttr[LEVELS] = { 0 };
+    for (int i = 0; i < LEVELS; i++)
+        productAttr[i] = hostObject->getAttri(i);
+
+    productAttr[0] -= 1;
+    int64 productKey = attrToKey(productAttr);
+
+    if (allObjects.find(productKey) != allObjects.end()) {/* we have this product */
+        Object* productObject = allObjects[productKey];
+        productObject->addNumber(n);
+        updateObjectInMap(productObject, n);
+    }
+    else { /* we don't have this object */
+        Object* productObject = new Object(productKey, n);
+        /* add product to map */
+        addNewObjectToMap(productObject);
+    }
+
+    hostObject->reduceNumber(n);
+    updateObjectInMap(hostObject, n);
+}
+
+void SCDWrapper::processSinkDissEvent(const int type, const int point)
+{
     // dissV event
     int64 productKey = 0;
     if(type == 0){
@@ -1539,8 +1593,8 @@ void SCDWrapper::drawSpeciesAndReactions( double&t ){
     countRatioDistribution(t);
     char buffer[20];
     char v[20];
-    gcvt(t, 8, buffer);
-    gcvt(VOLUME, 1, v);
+    char* __attribute__((unused)) result = gcvt(t, 8, buffer);
+    result = gcvt(VOLUME, 1, v);
     std::ostringstream cmdstr;
     std::ostringstream cmdstr1;
     //gs.cmd("set key bmargin left horizontal Right noreverse enhanced title \"Td = 573K \" box\n");
@@ -1575,7 +1629,7 @@ void SCDWrapper::drawSpeciesAndReactions( double&t ){
 void SCDWrapper::drawDamage(double& t){
     /* draw size distribution */
     char buffer[20];
-    gcvt(t,8,buffer);
+    char* __attribute__((unused)) result = gcvt(t,8,buffer);
     double dpa = getTotalDpa();
     std::ostringstream cmdstr;
     std::ostringstream cmdstr1;
@@ -1614,7 +1668,7 @@ void SCDWrapper::drawDamage(double& t){
 void SCDWrapper::drawHD(double& t){
     /* draw concentration-depth */
     char buffer[20];
-    gcvt(t,8,buffer);
+    char* __attribute__((unused)) result = gcvt(t,8,buffer);
     std::ostringstream cmdstr1;
     countDefectNumber(0, "V");
     countDefectNumber(0, "SIA");

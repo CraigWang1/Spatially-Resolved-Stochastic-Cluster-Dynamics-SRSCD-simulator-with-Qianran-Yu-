@@ -49,7 +49,7 @@ int main()
     {
         hostObject = srscd->selectReaction(theOtherKey, reaction, pointIndex);/* choose an event */
         srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
-        if(reaction == 6 || reaction == 8)
+        if(reaction == Reaction::H || reaction == Reaction::PARTICLE)
         {
             accTime = 0.0;
         }

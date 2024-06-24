@@ -30,26 +30,32 @@ Reaction OneLine::selectReaction(
         randRate -= totalRate;
         return NONE;
     } // the reaction is not positioned in this line
-    if(diffRToF > tempRate){
+    if(diffRToF >= tempRate){
         return DIFFUSETOF;
     }
     else {
         tempRate -= diffRToF;
     }
-    if (diffRToB > tempRate) {
+    if (diffRToB >= tempRate) {
         return DIFFUSETOB;
     }
     else {
         tempRate -= diffRToB;
     }
-    if (sinkR > tempRate) {
+    if (sinkR >= tempRate) {
         return SINK;
     }
     else {
         tempRate -= sinkR;
     }
+    if (SAVR >= tempRate) {
+        return SAV;
+    }
+    else {
+        tempRate -= SAVR;
+    }
     while (index < LEVELS) {
-        if (dissociationR[index] > tempRate) {
+        if (dissociationR[index] >= tempRate) {
             /* generate the other cluster key for monomer! */
             int attribute = hostObject->getAttri(index);
             theOtherKey = hostObject->signof(attribute)*((int64)pow(10.0, (double)EXP10*(LEVELS - index - 1)));
@@ -61,7 +67,7 @@ Reaction OneLine::selectReaction(
         }
     }
     while (iter != secondR.end()) {
-        if (iter->second > tempRate) {
+        if (iter->second >= tempRate) {
             theOtherKey = iter->first;
             return COMBINATION;
         }
@@ -113,7 +119,8 @@ const long double OneLine::computeTotalRate()
     totalRate = 0.0;
     totalRate += diffRToF; /* add one diffusion rate */
     totalRate += diffRToB; /* add another diffusion rate*/
-    totalRate += sinkR; /* add sink rate */
+    totalRate += sinkR;    /* add sink rate */
+    totalRate += SAVR;     /* add super abundant vacancy rate */
     for (i = 0; i < LEVELS; i++) {
         totalRate += dissociationR[i];
     }
@@ -147,6 +154,7 @@ void OneLine::display(Object const * const hostObject)
     for (iter = secondR.begin(); iter != secondR.end(); ++iter) {
         fs << "(" << iter->first << ")" << iter->second << "    ";
     }
+    fs << "(SAV)" << SAVR;
     fs << endl;
     fs.close();
 }
@@ -168,6 +176,7 @@ void OneLine::setOneLine(
         std::pair<int64, double> oneReaction(iter->first, rate);
         secondR.insert(oneReaction);
     }
+    computeSAVReaction(hostObject, count);
     computeTotalRate();
 }
 
@@ -336,6 +345,30 @@ double OneLine::computeCombReaction(
     r12 = hostObject->getR1() + mobileObject->getR1();
     dimensionTerm = computeDimensionTerm(r12, hostObject, mobileObject, count);
     return 4.0*PI*concentration*r12*dimensionTerm;
+}
+
+void OneLine::computeSAVReaction(
+                                 const Object* const hostObject,
+                                 const int count)
+{
+    SAVR = 0;
+
+    if (!SAV_ON)
+    {
+        return;
+    }
+
+    // If we have a mV-nH object, or nH object
+    if (hostObject->getAttri(0) <= 0 && hostObject->getAttri(2) > 0 && hostObject->getNumber(count) > 0)
+    {
+        int numH = hostObject->getAttri(2);
+        int numVacancies = abs(hostObject->getAttri(0));
+        double thresholdH = 4.75 + 4*numVacancies;
+        if (numH > thresholdH)
+        {
+            SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * hostObject->getNumber(count);
+        }
+    }
 }
 
 double OneLine::computeDimensionTerm(

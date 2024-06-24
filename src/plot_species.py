@@ -80,7 +80,7 @@ with open(f"species.txt") as f:
 		# if h_per_cluster > 0:    # for plotting all H
 		if obj_key > 0 and obj_key < 1000000:  # free H
 			free_hydrogen_c += np.array(line_hold[2:]).astype(float) * h_per_cluster
-			plot_H = True
+			plot_h = True
 		elif obj_key < 0 or (obj_key > 1000000) and h_per_cluster > 0: # trapped H
 			trapped_hydrogen_c += np.array(line_hold[2:]).astype(float) * h_per_cluster
 			plot_h = True
@@ -97,18 +97,22 @@ with open(f"species.txt") as f:
 	free_hydrogen_c /= VOLUME
 	vacancy_c /= VOLUME
 
+	all_hydrogen_c = free_hydrogen_c + trapped_hydrogen_c
+
 	plt.figure(figsize=(640/dpi, 480/dpi), dpi=dpi)
 	plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
-	upto = 25
+	upto = 100
 	if plot_h:
-		plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
-		plt.plot(positions[:upto], trapped_hydrogen_c[:upto], label="Trapped Hydrogen Concentration", color='darkgreen', marker='^', linestyle='-', markersize=0)
+		# plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
+		# plt.plot(positions[:upto], trapped_hydrogen_c[:upto], label="Trapped Hydrogen Concentration", color='darkgreen', marker='^', linestyle='-', markersize=0)
+		plt.plot(positions[:upto], all_hydrogen_c[:upto], label="Hydrogen Concentration")
 	if plot_v:
-		# indices_to_delete = [i for i in range(len(vacancy_c)) if vacancy_c[i] == 0]		
-		# positions_vacancy = np.delete(positions, indices_to_delete)
-		# vacancy_c = np.delete(vacancy_c, indices_to_delete)
-		plt.plot(positions[:upto], vacancy_c[:upto], label="Vacancy Concentration", color='r', linestyle='-')
-	plt.title(f"Hydrogen Concentration vs. Depth\n$T = {TEMPERATURE} K, t = {round(time*1e6, 1)} \mu s$")
+		indices_to_delete = [i for i in range(len(vacancy_c)) if vacancy_c[i] == 0]		
+		positions_vacancy = np.delete(positions, indices_to_delete)
+		nonzero_vacancy_c = np.delete(vacancy_c, indices_to_delete)
+		plt.plot(positions_vacancy, nonzero_vacancy_c[:upto], label="Nonzero Vacancy Concentration", color='r', linestyle='-', linewidth=0, marker='x')
+		plt.plot(positions[:upto], vacancy_c[:upto], color='r')
+	plt.title(f"Hydrogen Concentration vs. Depth\n$T = {TEMPERATURE} K, t = {round(time*1e6, 1)} \mu s$" + "$, Flux=4.0 \cdot 10^{23}$ $[cm^{-2}s^{-1}]$")
 	plt.xlabel("Depth $[nm]$")
 	plt.ylabel("Concentration $[cm^{-3}]$")
 	# if not plot_v:

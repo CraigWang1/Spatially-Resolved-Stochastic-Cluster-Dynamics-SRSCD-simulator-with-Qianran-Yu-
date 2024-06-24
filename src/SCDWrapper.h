@@ -10,6 +10,7 @@
 #include <string>
 #include <iomanip>
 #include <cassert>
+#include <random>
 
 class SCDWrapper {
 private:
@@ -74,6 +75,7 @@ private:
     void processSinkEvent(Object*, const int);     /* process absorption reaction */
     void processDissoEvent(Object*, const int, const int64, fstream& ); /* process dissociation event */
     void processCombEvent(Object*, const int, const int64, fstream& );  /* process combination reaction */
+    void processSAVEvent(Object*, const int);      /* process super-abundant-vacancy reaction */
     void processSinkDissEvent(const int, const int); /* process dissociation from sink event */
     /* get insertion functions */
     void getElectronInsertion(const int);

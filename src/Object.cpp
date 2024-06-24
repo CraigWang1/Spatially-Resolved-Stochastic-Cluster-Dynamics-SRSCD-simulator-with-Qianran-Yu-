@@ -445,7 +445,6 @@ void Object::computeBindTerm()
     }
     
     // H-defect clusters:
-    // H-defect clusters:
     else if (!check_H){
         if (attributes[0]<0) { // H-V clusters:
             double ratio = fabs( ((double) attributes[2])/((double) attributes[0]) );
