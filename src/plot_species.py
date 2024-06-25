@@ -1,4 +1,4 @@
-import os, re, cv2
+import os, re, cv2, time
 import math
 import matplotlib
 import matplotlib.pyplot as plt
@@ -64,65 +64,67 @@ count = 0
 
 # for filename in tqdm(sorted(os.listdir("1700K AllH"), key=lambda x:float(re.findall("(\d+)",x)[0]))):
 count += 1
-with open(f"species.txt") as f:
-	trapped_hydrogen_c = np.zeros(POINTS)
-	free_hydrogen_c = np.zeros(POINTS)
-	vacancy_c = np.zeros(POINTS)
-	plot_h = False
-	plot_v = False
-	f.readline() #step
-	time = float(f.readline().split()[2]) #time
-	f.readline() #fluenceH
-	for line_hold in f:
-		line_hold = line_hold.split()
-		obj_key = int(line_hold[1])
-		h_per_cluster = hydrogen_per_cluster(line_hold[1])
-		# if h_per_cluster > 0:    # for plotting all H
-		if obj_key > 0 and obj_key < 1000000:  # free H
-			free_hydrogen_c += np.array(line_hold[2:]).astype(float) * h_per_cluster
-			plot_h = True
-		elif obj_key < 0 or (obj_key > 1000000) and h_per_cluster > 0: # trapped H
-			trapped_hydrogen_c += np.array(line_hold[2:]).astype(float) * h_per_cluster
-			plot_h = True
+while True:
+	with open(f"species.txt") as f:
+		trapped_hydrogen_c = np.zeros(POINTS)
+		free_hydrogen_c = np.zeros(POINTS)
+		vacancy_c = np.zeros(POINTS)
+		plot_h = False
+		plot_v = False
+		f.readline() #step
+		t = float(f.readline().split()[2]) #time
+		f.readline() #fluenceH
+		for line_hold in f:
+			line_hold = line_hold.split()
+			obj_key = int(line_hold[1])
+			h_per_cluster = hydrogen_per_cluster(line_hold[1])
+			# if h_per_cluster > 0:    # for plotting all H
+			if obj_key > 0 and obj_key < 1000000:  # free H
+				free_hydrogen_c += np.array(line_hold[2:]).astype(float) * h_per_cluster
+				plot_h = True
+			elif obj_key < 0 or (obj_key > 1000000) and h_per_cluster > 0: # trapped H
+				trapped_hydrogen_c += np.array(line_hold[2:]).astype(float) * h_per_cluster
+				plot_h = True
 
-		v_per_cluster = vacancies_per_cluster(line_hold[1])
-		if v_per_cluster > 0:
-			vacancy_c += np.array(line_hold[2:]).astype(float) * v_per_cluster
-			plot_v = True
-	trapped_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
-	free_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
-	vacancy_c[0] *= VOLUME / SURFACE_VOLUME
+			v_per_cluster = vacancies_per_cluster(line_hold[1])
+			if v_per_cluster > 0:
+				vacancy_c += np.array(line_hold[2:]).astype(float) * v_per_cluster
+				plot_v = True
+		trapped_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
+		free_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
+		vacancy_c[0] *= VOLUME / SURFACE_VOLUME
 
-	trapped_hydrogen_c /= VOLUME
-	free_hydrogen_c /= VOLUME
-	vacancy_c /= VOLUME
+		trapped_hydrogen_c /= VOLUME
+		free_hydrogen_c /= VOLUME
+		vacancy_c /= VOLUME
 
-	all_hydrogen_c = free_hydrogen_c + trapped_hydrogen_c
+		all_hydrogen_c = free_hydrogen_c + trapped_hydrogen_c
 
-	plt.figure(figsize=(640/dpi, 480/dpi), dpi=dpi)
-	plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
-	upto = 100
-	if plot_h:
-		# plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
-		# plt.plot(positions[:upto], trapped_hydrogen_c[:upto], label="Trapped Hydrogen Concentration", color='darkgreen', marker='^', linestyle='-', markersize=0)
-		plt.plot(positions[:upto], all_hydrogen_c[:upto], label="Hydrogen Concentration")
-	if plot_v:
-		indices_to_delete = [i for i in range(len(vacancy_c)) if vacancy_c[i] == 0]		
-		positions_vacancy = np.delete(positions, indices_to_delete)
-		nonzero_vacancy_c = np.delete(vacancy_c, indices_to_delete)
-		plt.plot(positions_vacancy, nonzero_vacancy_c[:upto], label="Nonzero Vacancy Concentration", color='r', linestyle='-', linewidth=0, marker='x')
-		plt.plot(positions[:upto], vacancy_c[:upto], color='r')
-	plt.title(f"Hydrogen Concentration vs. Depth\n$T = {TEMPERATURE} K, t = {round(time*1e6, 1)} \mu s$" + "$, Flux=4.0 \cdot 10^{23}$ $[cm^{-2}s^{-1}]$")
-	plt.xlabel("Depth $[nm]$")
-	plt.ylabel("Concentration $[cm^{-3}]$")
-	# if not plot_v:
-	# plt.ylim(0, 6e25)
-	plt.legend()
-	plt.show()
-	# plt.tight_layout()
-	# plt.savefig("fig.png")
-	# plt.close()
-	# img = cv2.imread("fig.png")
-	# out.write(img)
+		plt.figure(figsize=(640/dpi, 480/dpi), dpi=dpi)
+		plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
+		upto = 100
+		if plot_h:
+			plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
+			# plt.plot(positions[:upto], trapped_hydrogen_c[:upto], label="Trapped Hydrogen Concentration", color='darkgreen', marker='^', linestyle='-', markersize=0)
+			# plt.plot(positions[:upto], all_hydrogen_c[:upto], label="Hydrogen Concentration")
+		if plot_v:
+			indices_to_delete = [i for i in range(len(vacancy_c)) if vacancy_c[i] == 0]		
+			positions_vacancy = np.delete(positions, indices_to_delete)
+			nonzero_vacancy_c = np.delete(vacancy_c, indices_to_delete)
+			plt.plot(positions_vacancy, nonzero_vacancy_c[:upto], label="Nonzero Vacancy Concentration", color='r', linestyle='-', linewidth=0, marker='x')
+			plt.plot(positions[:upto], vacancy_c[:upto], color='r')
+		plt.title(f"Hydrogen Concentration vs. Depth\n$T = {TEMPERATURE} K, t = {round(t*1e6, 1)} \mu s$" + "$, Flux=4.0 \cdot 10^{23}$ $[cm^{-2}s^{-1}]$")
+		plt.xlabel("Depth $[nm]$")
+		plt.ylabel("Concentration $[cm^{-3}]$")
+		# if not plot_v:
+		# plt.ylim(0, 6e25)
+		plt.legend()
+		plt.draw()
+		# plt.tight_layout()
+		# plt.savefig("fig.png")
+		plt.pause(30)
+		plt.close()
+		# img = cv2.imread("fig.png")
+		# out.write(img)
 
 out.release()

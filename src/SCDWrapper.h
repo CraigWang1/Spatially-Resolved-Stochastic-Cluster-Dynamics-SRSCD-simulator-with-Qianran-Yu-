@@ -90,8 +90,6 @@ private:
     void writeSpeciesFile(const double, const long int);
     void writeClusterFile(const double, const long int);
     /* distinguish reaction type function */
-    bool recognizeSAV(const Object* const, const Object* const);
-    /* if SAV, return true, if not, return false*/
     int countDefectNumber(const int, string);
     /* this function counts the number of defects(V,SIA,H...) in every element, returns total number of this defect in the bulk */
     void countRatioDistribution(double&);

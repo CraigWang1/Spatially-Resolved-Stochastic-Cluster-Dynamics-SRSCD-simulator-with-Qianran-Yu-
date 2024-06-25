@@ -270,7 +270,6 @@ Object* SCDWrapper::selectReaction(
     // causing the program to think that no event was selected
     cout << "returned nullptr" << endl;
     cout << randRate << " " << bulkRate << " " << tempRandRate << endl;
-    cout << "trying again" << endl; 
     return tempObject;
 }
 
@@ -653,6 +652,7 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
 
 void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
 {
+    // Update the OneLine associated with this object in this count
     OneLine* tempLine = linePool[hostObject]->lines[count];
     double diffusivity = hostObject->getDiff();
     int number = hostObject->getNumber(count);
@@ -671,9 +671,13 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
             linePool[hostObject]->lines[count] = tempLine;
         }
     }
+
+    // Update the OneLines of other objects impacted by this mobile object
     if (diffusivity > 0) {
         updateRateToOther(hostObject, count);
     }
+
+    // Update the OneLine of this object in neighbouring elements (diffusion rates change)
     if((count-1) >= 0){
         OneLine* tempLine = linePool[hostObject]->lines[count - 1];
         if(tempLine != nullptr){
@@ -1002,32 +1006,6 @@ void SCDWrapper::processCombEvent(
         /* vacancy, interstitial anniles */
         annilV += abs(attrZeroA) < abs(attrZeroB) ? abs(attrZeroA) : abs(attrZeroB);
     }
-    /*
-    if(n==0){
-        if(!recognizeSAV(hostObject, theOtherObject)){
-            fs2<<"Combination Reaction: "<< hostObject->getKey()<<" + "<<theOtherKey<<" -> " << productKey<<endl;
-        }
-    }
-    if(n==1){
-        if(!recognizeSAV(hostObject, theOtherObject)){
-            fs4<<"Combination Reaction: "<< hostObject->getKey()<<" + "<<theOtherKey<<" -> " << productKey << endl;
-        }
-    }
-    if(n==2){
-        if(!recognizeSAV(hostObject, theOtherObject)){
-            fs6<<"Combination Reaction: "<< hostObject->getKey()<<" + "<<theOtherKey<<" -> " << productKey << endl;
-        }
-    }
-    if (LOG_REACTIONS)
-    {
-        if(recognizeSAV(hostObject, theOtherObject)){
-            fs<<"Combination Reaction: "<< hostObject->getKey()<<" + "<<theOtherKey<<" -> "<<productKey<< " + "<< SIAKey <<" in element "<< n <<endl;
-        }else{
-            fs<<"Combination Reaction: "<< hostObject->getKey()<<" + "<<theOtherKey<<" -> "<<productKey<<" in element "<< n <<endl;
-        }
-    }
-    */
-
 }
 
 void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
@@ -1369,25 +1347,6 @@ void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
     }
     ofile.close();
     
-}
-
-bool SCDWrapper::recognizeSAV(const Object *const hostObject, const Object *const theOtherObject){
-    // For mV-nH + mSIA -> n*H reactions, don't count this as SAV because
-    //     the nH cluster splits into n individual H atoms, so no H cluster, so
-    //     no SAV can occur.
-    if (hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && theOtherObject->getAttri(0)>0 && theOtherObject->getAttri(2)==0 && abs(hostObject->getAttri(0)) == theOtherObject->getAttri(0))
-        return false;
-
-    int prodV = hostObject->getAttri(0) + theOtherObject->getAttri(0);
-    int prodH = hostObject->getAttri(2) + theOtherObject->getAttri(2);
-
-    double maxH = 4.75 + abs(prodV) * 4;
-
-    // Leave this reaction for processCombEvent to handle
-    if (hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && theOtherObject->getAttri(0)>0 && theOtherObject->getAttri(2)==0 && prodV < 0 && prodH > maxH)
-        return false;
-
-    return (prodV <= 0 && prodH > maxH);
 }
 
 int SCDWrapper::countDefectNumber(const int count, string type){
