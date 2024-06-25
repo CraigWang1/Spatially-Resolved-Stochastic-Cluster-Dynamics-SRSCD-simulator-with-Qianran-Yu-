@@ -53,14 +53,16 @@ private:
     /* decide insertion mode function */
     int64 atomProperty(InsertStyle, const int);
     /* moniter map functions */
-    void addNewObjectToMap(const int64, const int*);
-    /* add to map by key(increase m to nth element)---> this is created for restart*/
-    void addNewObjectToMap(const int64, const int);
-    /* add new object to map by key (only increase by 1 to #kth element)*/
+    void updateObjectInMap(Object *, const int);
+    /* Updates the object's reaction rates in that nth mesh element */
     void addNewObjectToMap(Object*);
-    /* add new object to map by object pointer(only increase 1 to #nth element) */
-    void updateObjectInMap(Object*, const int);
-    void removeObjectFromMap(const int64); /* remove one object from map */
+    /* add to map by object pointer */
+    void addToObjectMap(const int64, const int, const int number=1);
+    /* general-use function to add a number of instances to an object in the nth mesh element */
+    void reduceFromObjectMap(const int64, const int);
+    /* general-use function to remove one instance of an object in the nth mesh element */
+    void removeObjectFromMap(const int64); 
+    /* remove one object from map */
     void addReactionToOther(const Object* const);
     /* Impact of one new mobile object to other existing objects */
     void updateRateToOther(const Object* const, const int);
