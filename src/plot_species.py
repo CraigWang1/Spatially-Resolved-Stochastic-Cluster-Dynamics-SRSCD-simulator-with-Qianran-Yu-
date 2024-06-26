@@ -17,7 +17,7 @@ SURFACE_VOLUME = VOLUME / 20 * SURFACE_THICKNESS + VOLUME # [cm^3]
 DENSITY = 6.30705e+22                      # [atoms/cm^3] Atomic density for W.
 HEAT_OF_SOLUTION = 1.04                    # [eV] Heat of solution of H in W.
 KB = 8.617e-05                             # [ev/K] Boltzmann's constant.
-TEMPERATURE = 1700
+TEMPERATURE = 1000
 H_SATURATION_CONCENTRATION = DENSITY * math.exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
 
 
@@ -56,7 +56,7 @@ def vacancies_per_cluster(obj_key):
 	else:
 		return 0
 
-out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 40.0, (640,480))
+# out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 40.0, (640,480))
 
 positions = [10.272 + i*20 for i in range(100)]
 dpi = 100
@@ -122,9 +122,9 @@ while True:
 		plt.draw()
 		# plt.tight_layout()
 		# plt.savefig("fig.png")
-		plt.pause(30)
+		plt.pause(5)
 		plt.close()
 		# img = cv2.imread("fig.png")
 		# out.write(img)
 
-out.release()
+# out.release()

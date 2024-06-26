@@ -921,9 +921,27 @@ void SCDWrapper::processCombEvent(
 
 void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
 {
-    /* Superabundant vacancy mechanism.
+    /* 
+     * Superabundant vacancy mechanism.
      * Eject an interstitial (which increases vacancy by 1)
      */
+    int64 HKey = 1;
+    double HConcentration = 0;
+    if (allObjects.find(HKey) != allObjects.end())
+    {
+        if (n == 0)
+            HConcentration = allObjects[HKey]->getNumber(n) / SURFACE_VOLUME;
+        else
+            HConcentration = allObjects[HKey]->getNumber(n) / VOLUME;
+    }
+
+    double saturation_concentration = getHSaturationLimit(getMaxVNum());
+
+    // If it's not saturated, SAV doesn't need to create more vacancies
+    if (HConcentration < saturation_concentration)
+    {
+        return;
+    }
 
     // Eject interstitial
     int64 SIAKey = (int64)pow(10.0, (double)EXP10 * (LEVELS - 1)); /* Key for SIA. */
