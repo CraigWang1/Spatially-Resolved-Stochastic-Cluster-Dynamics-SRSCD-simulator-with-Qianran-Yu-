@@ -270,7 +270,6 @@ Object* SCDWrapper::selectReaction(
     // causing the program to think that no event was selected
     cout << "returned nullptr" << endl;
     cout << randRate << " " << bulkRate << " " << tempRandRate << endl;
-    cout << "trying again" << endl; 
     return tempObject;
 }
 
@@ -600,39 +599,6 @@ int64 SCDWrapper::atomProperty(SCDWrapper::InsertStyle mode, const int n)
     return 0; /* If return 0, means the code is wrong */
 }
 
-void SCDWrapper::addNewObjectToMap(const int64 key, const int* number)
-{
-    if (key != 0) {
-        Object* newObject = new Object(key, number);
-        pair<int64, Object*> newNode(key, newObject);
-        allObjects.insert(newNode); /* 1. add to all object */
-        if (newObject->getDiff() > 0) {
-            mobileObjects.insert(newNode);
-            addReactionToOther(newObject);
-        }  /* 2. add to mobile object if necessary */
-        Bundle* newBundle = new Bundle(newObject, mobileObjects);
-        pair<Object*, Bundle*> bundle(newObject, newBundle);
-        linePool.insert(bundle); /* 3. add to line pool */
-    }/* do this only when the object is a valid one */
-}
-
-void SCDWrapper::addNewObjectToMap(const int64 key, const int count)
-{
-    if (key != 0) {
-        Object* newObject = new Object(key, count);
-        pair<int64, Object*> newNode(key, newObject);
-        allObjects.insert(newNode); /* add to all object */
-        if (newObject->getDiff() > 0) {
-            mobileObjects.insert(newNode);
-            addReactionToOther(newObject);
-        }  /* add to mobile object if necessary */
-        Bundle* newBundle = new Bundle(newObject, mobileObjects);
-        pair<Object*, Bundle*> bundle(newObject, newBundle);
-        linePool.insert(bundle); /* add to line pool */
-        
-    }/* do this only when the object is a valid one */
-}
-
 void SCDWrapper::addNewObjectToMap(Object* newObject)
 {
     if (newObject->getKey() == 0) {
@@ -651,8 +617,34 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
     }/* if this object is valid, add it to map */
 }
 
+void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
+{
+    /* If the object exists, add to it. Otherwise create the object. */
+    Object* anObject;
+    if (allObjects.find(key) != allObjects.end()) 
+    {
+        /* object found! then number of instances in this element increases by number*/
+        anObject = allObjects[key];
+        anObject->addNumber(n, number);
+        updateObjectInMap(anObject, n);
+    }
+    else if (number > 0)
+    {
+        /* object wasn't found! build new object and insert it into map */
+        anObject = new Object(key, n, number);
+        addNewObjectToMap(anObject);
+    }
+}
+
+void SCDWrapper::reduceFromObjectMap(const int64 key, const int n)
+{
+    /* Count is mesh element index, number is number to add to object population */
+    addToObjectMap(key, n, -1);
+}
+
 void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
 {
+    // Update the OneLine associated with this object in this count
     OneLine* tempLine = linePool[hostObject]->lines[count];
     double diffusivity = hostObject->getDiff();
     int number = hostObject->getNumber(count);
@@ -671,9 +663,13 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
             linePool[hostObject]->lines[count] = tempLine;
         }
     }
+
+    // Update the OneLines of other objects impacted by this mobile object
     if (diffusivity > 0) {
         updateRateToOther(hostObject, count);
     }
+
+    // Update the OneLine of this object in neighbouring elements (diffusion rates change)
     if((count-1) >= 0){
         OneLine* tempLine = linePool[hostObject]->lines[count - 1];
         if(tempLine != nullptr){
@@ -760,25 +756,34 @@ void SCDWrapper::updateSinks(const int point, const int* number){
 /* private function */
 void SCDWrapper::processDiffEvent(Object* hostObject, const int n, const char signal)
 {
-    hostObject->reduceNumber(n);
+    int64 key = hostObject->getKey();
     
     if (signal == 'f') {
         ++reactions[0][n];
         if(n != 0){ /* when not surface */
             /* diffuse to the previous element */
-            hostObject->addNumber(n - 1); // because it is diffusion to front, the surface element will not diffuse
-            updateObjectInMap(hostObject, n - 1); // updated n-2, n-1, n
-            
+            addToObjectMap(key, n - 1);            
         }else{
             //surface diffuse to vacuum
-            int64 key = hostObject->getKey();
-            if(surface.find(key) != surface.end()){
-                ++surface[key];
-                
-            }else{
-                pair<int64, int> newNode(key, 1);
-                surface.insert(newNode); /* add to all object */
 
+            int64 key = hostObject->getKey();
+            int64 HKey = 1;
+
+            // no diffusion of H from surface element back to vacuum
+            if (key == HKey)
+            {
+                hostObject -> addNumber(n);
+                return;
+            }
+            else
+            {
+                if(surface.find(key) != surface.end()){
+                    ++surface[key];
+                    
+                }else{
+                    pair<int64, int> newNode(key, 1);
+                    surface.insert(newNode); /* add to all object */
+                }
             }
         }
     }
@@ -786,11 +791,9 @@ void SCDWrapper::processDiffEvent(Object* hostObject, const int n, const char si
         ++reactions[1][n];
         /* diffuse to the latter element */
         if ((n + 1) != POINTS) {
-            hostObject->addNumber(n + 1); // because it is diffusion to back
-            updateObjectInMap(hostObject, n + 1); // updated n n+1 and n+2
+            addToObjectMap(key, n + 1);
         }else{
             // bottom diffuses to vacuum
-            int64 key = hostObject->getKey();
             if(bottom.find(key) != bottom.end()){
                 ++bottom[key];
             }else{
@@ -799,13 +802,13 @@ void SCDWrapper::processDiffEvent(Object* hostObject, const int n, const char si
             }
         }
     }
-    updateObjectInMap(hostObject, n); // updated n-1, n, n+1
+    reduceFromObjectMap(key, n);
 }
 
 void SCDWrapper::processSinkEvent(Object * hostObject, const int n)
 {
     ++reactions[2][n];
-    hostObject->reduceNumber(n);
+    reduceFromObjectMap(hostObject->getKey(), n);
     /*
     if(key == -1000000){
         //case 1V
@@ -817,8 +820,6 @@ void SCDWrapper::processSinkEvent(Object * hostObject, const int n)
         computeSinkDissRate(1, n);
     }
     */
-    updateObjectInMap(hostObject, n); //updated n-1, n n+1
-    
 } /* if sink rate != 0, diffusivity of this object is not 0 */
 
 void SCDWrapper::processDissoEvent(
@@ -832,16 +833,7 @@ void SCDWrapper::processDissoEvent(
     int number = 1;
     int theOtherAttr[LEVELS] = { 0 };   /* this holds the attribute of the other cluster(product) */
     /* 1) deal with monomer */
-    if (allObjects.find(monomerKey) != allObjects.end()) {
-        /* monomer found! then number of monomer in this element increase 1*/
-        Object* anObject = allObjects[monomerKey];
-        anObject->addNumber(n);
-        updateObjectInMap(anObject, n);
-    }
-    else {
-        /* monomer didn't find! build new object and insert it into map */
-        addNewObjectToMap(monomerKey, n);
-    }
+    addToObjectMap(monomerKey, n);
     /* 2) generate the other cluster */
     Object* monomer = allObjects[monomerKey];
     for (int i = 0; i < LEVELS; i++) {
@@ -857,20 +849,10 @@ void SCDWrapper::processDissoEvent(
         
     }
     
-    if (allObjects.find(theOtherKey) != allObjects.end()) {
-        /* the other cluster found! then number of this cluster in this element increase 1 */
-        Object* anObject = allObjects[theOtherKey];
-        anObject->addNumber(n, number);
-        updateObjectInMap(anObject, n);
-    }
-    else {
-        /* cluster didn't find! build new object and insert it into map */
-        Object* anObject = new Object(theOtherAttr, n, number);
-        addNewObjectToMap(anObject);
-    }
+    addToObjectMap(theOtherKey, n, number);
+
     /* 3) deal with the host object */
-    hostObject->reduceNumber(n);
-    updateObjectInMap(hostObject, n);
+    reduceFromObjectMap(hostObject->getKey(), n);
     /*
     if(n==0){
         fs1 <<"Dissociation: " << hostObject->getKey() << " -> " << theOtherKey << " + "<<monomerKey<<endl;
@@ -908,43 +890,17 @@ void SCDWrapper::processCombEvent(
         /* change above reaction to Vn-Hm + xxx -> SIAp + q*H */
         productKey = HKey;
         number = productAttr[2];
-        if (allObjects.find(productKey) != allObjects.end()) {/* we have this product */
-            Object* productObject = allObjects[productKey];
-            productObject->addNumber(n, number);
-            updateObjectInMap(productObject, n);
-        }
-        else { /* we don't have this object */
-            Object* productObject = new Object(productAttr, n, number);
-            /* add product to map */
-            addNewObjectToMap(productObject);
-        }
+        addToObjectMap(productKey, n, number);
+
         productKey = (productAttr[0]+hostObject->getAttri(0)) * SIAKey;
         number = 1;
-        if (allObjects.find(productKey) != allObjects.end()) {/* we have this product */
-            Object* productObject = allObjects[productKey];
-            productObject->addNumber(n, number);
-            updateObjectInMap(productObject, n);
-        }
-        else { /* we don't have this object */
-            Object* productObject = new Object(productAttr, n, number);
-            /* add product to map */
-            addNewObjectToMap(productObject);
-        }
+        addToObjectMap(productKey, n, number);
     }else if(hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && theOtherObject->getAttri(0)>0 && theOtherObject->getAttri(2)==0 && abs(hostObject->getAttri(0)) == theOtherObject->getAttri(0)){
         /* Vn-Hm + SIAn -> Hm (n, m are not zero) */
         /* change above reaction to Vn-Hm + SIAn -> m * H */
         productKey = HKey;
         number = hostObject->getAttri(2);
-        if (allObjects.find(productKey) != allObjects.end()) {/* we have this product */
-            Object* productObject = allObjects[productKey];
-            productObject->addNumber(n, number);
-            updateObjectInMap(productObject, n);
-        }
-        else { /* we don't have this object */
-            Object* productObject = new Object(productAttr, n, number);
-            /* add product to map */
-            addNewObjectToMap(productObject);
-        }
+        addToObjectMap(productKey, n, number);
     }
     else if(hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && theOtherObject->getAttri(0)>0 && theOtherObject->getAttri(2)==0 && productAttr[0] < 0 && productAttr[2] > 4.75 + 4*abs(productAttr[0])){
         /* Vn-Hm + SIAx -> V(n-x)-Hm (n, m, and x are not zero) */
@@ -955,46 +911,17 @@ void SCDWrapper::processCombEvent(
         productKey = attrToKey(productAttr);
 
         // Create the new V(n-x)-H(max) object (eject the excess H above vacancy containment limit)
-        if (allObjects.find(productKey) != allObjects.end()) {/* we have this product */
-            Object* productObject = allObjects[productKey];
-            productObject->addNumber(n, number);
-            updateObjectInMap(productObject, n);
-        }
-        else { /* we don't have this object */
-            Object* productObject = new Object(productAttr, n, number);
-            /* add product to map */
-            addNewObjectToMap(productObject);
-        }
+        addToObjectMap(productKey, n, number);
 
         // Create (excess)*H object
-        if (allObjects.find(HKey) != allObjects.end()) {/* we have this product */
-            Object* productObject = allObjects[HKey];
-            productObject->addNumber(n, excessH);
-            updateObjectInMap(productObject, n);
-        }
-        else { /* we don't have this object */
-            Object* productObject = new Object(HKey, n, excessH);
-            /* add product to map */
-            addNewObjectToMap(productObject);
-        }
+        addToObjectMap(HKey, n, excessH);
     }
     else{
-        if (allObjects.find(productKey) != allObjects.end()) {/* we have this product */
-            Object* productObject = allObjects[productKey];
-            productObject->addNumber(n, number);
-            updateObjectInMap(productObject, n);
-        }
-        else { /* we don't have this object */
-            Object* productObject = new Object(productAttr, n, number);
-            /* add product to map */
-            addNewObjectToMap(productObject);
-        }
+        addToObjectMap(productKey, n, number);
     }
     /* update reactant */
-    hostObject->reduceNumber(n);
-    updateObjectInMap(hostObject, n);
-    theOtherObject->reduceNumber(n);
-    updateObjectInMap(theOtherObject, n);
+    reduceFromObjectMap(hostObject->getKey(), n);
+    reduceFromObjectMap(theOtherObject->getKey(), n);
 
     int attrZeroA = hostObject->getAttri(0);
     int attrZeroB = theOtherObject -> getAttri(0);
@@ -1002,52 +929,35 @@ void SCDWrapper::processCombEvent(
         /* vacancy, interstitial anniles */
         annilV += abs(attrZeroA) < abs(attrZeroB) ? abs(attrZeroA) : abs(attrZeroB);
     }
-    /*
-    if(n==0){
-        if(!recognizeSAV(hostObject, theOtherObject)){
-            fs2<<"Combination Reaction: "<< hostObject->getKey()<<" + "<<theOtherKey<<" -> " << productKey<<endl;
-        }
-    }
-    if(n==1){
-        if(!recognizeSAV(hostObject, theOtherObject)){
-            fs4<<"Combination Reaction: "<< hostObject->getKey()<<" + "<<theOtherKey<<" -> " << productKey << endl;
-        }
-    }
-    if(n==2){
-        if(!recognizeSAV(hostObject, theOtherObject)){
-            fs6<<"Combination Reaction: "<< hostObject->getKey()<<" + "<<theOtherKey<<" -> " << productKey << endl;
-        }
-    }
-    if (LOG_REACTIONS)
-    {
-        if(recognizeSAV(hostObject, theOtherObject)){
-            fs<<"Combination Reaction: "<< hostObject->getKey()<<" + "<<theOtherKey<<" -> "<<productKey<< " + "<< SIAKey <<" in element "<< n <<endl;
-        }else{
-            fs<<"Combination Reaction: "<< hostObject->getKey()<<" + "<<theOtherKey<<" -> "<<productKey<<" in element "<< n <<endl;
-        }
-    }
-    */
-
 }
 
 void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
 {
-    /* Superabundant vacancy mechanism.
+    /* 
+     * Superabundant vacancy mechanism.
      * Eject an interstitial (which increases vacancy by 1)
      */
+    int64 HKey = 1;
+    double HConcentration = 0;
+    if (allObjects.find(HKey) != allObjects.end())
+    {
+        if (n == 0)
+            HConcentration = allObjects[HKey]->getNumber(n) / SURFACE_VOLUME;
+        else
+            HConcentration = allObjects[HKey]->getNumber(n) / VOLUME;
+    }
+
+    double saturation_concentration = getHSaturationLimit(getMaxVNum());
+
+    // If it's not saturated, SAV doesn't need to create more vacancies
+    if (HConcentration < saturation_concentration)
+    {
+        return;
+    }
 
     // Eject interstitial
     int64 SIAKey = (int64)pow(10.0, (double)EXP10 * (LEVELS - 1)); /* Key for SIA. */
-    if (allObjects.find(SIAKey) != allObjects.end()) {/* we have this product */
-        Object* SIA = allObjects[SIAKey];
-        SIA->addNumber(n);
-        updateObjectInMap(SIA, n);
-    }
-    else { /* we don't have this object */
-        Object* SIA = new Object(SIAKey, n);
-        /* add product to map */
-        addNewObjectToMap(SIA);
-    }
+    addToObjectMap(SIAKey, n);
 
     // Generate 1 vacancy
     int productAttr[LEVELS] = { 0 };
@@ -1057,19 +967,9 @@ void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
     productAttr[0] -= 1;
     int64 productKey = attrToKey(productAttr);
 
-    if (allObjects.find(productKey) != allObjects.end()) {/* we have this product */
-        Object* productObject = allObjects[productKey];
-        productObject->addNumber(n);
-        updateObjectInMap(productObject, n);
-    }
-    else { /* we don't have this object */
-        Object* productObject = new Object(productKey, n);
-        /* add product to map */
-        addNewObjectToMap(productObject);
-    }
+    addToObjectMap(productKey, n);
 
-    hostObject->reduceNumber(n);
-    updateObjectInMap(hostObject, n);
+    reduceFromObjectMap(hostObject->getKey(), n);
 }
 
 void SCDWrapper::processSinkDissEvent(const int type, const int point)
@@ -1084,16 +984,7 @@ void SCDWrapper::processSinkDissEvent(const int type, const int point)
         sinks[3][point]--;
         productKey = 1;
     }
-    if (allObjects.find(productKey) != allObjects.end()) {/* we have this product */
-        Object* productObject = allObjects[productKey];
-        productObject->addNumber(point, 1);
-        updateObjectInMap(productObject, point);
-    }
-    else { /* we don't have this object */
-        Object* productObject = new Object(productKey, point, 1);
-        /* add product to map */
-        addNewObjectToMap(productObject);
-    }
+    addToObjectMap(productKey, point);
     computeSinkDissRate(type, point);
 }
 
@@ -1102,22 +993,8 @@ void SCDWrapper::getElectronInsertion(const int n)
     /* Insert Frenkel pairs: */
     int64 SIAKey = (int64)pow(10.0, (double)EXP10 * (LEVELS - 1)); /* Key for SIA. */
     int64 vacancyKey = (-1) * SIAKey; /* Key for vacancy */
-    if (allObjects.find(SIAKey) != allObjects.end()) {
-        Object* tempObject = allObjects[SIAKey];
-        tempObject->addNumber(n); /* default: increasing by one */
-        updateObjectInMap(tempObject, n);
-    }/* we have SIA */
-    else {
-        addNewObjectToMap(SIAKey, n);
-    }/* we don't have SIA */
-    if (allObjects.find(vacancyKey) != allObjects.end()) {
-        Object* tempObject = allObjects[vacancyKey];
-        tempObject->addNumber(n); /* default: increasing by one */
-        updateObjectInMap(tempObject, n);
-    }/* we have vacancy */
-    else {
-        addNewObjectToMap(vacancyKey, n);
-    }
+    addToObjectMap(SIAKey, n);
+    addToObjectMap(vacancyKey, n);
 }
 
 void SCDWrapper::getNeutronInsertion(const int n)
@@ -1143,15 +1020,7 @@ void SCDWrapper::getNeutronInsertion(const int n)
                 if (number != 0) {
                     clusterKey = (int64)sign*(j + 1)*(pow(10.0, (double)EXP10*(LEVELS - 1)));
                     /* generate cluster key */
-                    if (allObjects.find(clusterKey) == allObjects.end()) {
-                        Object* newObject = new Object(clusterKey, n, number);
-                        addNewObjectToMap(newObject);
-                    } /* we don't have this cluster */
-                    else {
-                        Object* tempObject = allObjects[clusterKey];
-                        tempObject->addNumber(n, number);
-                        updateObjectInMap(tempObject, n);
-                    }/* we have this cluster */
+                    addToObjectMap(clusterKey, n, number);
                 }
             }
         }
@@ -1166,7 +1035,6 @@ void SCDWrapper::getIonInsertion(const int n, const double dt, fstream& fs)
     double ionEnergy = 0.0;
     double totalEnergy = (double)Poisson(AVG_ION_EN[n]);
     int i, j, ndef = 0;
-    int nov = 0; //number of vacancy
     int64 clusterKey;
     //fstream fk;
     //fk.open("V_insertion.txt", ios::app);
@@ -1208,27 +1076,7 @@ void SCDWrapper::getIonInsertion(const int n, const double dt, fstream& fs)
                     }//park SIAs
                     */
                     /* generate cluster key */
-                    if (allObjects.find(clusterKey) == allObjects.end()) 
-                    {
-                        Object* newObject = new Object(clusterKey, n, number);
-                        nov = newObject->getAttri(0);
-                        if(nov < 0)
-                        {
-                            generationNumber += (-1) * nov * number;
-                        }
-                        addNewObjectToMap(newObject);
-                    } /* we don't have this cluster */
-                    else 
-                    {
-                        Object* tempObject = allObjects[clusterKey];
-                        tempObject->addNumber(n, number);
-                        nov = tempObject->getAttri(0);
-                        if(nov < 0)
-                        {
-                            generationNumber += (-1) * nov * number;
-                        }
-                        updateObjectInMap(tempObject, n);
-                    }/* we have this cluster */
+                    addToObjectMap(clusterKey, n, number);
                     if (LOG_REACTIONS)
                         fs <<"ion insertion in element "<< n <<", gain " << number <<" " << clusterKey <<endl;
                 }
@@ -1256,60 +1104,17 @@ void SCDWrapper::getHeInsertion(const int n)
 {
     int channel = 1;
     int64 clusterKey = atomProperty(INTERSTITIAL, channel + 1);
-    if (allObjects.find(clusterKey) == allObjects.end()) {
-        addNewObjectToMap(clusterKey, n);
-    } /* we don't have this cluster */
-    else {
-        Object* tempObject = allObjects[clusterKey];
-        tempObject->addNumber(n);
-        updateObjectInMap(tempObject, n);
-    }/* we have this cluster */
+    addToObjectMap(clusterKey, n);
 }
 
 void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
 {
     fluenceH += FLUX_H*dt; /* 4.00e+16 is H flux */
 
-    // Maintain H equilibrium (insertion & diffusion) if we reached the saturation limit at the surface element
-    if (n == 0)
-    {
-        int64 HKey = 1;
-        double surfaceHConcentration = 0;
-        double mean = 1;
-        double stddev = KB * TEMPERATURE / HEAT_OF_SOLUTION;
-        double acceptProbability = 1;
-        if (allObjects.find(HKey) != allObjects.end())
-        {
-            surfaceHConcentration = allObjects[HKey]->getNumber(n) / SURFACE_VOLUME;
-        }
-
-        double saturation_concentration = getHSaturationLimit(getMaxVNum());
-        acceptProbability = Normal(mean, stddev) - surfaceHConcentration / saturation_concentration;
-
-        if (acceptProbability < 0)
-            acceptProbability = 0;
-        else if (acceptProbability > 1)
-            acceptProbability = 1;
-
-        if ((double) rand() / RAND_MAX > acceptProbability)
-        {
-            if (LOG_REACTIONS)
-                fs << "H insertion: rejected 1 " << HKey <<" in element "<< n <<endl;
-            return;
-        }
-    }
-
     ++reactions[6][n];
     int channel = 2;
     int64 clusterKey = atomProperty(INTERSTITIAL, channel + 1);
-    if (allObjects.find(clusterKey) == allObjects.end()) {
-        addNewObjectToMap(clusterKey, n);
-    } /* we don't have this cluster */
-    else {
-        Object* tempObject = allObjects[clusterKey];
-        tempObject->addNumber(n);
-        updateObjectInMap(tempObject, n);
-    }/* we have this cluster */
+    addToObjectMap(clusterKey, n);
     if (LOG_REACTIONS)
         fs << "H insertion: get 1 " << clusterKey <<" in element "<< n <<endl;
 }
@@ -1361,33 +1166,14 @@ void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
                 lineHold >> skip >> objectKey;
                 for (int i = 0; i < POINTS; i++) {
                     lineHold >> number[i];
+                    srscd->addToObjectMap(objectKey, i, number[i]);
                 }
-                srscd->addNewObjectToMap(objectKey, number);
             }
             lineHold.clear();
         }
     }
     ofile.close();
     
-}
-
-bool SCDWrapper::recognizeSAV(const Object *const hostObject, const Object *const theOtherObject){
-    // For mV-nH + mSIA -> n*H reactions, don't count this as SAV because
-    //     the nH cluster splits into n individual H atoms, so no H cluster, so
-    //     no SAV can occur.
-    if (hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && theOtherObject->getAttri(0)>0 && theOtherObject->getAttri(2)==0 && abs(hostObject->getAttri(0)) == theOtherObject->getAttri(0))
-        return false;
-
-    int prodV = hostObject->getAttri(0) + theOtherObject->getAttri(0);
-    int prodH = hostObject->getAttri(2) + theOtherObject->getAttri(2);
-
-    double maxH = 4.75 + abs(prodV) * 4;
-
-    // Leave this reaction for processCombEvent to handle
-    if (hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && theOtherObject->getAttri(0)>0 && theOtherObject->getAttri(2)==0 && prodV < 0 && prodH > maxH)
-        return false;
-
-    return (prodV <= 0 && prodH > maxH);
 }
 
 int SCDWrapper::countDefectNumber(const int count, string type){

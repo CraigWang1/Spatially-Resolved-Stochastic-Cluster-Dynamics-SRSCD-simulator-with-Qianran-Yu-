@@ -42,11 +42,11 @@
 #define SAV_ENERGY 0.95          // [eV] energy that controls SAV rate
 // Run parameters:
 #define ION               // Irradiation type.
-#define TOTAL_TIME 2500    // [s] Total simulated time.
+#define TOTAL_TIME 2500   // [s] Total simulated time.
 #define TOTAL_DPA 2        // Total DPA damage to reach.
 #define VOLUME 1.0e-17    // [cm^3] System volume.
 #define DIVIDING_AREA 5.0e-12  // [cm^2] Area of the surface in between volume elements.
-#define TEMPERATURE 1700.0  // [K] System temperature.
+#define TEMPERATURE 900.0  // [K] System temperature.
 //#define RATIO_HE 1.1       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_HE 0       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_H 0
@@ -68,6 +68,7 @@ enum Reaction { DIFFUSETOF, DIFFUSETOB, SINK, DISSOCIATION, COMBINATION, SAV, NO
  ** SINK: absorption
  ** DISSOCIATION: dissociation reaction(one monomer splited out)
  ** COMBINATION: 2nd order reaction, 2 reactants goes to 1 product
+ ** SAV: Super Abundant Vacancy mechanism
  ** NONE: SIGNAL-> no reaction been selected in the rateMatrix
  ** PARTICLE: damage[0], ion/neutron insertion
  ** HE: damage[1], He insersion
