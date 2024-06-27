@@ -603,6 +603,7 @@ void Object::computeBindTerm()
 
             bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
             bind[0] = 0; //because there's no V/SIA in cluster
+
             /*
             if (attributes[2]==1) { // H   data from Xiaochun Li(2015)
                 bind[2] = 0;

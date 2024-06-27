@@ -82,7 +82,7 @@ int main()
             }
 
             // Initialize the first eta estimate, or update the previous one
-            if (prev_progress != 0)
+            if (prev_progress != 0 && progress - prev_progress != 0)
             {
                 eta_min = (100 - progress) / ((progress - prev_progress) / system_dt) / 60.;
                 
