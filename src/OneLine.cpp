@@ -227,33 +227,25 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     /* 
      * 1. compute diffusion rate to the front element 
      * Diffusion goes from area of higher concentration to lower concentration
+     * Object not allowed to diffuse out through the front
      */
-    if (concentration > frontConcentration) {
+    if (concentration > frontConcentration && count != 0) {
         /* if diffusable, surface objects diffusing into vacuum is considered */
         prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthf;
         diffRToF = prefactor*(concentration - frontConcentration);
-        
-        int64 HKey = 1;
-        if(count == 0 && hostObject->getKey() != HKey){
-            diffRToF = 0.0;
-        } // single H is the only species that can diffuse out when it's oversaturated
     }
     else {
         diffRToF = 0.0;
     }
-    /* 2. compute diffusion rate to the back element*/
-    if (concentration > backConcentration) {
+    /* 2. compute diffusion rate to the back element
+     * Object not allowed to diffuse out thorugh the back
+     */
+    if (concentration > backConcentration && count != POINTS - 1) {
         /* if diffusable */
         prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthb;
         diffRToB = prefactor*(concentration - backConcentration);
     }
     else {
-        diffRToB = 0.0;
-    }
-
-
-    if (count == POINTS - 1) {
-        //objects at bottom is not allowed to diffuse into vacuum
         diffRToB = 0.0;
     }
 }

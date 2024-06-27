@@ -765,32 +765,19 @@ void SCDWrapper::processDiffEvent(Object* hostObject, const int n, const char si
             addToObjectMap(key, n - 1);            
         }else{
             //surface diffuse to vacuum
-
-            int64 key = hostObject->getKey();
-            int64 HKey = 1;
-
-            // no diffusion of H from surface element back to vacuum
-            if (key == HKey)
-            {
-                hostObject -> addNumber(n);
-                return;
-            }
-            else
-            {
-                if(surface.find(key) != surface.end()){
-                    ++surface[key];
-                    
-                }else{
-                    pair<int64, int> newNode(key, 1);
-                    surface.insert(newNode); /* add to all object */
-                }
-            }
+            if(surface.find(key) != surface.end()){
+                ++surface[key];
+                
+            }else{
+                pair<int64, int> newNode(key, 1);
+                surface.insert(newNode); /* add to all object */
+            } 
         }
     }
     else if(signal == 'b'){
         ++reactions[1][n];
-        /* diffuse to the latter element */
         if ((n + 1) != POINTS) {
+            /* diffuse to the latter element */
             addToObjectMap(key, n + 1);
         }else{
             // bottom diffuses to vacuum
