@@ -2,7 +2,7 @@
 CXX= g++
 
 # Use CXXFLAGS to specify additional compiler options to use:
-CXXFLAGS = -Wall -std=c++0x -O3
+CXXFLAGS = -Wall -std=c++0x -g -pg
 
 # Define variables:
 EXE_FILE= scdexe 
@@ -13,7 +13,7 @@ HEADER_FILES= SCDWrapper.h Bundle.h CascadeDamage.h Damage.h Object.h OneLine.h 
 # Build executable:
 exe : $(EXE_FILE)
 $(EXE_FILE) : $(OBJ_FILES) 
-	$(CXX) -o $(EXE_FILE) $(OBJ_FILES) -lm -O3
+	$(CXX) -o $(EXE_FILE) $(OBJ_FILES) -lm -g -pg
 	# chmod ugo+x $(EXE_FILE)	# turn on execute permissionss
 
 # Rules:

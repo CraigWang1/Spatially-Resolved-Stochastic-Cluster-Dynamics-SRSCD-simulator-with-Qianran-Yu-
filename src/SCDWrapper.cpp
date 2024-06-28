@@ -664,7 +664,12 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
         }
     }
 
-    // Update the OneLines of other objects impacted by this mobile object
+    // Update the OneLines of mobileObjects impacted by this object
+    // if (diffusivity == 0) {
+    //     updateRateToMobile(hostObject, count);
+    // }
+
+    // Update the OneLines of all other objects impacted by this mobile object
     if (diffusivity > 0) {
         updateRateToOther(hostObject, count);
     }
@@ -699,8 +704,23 @@ void SCDWrapper::addReactionToOther(Object const * const mobileObject)
     }
 }
 
+void SCDWrapper::updateRateToMobile(const Object* const hostObject, const int count)
+{
+    // Assumes hostObject has diffusivity of 0, update its comb rates with the mobile objects
+    unordered_map<int64, Object*>::iterator iter;
+    for (iter = mobileObjects.begin(); iter != mobileObjects.end(); ++iter) {
+        Object* mobileObject = iter->second;
+        Bundle* tempBundle = linePool[mobileObject];
+        OneLine* tempLine = tempBundle->lines[count];
+        if (tempLine != nullptr) {
+            tempLine->updateReaction(hostObject, mobileObject, count);
+        }
+    }
+}
+
 void SCDWrapper::updateRateToOther(Object const * const mobileObject, const int count)
 {
+    // Assumes mobileObject has diffusivity > 0, update its comb rates with all other objects
     unordered_map<Object*, Bundle*>::iterator iter;
     for (iter = linePool.begin(); iter != linePool.end(); ++iter) {
         Object* hostObject = iter->first;

@@ -65,8 +65,10 @@ private:
     /* remove one object from map */
     void addReactionToOther(const Object* const);
     /* Impact of one new mobile object to other existing objects */
+    void updateRateToMobile(const Object* const hostObject, const int count);
+    /* When number of immobile object changes, rates of mobile objects related to this object change also */
     void updateRateToOther(const Object* const, const int);
-    /* when number of this object changes, rates related to this object change also */
+    /* when number of this mobile object changes, rates related to this object change also */
     void removeRateToOther(const int64);
     /* when one mobile object has been removed,
      ** rates of this object with other extisting objects should also be removed

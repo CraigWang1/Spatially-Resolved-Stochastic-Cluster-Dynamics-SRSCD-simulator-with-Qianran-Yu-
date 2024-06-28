@@ -14,8 +14,8 @@ OneLine::OneLine(
                  const int count,
                  unordered_map<int64, Object*>& mobileObjects) :totalRate(0.0)
 {
+    computePrefactors(hostObject, count, mobileObjects);
     setOneLine(hostObject, count, mobileObjects);
-    
 }
 
 Reaction OneLine::selectReaction(
@@ -79,11 +79,114 @@ Reaction OneLine::selectReaction(
     return ERROR;
 }
 
+void OneLine::computePrefactors(
+                                const Object* const hostObject, 
+                                const int count,
+                                unordered_map<int64, Object*>& mobileObjects)
+{
+    computeSinkRPrefactor(hostObject);
+    for (int index = 0; index < LEVELS; index++) {
+        computeDissRPrefactor(hostObject, index, count);
+    }
+    unordered_map<int64, Object*>::iterator iter;
+    for (iter = mobileObjects.begin(); iter != mobileObjects.end(); ++iter) {
+        computeCombRPrefactor(hostObject, iter->second, count);
+    }
+    computeSAVRPrefactor(hostObject, count);
+}
+
+void OneLine::computeSinkRPrefactor(const Object* const hostObject)
+{
+    if (!SINK_ON)
+    {
+        sinkRPrefactor = 0.0;
+        return;
+    }
+
+    sinkRPrefactor = hostObject->getDiff()*hostObject->getSink();
+}
+
+void OneLine::computeDissRPrefactor(
+                                    const Object* const hostObject, 
+                                    const int index,
+                                    const int count)
+{
+    if (!DISS_ON)
+    {
+        dissociationRPrefactor[index] = 0.0;
+        return;
+    }
+
+    if (hostObject->getAttri(index) != 0) {
+        int attr[LEVELS] = { 0 };
+        attr[index] = hostObject->signof(hostObject->getAttri(index));
+        Object tempObject(attr, count);
+        dissociationRPrefactor[index] = 4.0 * PI * hostObject->getR1e() / avol * tempObject.getDiff() * hostObject->getBind(index);
+    }
+    else {
+        dissociationRPrefactor[index] = 0.0;
+    }
+}
+
+void OneLine::computeSAVRPrefactor(const Object* const hostObject, const int count)
+{
+    SAVRPrefactor = 0;
+
+    if (!SAV_ON)
+    {
+        return;
+    }
+
+    // If we have a mV-nH object, or nH object
+    if (hostObject->getAttri(0) <= 0 && hostObject->getAttri(2) > 0 && hostObject->getNumber(count) > 0)
+    {
+        int numH = hostObject->getAttri(2);
+        int numVacancies = abs(hostObject->getAttri(0));
+        // double thresholdH = 4.75 + 4*numVacancies;
+        double thresholdH = 4*numVacancies;
+        if (numH > thresholdH)
+        {
+            SAVRPrefactor = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE);
+        }
+    }
+}
+
+void OneLine::computeCombRPrefactor(
+                                    const Object* const hostObject,
+                                    const Object* const mobileObject,
+                                    const int count)
+{
+    if (!COMB_ON)
+    {
+        secondRPrefactor[mobileObject->getKey()] = 0.0;
+        return;
+    }
+    
+    // H+H-->2H
+    // Disable H clustering for now b/c not sure how it works with SAV
+    if(count != 0 && hostObject->getKey() == 1 && mobileObject->getKey() == 1){
+        secondRPrefactor[mobileObject->getKey()] = 0.0;
+        return;
+    }
+
+    double volume = VOLUME;
+
+    // volume on surface layer = volume/20nm * 0.54nm
+    if(count == 0)
+        volume = SURFACE_VOLUME;
+
+    double r12 = hostObject->getR1() + mobileObject->getR1();
+    double dimensionTerm = computeDimensionTerm(r12, hostObject, mobileObject, count);
+    double prefactor = 4.0*PI*r12*dimensionTerm/volume;
+    secondRPrefactor[mobileObject->getKey()] = prefactor;
+}
+
 void OneLine::addReaction(
                           const Object* const hostObject,
                           const Object* const newObject,
                           const int count)
 {
+    computeCombRPrefactor(hostObject, newObject, count);
     double rate = computeCombReaction(hostObject, newObject, count);
     std::pair<int64, double> oneReaction(newObject->getKey(), rate);
     secondR.insert(oneReaction);
@@ -252,13 +355,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
 
 void OneLine::computeSinkReaction(const Object* const hostObject, const int count)
 {
-    if (!SINK_ON)
-    {
-        sinkR = 0.0;
-        return;
-    }
-
-    sinkR = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSink();
+    sinkR = sinkRPrefactor* hostObject->getNumber(count);
 }
 
 void OneLine::computeDissReaction(
@@ -266,28 +363,7 @@ void OneLine::computeDissReaction(
                                   const int index,
                                   const int count)
 {
-    if (!DISS_ON)
-    {
-        dissociationR[index] = 0.0;
-        return;
-    }
-
-    if (hostObject->getAttri(index) != 0) {
-        int attr[LEVELS] = { 0 };
-        attr[index] = hostObject->signof(hostObject->getAttri(index));
-        Object tempObject(attr, count);
-        // if(count == 0 && hostObject->getKey() == 2){
-            // dissociationR[index] = 4.0 * PI * hostObject->getR1e() / avol * tempObject.getDiff() * hostObject->getBindSH() * hostObject->getNumber(count);
-            
-        // }else{
-            dissociationR[index] = 4.0 * PI * hostObject->getR1e() / avol * tempObject.getDiff() * hostObject->getBind(index) * hostObject->getNumber(count);
-            
-        // }
-    }
-    else {
-        dissociationR[index] = 0.0;
-        
-    }
+    dissociationR[index] = dissociationRPrefactor[index] * hostObject->getNumber(count);
 }
 
 double OneLine::computeCombReaction(
@@ -295,74 +371,20 @@ double OneLine::computeCombReaction(
                                     const Object* const mobileObject,
                                     const int count)
 {    
-    if (!COMB_ON)
-    {
-        return 0.0;
-    }
+    double number;
+    if (hostObject->getKey() != mobileObject->getKey())
+        number = hostObject->getNumber(count)*mobileObject->getNumber(count);
+    else
+        number = hostObject->getNumber(count)*(hostObject->getNumber(count) - 1);
 
-    double concentration;
-    double r12;
-    double dimensionTerm;
-    double volume;
-    if(count == 0){
-        volume = SURFACE_VOLUME;
-        // volume on surface layer = volume/20nm * 0.54nm
-        
-    }else{
-        volume = VOLUME;
-    }
-    
-    if (hostObject->getKey() != mobileObject->getKey()) {
-        concentration = hostObject->getNumber(count)*mobileObject->getNumber(count) / volume;
-        
-    }else {
-        concentration = hostObject->getNumber(count)*(hostObject->getNumber(count) - 1) / volume;
-        
-    }
-
-    // H+H-->2H
-    // Disable H clustering for now b/c not sure how it works with SAV
-    if(count != 0 && hostObject->getKey() == 1 && mobileObject->getKey() == 1){
-        return 0.0;
-    }
-
-    /*
-    if(hostObject->getKey() == 1 && mobileObject->getKey() == 2){
-        return 0.0;
-    }
-    if(hostObject->getKey() == 2 && mobileObject->getKey() == 1){
-        return 0.0;
-    }
-    */
-
-    r12 = hostObject->getR1() + mobileObject->getR1();
-    dimensionTerm = computeDimensionTerm(r12, hostObject, mobileObject, count);
-    return 4.0*PI*concentration*r12*dimensionTerm;
+    return secondRPrefactor[mobileObject->getKey()] * number;
 }
 
 void OneLine::computeSAVReaction(
                                  const Object* const hostObject,
                                  const int count)
 {
-    SAVR = 0;
-
-    if (!SAV_ON)
-    {
-        return;
-    }
-
-    // If we have a mV-nH object, or nH object
-    if (hostObject->getAttri(0) <= 0 && hostObject->getAttri(2) > 0 && hostObject->getNumber(count) > 0)
-    {
-        int numH = hostObject->getAttri(2);
-        int numVacancies = abs(hostObject->getAttri(0));
-        // double thresholdH = 4.75 + 4*numVacancies;
-        double thresholdH = 4*numVacancies;
-        if (numH > thresholdH)
-        {
-            SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * hostObject->getNumber(count);
-        }
-    }
+    SAVR = SAVRPrefactor * hostObject->getNumber(count);
 }
 
 double OneLine::computeDimensionTerm(

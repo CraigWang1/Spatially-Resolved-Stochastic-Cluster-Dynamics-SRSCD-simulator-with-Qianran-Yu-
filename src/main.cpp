@@ -45,7 +45,7 @@ int main()
     srscd->drawSpeciesAndReactions(advTime);
     clock_t prev_time = clock();
     cout << H_SATURATION_CONCENTRATION * VOLUME << endl;
-    while(!done)
+    for (int i = 0; i < 1000000; i++) 
     {
         hostObject = srscd->selectReaction(theOtherKey, reaction, pointIndex);/* choose an event */
         srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */

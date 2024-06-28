@@ -13,11 +13,27 @@ private:
     long double sinkR;                 // go to sink reaction rate
     long double dissociationR[LEVELS];
     long double SAVR;                // super abundant vacancy reaction rate
+
+    // Prefactors to make calculating rates easier.
+    // Usually they are the rates associated with just 1 instance of the hostObject
+    long double diffRPrefactor;
+    long double sinkRPrefactor;
+    long double dissociationRPrefactor[LEVELS];
+    long double SAVRPrefactor;
+    long double combRPrefactor;
+
     // dissociation reaction rate
     long double totalRate;             // totalRate of the line;
     std::unordered_map<int64, long double> secondR;  // second reaction rate
+    std::unordered_map<int64, long double> secondRPrefactor; // prefactors for comb rate
     
     // private functions
+    void computePrefactors(const Object* const, const int, unordered_map<int64, Object*>&);
+    void computeSinkRPrefactor(const Object* const);
+    void computeDissRPrefactor(const Object* const, const int, const int);
+    void computeSAVRPrefactor(const Object* const, const int);
+    void computeCombRPrefactor(const Object* const, const Object* const, const int);
+
     void setOneLine(const Object* const, const int, unordered_map<int64, Object*>&); // build one line
     void computeDiffReaction(const Object* const, const int);  // compute diffusion rate
     void computeSinkReaction(const Object* const, const int);         // compute absorption reaction rate
