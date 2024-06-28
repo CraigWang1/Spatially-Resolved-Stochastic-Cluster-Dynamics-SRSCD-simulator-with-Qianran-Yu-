@@ -321,11 +321,12 @@ double OneLine::computeCombReaction(
     }
 
     // H+H-->2H
-    /*
+    // Disable H clustering for now b/c not sure how it works with SAV
     if(count != 0 && hostObject->getKey() == 1 && mobileObject->getKey() == 1){
         return 0.0;
     }
 
+    /*
     if(hostObject->getKey() == 1 && mobileObject->getKey() == 2){
         return 0.0;
     }

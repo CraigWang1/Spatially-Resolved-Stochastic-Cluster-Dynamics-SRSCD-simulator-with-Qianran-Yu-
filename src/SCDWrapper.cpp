@@ -835,6 +835,12 @@ void SCDWrapper::processDissoEvent(
         /* change above reaction to V1-Hm -> m * H +V */
         
     }
+    else if (hostObject->getAttri(0) == 1 && hostObject->getAttri(2) > 0 && monomerKey == 1000000){
+        theOtherKey = HKey;
+        number = hostObject->getAttri(2);
+        /* SIA1-Hm -> Hm + SIA */
+        /* change above reaction to SIA1-Hm -> m*H + SIA */
+    }
     
     addToObjectMap(theOtherKey, n, number);
 
