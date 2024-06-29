@@ -112,6 +112,13 @@ void OneLine::updateLine(
     setOneLine(hostObject, count, mobileObjects);
 }
 
+void OneLine::updateDiff(
+                        const Object* const hostObject, 
+                        const int count)
+{
+    computeDiffReaction(hostObject, count);
+}
+
 const long double OneLine::computeTotalRate()
 {
     int i;
@@ -322,7 +329,7 @@ double OneLine::computeCombReaction(
 
     // H+H-->2H
     // Disable H clustering for now b/c not sure how it works with SAV
-    if(count != 0 && hostObject->getKey() == 1 && mobileObject->getKey() == 1){
+    if(hostObject->getKey() == 1 && mobileObject->getKey() == 1){
         return 0.0;
     }
 

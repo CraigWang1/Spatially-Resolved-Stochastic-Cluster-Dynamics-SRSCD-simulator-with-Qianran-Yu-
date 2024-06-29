@@ -21,7 +21,6 @@ int main()
     double system_dt = 0.0;
     double accTime = 0.0;
     long double bulkRate = 0.0; /* total rate of the whole bulk */
-    double totalDPA = 0.2;
     double dpa = 0.0;
     double progress = 0.0; /* progress of 50 = 50% done with simulation */
     double eta_min = 0.0;
@@ -74,7 +73,7 @@ int main()
             // Chose between dpa or time to calculate progress
             if (IRRADIATION_ON)
             {
-                progress = (dpa / totalDPA) * 100.;
+                progress = (dpa / TOTAL_DPA) * 100.;
             }
             else
             {

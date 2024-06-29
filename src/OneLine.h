@@ -33,6 +33,7 @@ public:
     void removeReaction(const int64); /* delete one reaction when an object is deleted */
     void updateReaction(const Object* const, const Object* const, const int);/* when the number of another object has changed, one rate in this line should be changed */
     void updateLine(const Object* const, const int, unordered_map<int64, Object*>&); /* when number of this object has changed, rates in this line should be updated */
+    void updateDiff(const Object* const, const int);
     const long double computeTotalRate();
     const long double getDiffRateF() const;
     const long double getDiffRateB() const;

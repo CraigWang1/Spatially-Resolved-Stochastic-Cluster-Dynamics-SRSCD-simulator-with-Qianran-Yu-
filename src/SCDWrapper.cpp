@@ -18,7 +18,7 @@ static int generationNumber = 0;
 static int dissV = 0; //this only counts number of events
 static int dissH = 0; //this only counts number of events
 /* public funciton */
-SCDWrapper::SCDWrapper():damage(), cpdf()
+SCDWrapper::SCDWrapper():damage(), cpdf(), totalDpa(0)
 {
     formationE[1] = V1_FORMATION_ENERGY; 
 
@@ -667,19 +667,19 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
     // Update the OneLines of other objects impacted by this mobile object
     if (diffusivity > 0) {
         updateRateToOther(hostObject, count);
-    }
 
-    // Update the OneLine of this object in neighbouring elements (diffusion rates change)
-    if((count-1) >= 0){
-        OneLine* tempLine = linePool[hostObject]->lines[count - 1];
-        if(tempLine != nullptr){
-            tempLine->updateLine(hostObject, count - 1, mobileObjects);
+        // Update diffusion rates of this object in neighbouring elements
+        if((count-1) >= 0){
+            OneLine* tempLine = linePool[hostObject]->lines[count - 1];
+            if(tempLine != nullptr){
+                tempLine->updateDiff(hostObject, count - 1);
+            }
         }
-    }
-    if((count + 1) < POINTS){
-        OneLine* tempLine = linePool[hostObject]->lines[count + 1];
-        if(tempLine != nullptr){
-            tempLine->updateLine(hostObject, count + 1, mobileObjects);
+        if((count + 1) < POINTS){
+            OneLine* tempLine = linePool[hostObject]->lines[count + 1];
+            if(tempLine != nullptr){
+                tempLine->updateDiff(hostObject, count + 1);
+            }
         }
     }
 }
@@ -1032,6 +1032,7 @@ void SCDWrapper::getIonInsertion(const int n, const double dt, fstream& fs)
     //fstream fk;
     //fk.open("V_insertion.txt", ios::app);
     doseIon[n] += damage.getDpaRate(n)*dt;
+    totalDpa += doseIon[n];
     in_time += dt;
     //fk << damage.getDpaRate(n) << " * " << dt << "  " << in_time << "   ";
     CascadeDamage damage;
@@ -1477,11 +1478,7 @@ void SCDWrapper::writeVacancy(){
 }
 
 double SCDWrapper::getTotalDpa(){
-    double dpa = 0;;
-    for(int i = 0; i<POINTS; i++){
-        dpa += doseIon[i];
-    }
-    return dpa;
+    return totalDpa;
 }
 
 

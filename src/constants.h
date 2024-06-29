@@ -102,4 +102,3 @@ const double NM_TO_CM = 1.0e-7;
 #define RESTART            // Do restart. */
 /* #define RATE_DUMP          // Dump rate spectrum every PSTEPS. */
 /* #define DEBUG              // Check cascade damage. */
-
