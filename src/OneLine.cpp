@@ -279,7 +279,15 @@ void OneLine::computeDissReaction(
         return;
     }
 
-    if (hostObject->getAttri(index) != 0) {
+
+    // All types of monomer (I1, V1, H1, He1 object, etc.) should have 0 dissociation rate
+    int elementNum = 0;
+    for (int i = 0; i < LEVELS; i++)
+    {  
+        elementNum += abs(hostObject->getAttri(i));
+    }
+    
+    if (hostObject->getAttri(index) != 0 && elementNum > 1) {
         int attr[LEVELS] = { 0 };
         attr[index] = hostObject->signof(hostObject->getAttri(index));
         Object tempObject(attr, count);

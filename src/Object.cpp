@@ -142,7 +142,7 @@ void Object::getThreeNumber(const int count, int* objectN) const
     }
 }
 
-void Object::display()
+void Object::display() const
 {
     cout << "Information of Object " << oKey << ": " << endl;
     cout << "Attributes: ";

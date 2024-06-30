@@ -54,6 +54,6 @@ public:
     int getDim() const;     // get access to dimensionality
     double getBindSH() const; // get binding energy of surface hydrogen
     void getThreeNumber(const int, int*) const;// get access to object number (number[POINTS])
-    void display();
+    void display() const;
 };
 
