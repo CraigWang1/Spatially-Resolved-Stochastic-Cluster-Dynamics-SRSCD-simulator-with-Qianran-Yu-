@@ -5,12 +5,14 @@
 #include"cpdf.h"
 #include"rvgs.h"
 #include"CascadeDamage.h"
+#include"BoundaryChange.h"
 #include"constants.h"
 // #include"gnuplot_i.h"
 #include <string>
 #include <iomanip>
 #include <cassert>
 #include <random>
+#include <omp.h>
 
 class SCDWrapper {
 private:
@@ -20,6 +22,8 @@ private:
     unordered_map<Object*, Bundle*> linePool;
     unordered_map<int64, int> surface;
     unordered_map<int64, int> bottom;
+    vector<BoundaryChange*> RxBoundaryChangeQueue; // Store changes in processor's boundary volume elements
+    vector<BoundaryChange*> TxBoundaryChangeQueue;
     unordered_map<int, double> formationE; 
     unordered_map<int, double> HSaturationLimit; // look up table for HSaturationLimit
 
@@ -29,10 +33,14 @@ private:
     long double sinkDissRate[2][POINTS];
     // dissociation rate of V/H from dislocations
     int reactions[8][POINTS];
-    
+    int startIndex, endIndex;   // assign this srscd object to a subsection of the volume for parallelization
+    int numVolumeElements;      // ^
+    long double noneRate;       // rate of no reaction happening in this domain (Dunn 2016)
+
     /* hold reactions, 1st dimension is reaction type, second dimension is element, value is total number of this reaction */
     long double matrixRate[POINTS];    // total rate in every element(point)
     long double bulkRate;  // total rate in the whole bulk;
+    long double domainRate; // total rate in this srscd's assigned domain (startIndex to endIndex)
     double totalDpa;
     bool lastElemSaturated;
     enum InsertStyle {INTERSTITIAL, SUBSTITUTIONAL};
@@ -112,8 +120,11 @@ public:
     void computeMatrixRate(const int n);  // computes total rate in element n
     void updateMatrixRate(const int n, const Reaction reaction); // computes total rate in elements that are affected by reaction
     void computeBulkRate();
+    void computeDomainRate();
+    void examineDomainRate();
     long double getBulkRate();
     Object* selectReaction(int64&, Reaction&, int&);  // select reaction
+    Object* selectDomainReaction(int64&, Reaction&, int&);  // select reaction inside processor's domain
     void processEvent(const Reaction, Object*, const int, const int64, const double, const double);    // deal with reactions
     ~SCDWrapper();          /* destructor to delete everything newed */
     // get series functions that allow direct manipulation on private data member
@@ -131,11 +142,23 @@ public:
     friend void restart(long int&, double&, SCDWrapper*);
     /* test functions, don't need in the future */
     void test(const int); /* count how many vacancies now in the bulk */
-    
+    void setDomain(const int&, const int&);
+    void fillNoneReaction(const double&);
+    void clearNoneReaction();
+    void implementBoundaryChanges(vector<BoundaryChange*>&);
+    void combineVolumeElements(const vector<SCDWrapper*> &);
+    double getDomainRate() const;
+
     /* draw picture functions */
     void drawSpeciesAndReactions(double&t);
     void drawDamage(double&); /* this function draw all diagrams in damage process */
     void drawHD(double&); /* this function draw all diagrams in H deposition process */
     void writeVacancy();
     double getTotalDpa();
+    double getDomainDpa();
+    vector<BoundaryChange*> getTxBoundaryChangeQueue();
+    void clearTxBoundaryChangeQueue();
+    void setRxBoundaryChangeQueue(vector<BoundaryChange*> queue);
+    int getStartIdx();
+    int getEndIdx();
 };
