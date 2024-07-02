@@ -83,7 +83,7 @@ const double H_SATURATION_CONCENTRATION = DENSITY * exp(-HEAT_OF_SOLUTION/KB/TEM
 const double SURFACE_VOLUME = VOLUME + (VOLUME / 20. * SURFACE_THICKNESS); // surface element is the thin surface layer + one bulk element
 const double V_MONOMER_BINDING_ENERGY[7] = {-0.1, 0.04, 0.64, 0.72, 0.89, 0.72, 0.88}; /* Data from paper Table A1.*/
 
-const bool LOG_REACTIONS = true;
+const bool LOG_REACTIONS = false;
 
 /* Configure which features to run */
 const bool IRRADIATION_ON = false;
