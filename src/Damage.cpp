@@ -131,6 +131,10 @@ void Damage::computeDamageTwo(const int n)
     double concentration_H = 1.34e+4;
     if (n == 0) {
         damage[n][2] = concentration_H * FLUX_H * volume; // rate (num hydrogen insertions/s)
+        damage[n][2] *= sqrt(H_DEPOSITION_ENERGY / 113.); // Higher H energy means deeper penetration which means higher insertion rate, from Ogorodnikova 2015 (Fundamental Aspects...), we calibrated original concentration_H with 113 eV H atoms
+        double oldReflectionCoeff = -0.074 * log(113) + 0.96; // concentration_H was calibrated with 113 eV H atoms
+        double newReflectionCoeff = -0.074 * log(H_DEPOSITION_ENERGY) + 0.96; // Data regression from Ogorodnikova 2015
+        damage[n][2] *= (1 - newReflectionCoeff) / (1 - oldReflectionCoeff); // As H atom energy increases, reflection coefficient decreases, so insertion rate increases
         // cout << "damage2: " << damage[n][2] << endl;
     }
     else {
