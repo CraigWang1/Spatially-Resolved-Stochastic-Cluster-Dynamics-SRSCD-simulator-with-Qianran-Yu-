@@ -337,7 +337,15 @@ double OneLine::computeCombReaction(
 
     // H+H-->2H
     // Disable H clustering for now b/c not sure how it works with SAV
-    if(hostObject->getKey() == 1 && mobileObject->getKey() == 1){
+    if (hostObject->getKey() == 1 && mobileObject->getKey() == 1){
+        return 0.0;
+    }
+
+    // Disable multiples of 1V-12H + 1H because vacancy can store max 12H, save sim time
+    if (hostObject->getAttri(0) < 0 && 
+        hostObject->getAttri(2) == abs(hostObject->getAttri(0))*12 &&
+        mobileObject->getKey() == 1)
+    {
         return 0.0;
     }
 
