@@ -7,6 +7,7 @@ Damage::Damage()
     for (index = 0; index < POINTS; ++index) {
         totalRate[index] = 0.0;
     }
+    totalIonRate = 0;
     readFile();
     //for(index=0; index<1; ++index){
     for (index = 0; index < POINTS; ++index) {
@@ -109,6 +110,7 @@ void Damage::computeDamageZero(const int n)
     }
 
     //damage[n][0] = DPA_RATE[n] * DENSITY*VOLUME / NRT[n];
+    totalIonRate += damage[n][0];
     totalRate[n] += damage[n][0];
 }
 
@@ -157,4 +159,9 @@ double Damage::getDpaRate(const int n){
 double Damage::getDamageTwo(const int n)
 {
     return damage[n][2];
+}
+
+double Damage::getTotalIonRate()
+{
+    return totalIonRate;
 }

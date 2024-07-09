@@ -78,6 +78,8 @@ for i in range(len(fluences)):
 		for line_hold in f:
 			line_hold = line_hold.split(", ")
 			depth_micrometer = float(line_hold[0])
+			if depth_micrometer > 2:
+				break
 			concentration_at = float(line_hold[1]) # at. % units
 			experiment_positions.append(depth_micrometer)
 			concentrations.append(concentration_at)
@@ -140,21 +142,20 @@ with open("species.txt") as f:
 	# Apply the filter using Gustafsson's method
 	avg_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c, method="gust")
 
-	upto = 95
-	if plot_h:
-		# plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
-		plt.plot(positions[:upto], trapped_hydrogen_c[:upto], label="Simulation", alpha=0.3)
-		plt.plot(positions[:upto], avg_hydrogen_c[:upto], label="Simulation Filtered", color='blue', marker='^', linestyle='-', markersize=0)
-		# plt.plot(positions[:upto], all_hydrogen_c[:upto], label="Hydrogen Concentration")
-	# if plot_v:
-		# indices_to_delete = [i for i in range(len(vacancy_c)) if vacancy_c[i] == 0]		
-		# positions_vacancy = np.delete(positions, indices_to_delete)
-		# nonzero_vacancy_c = np.delete(vacancy_c, indices_to_delete)
-		# plt.plot(positions[:upto], vacancy_c[:upto], color='r', label="Vacancy Concentration")
-
-
 concentrations = [c*time/125 for c in concentrations]
 plt.plot(experiment_positions, concentrations, label="Experiment", color='r')
+
+upto = 95
+if plot_h:
+	# plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
+	plt.plot(positions[:upto], trapped_hydrogen_c[:upto], label="Simulation", alpha=0.3)
+	plt.plot(positions[:upto], avg_hydrogen_c[:upto], label="Simulation Filtered", color='blue', marker='^', linestyle='-', markersize=0)
+	# plt.plot(positions[:upto], all_hydrogen_c[:upto], label="Hydrogen Concentration")
+# if plot_v:
+	# indices_to_delete = [i for i in range(len(vacancy_c)) if vacancy_c[i] == 0]		
+	# positions_vacancy = np.delete(positions, indices_to_delete)
+	# nonzero_vacancy_c = np.delete(vacancy_c, indices_to_delete)
+	# plt.plot(positions[:upto], vacancy_c[:upto], color='r', label="Vacancy Concentration")
 
 plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
 

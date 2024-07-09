@@ -4,7 +4,6 @@
 // SCDWrapper -- implementaions of class SCDWrapper
 
 static double fluenceH = 0.0;
-static double in_time = 0.0;
 static double doseIon[POINTS] = {0.0};
 static int annilV = 0;
 static int start = 1;
@@ -26,7 +25,10 @@ SCDWrapper::SCDWrapper():damage(), cpdf(), totalDpa(0)
         computeMatrixRate(i);
     } /* initialized matrix rate in every element */
     computeBulkRate();  /* initialized total rate in the bulk */
-    
+    for (int i = 0; i < NUM_SECTORS; i++) {
+        sectorRates[i] = 0;
+    }
+
     /* initialize reactions[][] */
     for(int i=0; i<8; i++){
         for(int j=0; j<POINTS; j++){
@@ -101,6 +103,7 @@ void SCDWrapper::computeMatrixRate(const int n)
     /* Qianran 0925 */
     //cout << "Element " << n + 1 << endl;
     matrixRate[n] = 0.0;
+    matrixNumReactions[n] = 0;
     unordered_map<int64, Object*>::iterator iter;
     for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
         int64 tempKey = iter->first;
@@ -125,12 +128,27 @@ void SCDWrapper::computeMatrixRate(const int n)
         OneLine* tempLine = tempBundle->lines[n];
         if (tempLine != nullptr) {
             matrixRate[n] += tempLine->computeTotalRate();
+            matrixNumReactions[n] += tempLine->computeNumReactions();
             //tempLine->display(tempObject);/* Qianran 0925 */
         }
     }
-    matrixRate[n] += damage.getTotalDamage(n);
-    matrixRate[n] += sinkDissRate[0][n];
-    matrixRate[n] += sinkDissRate[1][n];
+
+    if (damage.getTotalDamage(n) > 0)
+    {
+        matrixRate[n] += damage.getTotalDamage(n);
+        matrixNumReactions[n]++;
+    }
+    if (sinkDissRate[0][n] > 0)
+    {
+        matrixRate[n] += sinkDissRate[0][n];
+        matrixNumReactions[n]++;
+    }
+    if (sinkDissRate[1][n] > 0)
+    {
+        matrixRate[n] += sinkDissRate[1][n];
+        matrixNumReactions[n]++;
+    }
+
 }
 
 void SCDWrapper::updateMatrixRate(const int n, const Reaction reaction)
@@ -147,44 +165,8 @@ void SCDWrapper::updateMatrixRate(const int n, const Reaction reaction)
     if (affectedEnd >= POINTS)
         affectedEnd = POINTS - 1;
 
-    for (int i = affectedStart; i <= affectedEnd; i++) {
-        matrixRate[i] = 0;
-        matrixRate[i] += damage.getTotalDamage(i);
-        matrixRate[i] += sinkDissRate[0][i];
-        matrixRate[i] += sinkDissRate[1][i];
-    }
-
-    unordered_map<int64, Object*>::iterator iter;
-    for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
-        int64 tempKey = iter->first;
-        Object* tempObject = iter->second;
-        int totalNumber = tempObject->getTotalNumber();
-        while(totalNumber == 0) {
-            iter++;
-            removeObjectFromMap(tempKey);
-            if (iter != allObjects.end()) {
-                tempObject = iter->second;
-                tempKey = iter->first;
-                totalNumber = tempObject->getTotalNumber();
-            }
-            else {
-                break;
-            }
-        }
-        if (iter == allObjects.end()) {
-            break;
-        }
-
-        for (int i = affectedStart; i <= affectedEnd; i++) {
-            Bundle* tempBundle = linePool[tempObject];
-            OneLine* tempLine = tempBundle->lines[i];
-            if (tempLine != nullptr) {
-                matrixRate[i] += tempLine->computeTotalRate();
-                //tempLine->display(tempObject);/* Qianran 0925 */
-            }
-        }
-
-    }
+    for (int i = affectedStart; i <= affectedEnd; i++)
+        computeMatrixRate(i);
 }
 
 void SCDWrapper::computeBulkRate()
@@ -273,13 +255,87 @@ Object* SCDWrapper::selectReaction(
     return tempObject;
 }
 
+Object* SCDWrapper::selectSectorReaction(
+                                         int64& theOtherKey,
+                                         Reaction& reaction,
+                                         int& count,
+                                         int sector)
+{
+    ofstream fs;
+    fs.open("selectReaction.txt", ios::app);
+    int pointIndex;
+
+    // Generate a random number
+    // Create a random device to seed the random number engine
+    std::random_device rd;
+
+    // Initialize the random number engine with the seed
+    std::default_random_engine engine(rd());
+
+    // Create a uniform real distribution that produces values in the range [0.0, 1.0)
+    std::uniform_real_distribution<long double> distribution(0.0L, 1.0L);
+
+    // Generate a random long double
+    long double randomNum = distribution(engine);
+
+    long double randRate = randomNum * getSectorRate(sector);
+    // long double randRate = ((double)rand() / (RAND_MAX+1.0))*bulkRate; // add 1 to make the random rate [0, 1)
+    long double tempRandRate = randRate;
+    Object* tempObject = nullptr;
+    Bundle* tempBundle;
+    OneLine* tempLine;
+    //fs << "BulkRate = " << bulkRate << "RandRate = " << randRate << endl;
+    SectorBound sb = sectorBounds[sector];
+    for (pointIndex = sb.leftIdx; pointIndex <= sb.rightIdx; ++pointIndex) {
+        if (matrixRate[pointIndex] < tempRandRate) {
+            tempRandRate -= matrixRate[pointIndex];
+            continue;
+        }/* if the event is not positioned in this element, move on to the next one */
+        else {
+            reaction = NONE;
+            unordered_map<int64, Object*>::iterator iter = allObjects.begin();
+            while (reaction == NONE && iter != allObjects.end()) {
+                tempObject = iter->second;
+                tempBundle = linePool[tempObject];
+                tempLine = tempBundle->lines[pointIndex];
+                if (tempLine != nullptr) {
+                    reaction = tempLine->selectReaction(tempObject, theOtherKey, tempRandRate);
+                }
+                ++iter;
+            }
+            if (reaction == NONE) {
+                reaction = damage.selectDamage(pointIndex, tempRandRate);
+            }
+            if (reaction == NONE){
+                if(sinkDissRate[0][pointIndex] >= tempRandRate){
+                    reaction = DISSV;
+                }else{
+                    reaction = DISSH;
+                }
+                
+            }
+            
+            count = pointIndex;
+            if (LOG_REACTIONS)
+                fs << "Element = " << pointIndex + 1 <<", "<< "Reaction = " << reaction << endl << endl;
+            fs.close();
+            return tempObject;
+        }
+    }
+    // Sometimes there is a case where randRate == bulkRate, which might result in a 
+    // tiny bit of leftover number (eg. doing 9e14-9e14 gives 0.0001 when it should give 0)
+    // causing the program to think that no event was selected
+    cout << "returned nullptr" << endl;
+    cout << randRate << " " << getSectorRate(sector) << " " << tempRandRate << endl;
+    return tempObject;
+}
+
 void SCDWrapper::processEvent(
                               const Reaction reaction,
                               Object* hostObject,
                               const int n,
                               const int64 theOtherKey,
-                              const double time,
-                              const double dt
+                              const double time
                               )
 {
     // Check if last element is saturated
@@ -346,13 +402,14 @@ void SCDWrapper::processEvent(
                 fs << hostObject->getKey() << "  in element " << n << " experiences SAV (ejects interstitial)" << endl;
             break;
         case PARTICLE:
-            getParticleInsertion(n, dt, fs);
+            getParticleInsertion(n, fs);
             break;
         case HE:
             getHeInsertion(n);
             break;
         case H:
-            getHInsertion(n, dt, fs);
+            getHInsertion(n, fs);
+            fluenceH = FLUX_H * time;
             break;
         case DISSV:
             processSinkDissEvent(0, n);
@@ -370,7 +427,8 @@ void SCDWrapper::processEvent(
 
     // Keep track of affected reaction rates
     updateMatrixRate(n, reaction);
-    computeBulkRate();
+    for (int i = 0; i < NUM_SECTORS; i++)   // compute both sector rates in case an event happened at edge of sector
+        computeSectorRate(i);
 
     fs.close();
 }
@@ -411,6 +469,9 @@ void SCDWrapper::examineRate()
     for (int i = 0; i < POINTS; ++i) {
         computeMatrixRate(i);
         //fs << matrixRate[i] <<"        ";
+    }
+    for (int i = 0; i < NUM_SECTORS; ++i) {
+        computeSectorRate(i);
     }
     // computeBulkRate();
     //fs << "BulkRate" << bulkRate << endl<<endl<<endl;
@@ -633,6 +694,18 @@ void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
         /* object wasn't found! build new object and insert it into map */
         anObject = new Object(key, n, number);
         addNewObjectToMap(anObject);
+    }
+
+    // Update information on mobile objects along processor's boundary
+    Object temp(key, 0);
+    if (temp.getDiff() > 0)
+    {
+        if (n == startIdx || (n == startIdx - 1 && n != 0))
+        {
+            leftBoundaryChanges.push_back(new BoundaryChange(key, n, number));
+        }
+        else if (n == endIdx || (n == endIdx + 1 && n != POINTS-1))
+            rightBoundaryChanges.push_back(new BoundaryChange(key, n, number));
     }
 }
 
@@ -1022,7 +1095,7 @@ void SCDWrapper::getNeutronInsertion(const int n)
     }
 }
 
-void SCDWrapper::getIonInsertion(const int n, const double dt, fstream& fs)
+void SCDWrapper::getIonInsertion(const int n, fstream& fs)
 {
     ++reactions[5][n];
     double ionEnergy = 0.0;
@@ -1031,10 +1104,8 @@ void SCDWrapper::getIonInsertion(const int n, const double dt, fstream& fs)
     int64 clusterKey;
     //fstream fk;
     //fk.open("V_insertion.txt", ios::app);
-    doseIon[n] += damage.getDpaRate(n)*dt;
+    doseIon[n] += damage.getDpaRate(n) / damage.getTotalIonRate();
     totalDpa += doseIon[n];
-    in_time += dt;
-    //fk << damage.getDpaRate(n) << " * " << dt << "  " << in_time << "   ";
     CascadeDamage damage;
     while (ionEnergy < totalEnergy) 
     {
@@ -1079,18 +1150,17 @@ void SCDWrapper::getIonInsertion(const int n, const double dt, fstream& fs)
         damage.cleanDamage();
         ionEnergy += pkaEnergy;
     }
-    //fk<<dt<<"   "<<nov<<endl;
     //fk.close();
 }
 
-void SCDWrapper::getParticleInsertion(const int n, const double dt, fstream& fs)
+void SCDWrapper::getParticleInsertion(const int n, fstream& fs)
 {
 #ifdef ELECTRON
     getElectronInsertion(n);
 #elif defined (NEUTRON)
     getNeutronInsertion(n);
 #elif defined (ION)
-    getIonInsertion(n, dt, fs);
+    getIonInsertion(n, fs);
 #endif
 }
 
@@ -1101,10 +1171,8 @@ void SCDWrapper::getHeInsertion(const int n)
     addToObjectMap(clusterKey, n);
 }
 
-void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
+void SCDWrapper::getHInsertion(const int n, fstream& fs)
 {
-    fluenceH += FLUX_H*dt; /* 4.00e+16 is H flux */
-
     ++reactions[6][n];
     int channel = 2;
     int64 clusterKey = atomProperty(INTERSTITIAL, channel + 1);
@@ -1536,4 +1604,163 @@ int SCDWrapper::getMaxVNum()
         }
     }
     return max;
+}
+
+void SCDWrapper::setDomain(int start, int end)
+{
+    startIdx = start;
+    endIdx = end;  // inclusive
+    int numSpatialElem = endIdx - startIdx + 1;
+
+    // Partition start and end indices (inclusive) for each sector of this processor
+    double currIdx = startIdx;
+    double idxIncrement = (double) numSpatialElem / NUM_SECTORS;
+    for (int i = 0; i < NUM_SECTORS; i++)
+    {
+        SectorBound sb;
+        sb.leftIdx = round(currIdx);
+        currIdx += idxIncrement;
+        sb.rightIdx = round(currIdx) - 1;
+        sectorBounds.push_back(sb);
+    }
+}
+
+void SCDWrapper::computeSectorRate(int sectorIdx)
+{
+    sectorRates[sectorIdx] = 0.0;
+    SectorBound sb = sectorBounds[sectorIdx];  // sectors are 0-indexed, left to right in spatial map
+    for (int i = sb.leftIdx; i <= sb.rightIdx; i++)
+        sectorRates[sectorIdx] += matrixRate[i];
+}
+
+int SCDWrapper::computeSectorNumReactions(int sectorIdx)
+{
+    int numReactions = 0;
+    SectorBound sb = sectorBounds[sectorIdx];
+    for (int i = sb.leftIdx; i <= sb.rightIdx; i++)
+        numReactions += matrixNumReactions[i];
+    return numReactions;
+}
+
+long double SCDWrapper::getSectorRate(int sectorIdx)
+{
+    return sectorRates[sectorIdx];
+}
+
+long double SCDWrapper::findMaxAvgSectorRate()
+{
+    long double maxAvg = 0;
+    for (int i = 0; i < NUM_SECTORS; i++)
+    {
+        int sectorNumReactions = computeSectorNumReactions(i);
+        long double avgRate = 0;
+        if (sectorNumReactions > 0)
+            avgRate = getSectorRate(i) / sectorNumReactions;
+        maxAvg = max(maxAvg, avgRate);
+    }
+
+    return maxAvg;
+}
+
+int SCDWrapper::getStartIdx()
+{
+    return startIdx;
+}
+
+int SCDWrapper::getEndIdx()
+{
+    return endIdx;
+}
+
+void SCDWrapper::processBoundaryChanges(list<BoundaryChange*>* boundaryChanges)
+{
+    if (boundaryChanges == nullptr || boundaryChanges->size() == 0)
+        return;
+
+    bool leftBoundary = true;
+    list<BoundaryChange*>::iterator iter = boundaryChanges->begin();
+    while (iter != boundaryChanges->end())
+    {
+        BoundaryChange* bc = *iter;
+        if (bc == nullptr)
+        {
+            cout << "hi" << endl;
+        }
+        if (bc->pointIndex == endIdx || bc->pointIndex == endIdx + 1)
+            leftBoundary = false;
+        if (allObjects.find(bc->objKey) != allObjects.end()) {
+            /* object found! then number of instances in this element increase */
+            Object* anObject = allObjects[bc->objKey];
+            anObject->addNumber(bc->pointIndex, bc->change); // negative change accounts for decrease
+            // cout << "object: " << bc->objKey << " add " << bc->change << " at " << bc->pointIndex << endl;
+            updateObjectInMap(anObject, bc->pointIndex);
+        }
+        else {
+            /* object didn't find! build new object and insert it into map */
+            Object* anObject = new Object(bc->objKey, bc->pointIndex, bc->change);
+            addNewObjectToMap(anObject);
+        }
+
+        delete bc;
+        iter = boundaryChanges->erase(iter);
+    }
+
+    if (leftBoundary)
+    {
+        updateMatrixRate(startIdx, Reaction::NONE);
+        computeSectorRate(0);
+    }
+    else
+    {
+        updateMatrixRate(endIdx, Reaction::NONE);
+        computeSectorRate(NUM_SECTORS-1);
+    }
+}
+
+list<BoundaryChange*>* SCDWrapper::getLeftBoundaryChanges()
+{
+    return &leftBoundaryChanges;
+}
+
+list<BoundaryChange*>* SCDWrapper::getRightBoundaryChanges()
+{
+    return &rightBoundaryChanges;
+}
+
+void SCDWrapper::combineProcessors(const vector<SCDWrapper*> &procs)
+{
+    /* Combine volume elements from multiple processors */
+    allObjects.clear();
+    mobileObjects.clear();
+    linePool.clear();
+    for (SCDWrapper* srscd: procs)
+    {
+        int startIndex = srscd->getStartIdx();
+        int endIndex = srscd->getEndIdx();
+        unordered_map<int64, Object*>* objects = srscd->getAllObjects();
+        unordered_map<int64, Object*>::iterator iter;
+        for (iter = objects->begin(); iter != objects->end(); ++iter) 
+        {
+            int64 tempKey = iter->first;
+            Object* tempObject = iter->second;
+            for (int i = startIndex; i <= endIndex; i++)
+            {
+                int num = tempObject->getNumber(i);
+                if (num > 0)
+                {
+                    if (allObjects.find(tempKey) != allObjects.end())
+                    {
+                        /* Found object, updating the number in this element */
+                        Object* anObject = allObjects[tempKey];
+                        anObject->addNumber(i, num);
+                    }
+                    else
+                    {
+                        /* Couldn't find object, so create a new one */
+                        addNewObjectToMap(new Object(tempKey, i, num));
+                    }
+                }
+            }
+        }
+    }
 }

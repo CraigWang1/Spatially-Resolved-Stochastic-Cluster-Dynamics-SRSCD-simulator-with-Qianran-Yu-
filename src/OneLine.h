@@ -35,6 +35,7 @@ public:
     void updateLine(const Object* const, const int, unordered_map<int64, Object*>&); /* when number of this object has changed, rates in this line should be updated */
     void updateDiff(const Object* const, const int);
     const long double computeTotalRate();
+    int computeNumReactions();
     const long double getDiffRateF() const;
     const long double getDiffRateB() const;
     void display(const Object* const);

@@ -2,18 +2,18 @@
 CXX= g++
 
 # Use CXXFLAGS to specify additional compiler options to use:
-CXXFLAGS = -Wall -std=c++0x -O3 
+CXXFLAGS = -Wall -std=c++0x -fopenmp -g
 
 # Define variables:
 EXE_FILE= scdexe 
-OBJ_FILES= main.o SCDWrapper.o Bundle.o CascadeDamage.o Damage.o Object.o OneLine.o rvgs.o cpdf.o
-HEADER_FILES= SCDWrapper.h Bundle.h CascadeDamage.h Damage.h Object.h OneLine.h rvgs.h constants.h cpdf.h gnuplot-iostream.h gnuplot_i.h
+OBJ_FILES= main.o SCDWrapper.o Bundle.o CascadeDamage.o Damage.o Object.o OneLine.o rvgs.o cpdf.o BoundaryChange.o
+HEADER_FILES= SCDWrapper.h Bundle.h CascadeDamage.h Damage.h Object.h OneLine.h rvgs.h constants.h cpdf.h gnuplot-iostream.h gnuplot_i.h BoundaryChange.h
 
 
 # Build executable:
 exe : $(EXE_FILE)
 $(EXE_FILE) : $(OBJ_FILES) 
-	$(CXX) -o $(EXE_FILE) $(OBJ_FILES) -lm -O3 
+	$(CXX) -o $(EXE_FILE) $(OBJ_FILES) -lm -fopenmp -g
 	# chmod ugo+x $(EXE_FILE)	# turn on execute permissionss
 
 # Rules:

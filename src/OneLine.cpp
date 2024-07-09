@@ -137,6 +137,31 @@ const long double OneLine::computeTotalRate()
     return totalRate;
 }
 
+int OneLine::computeNumReactions()
+{
+    int numReactions = 0;
+    if (diffRToF > 0)
+        numReactions++;
+    if (diffRToB > 0)
+        numReactions++;
+    if (sinkR > 0)
+        numReactions++;
+    if (SAVR > 0)
+        numReactions++;
+    for (int i = 0; i < LEVELS; i++)
+    {
+        if (dissociationR[i] > 0)
+            numReactions++;
+    }
+    for (unordered_map<int64, long double>::iterator iter = secondR.begin(); iter != secondR.end(); ++iter)
+    {
+        if (iter->second > 0)
+            numReactions++;
+    }
+
+    return numReactions;
+}
+
 const long double OneLine::getDiffRateF() const
 {
     return diffRToF;

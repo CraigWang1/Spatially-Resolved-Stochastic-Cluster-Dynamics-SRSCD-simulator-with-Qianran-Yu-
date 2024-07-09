@@ -5,12 +5,21 @@
 #include"cpdf.h"
 #include"rvgs.h"
 #include"CascadeDamage.h"
+#include"BoundaryChange.h"
 #include"constants.h"
 // #include"gnuplot_i.h"
 #include <string>
 #include <iomanip>
 #include <cassert>
 #include <random>
+#include <algorithm>
+#include <list>
+#include <omp.h>
+
+struct SectorBound {
+    int leftIdx;
+    int rightIdx;  // inclusive
+};
 
 class SCDWrapper {
 private:
@@ -29,9 +38,10 @@ private:
     long double sinkDissRate[2][POINTS];
     // dissociation rate of V/H from dislocations
     int reactions[8][POINTS];
-    
+
     /* hold reactions, 1st dimension is reaction type, second dimension is element, value is total number of this reaction */
     long double matrixRate[POINTS];    // total rate in every element(point)
+    int matrixNumReactions[POINTS];    // number of nonzero reactions in each spatial element
     long double bulkRate;  // total rate in the whole bulk;
     double totalDpa;
     bool lastElemSaturated;
@@ -43,7 +53,14 @@ private:
     // GnuplotS gd1, gd2; /* damage graph 1 and damage graph 2*/
     // GnuplotS gh1, gh2, gh3; /* H deposition graph 1,2,3 */
     // GnuplotS gv;
-    
+
+    /* Parameters for running in parallel */
+    int startIdx, endIdx;
+    vector<SectorBound> sectorBounds; // the start and end indices (inclusive) of each sector in the spatial map
+    long double sectorRates[3]; // the total reaction rates in each sector
+    list<BoundaryChange*> leftBoundaryChanges;  // record changes in mobile species counts at the boundaries and ghost region of the domain this processor is in charge of, so can later communicate to other processors
+    list<BoundaryChange*> rightBoundaryChanges; 
+
     /* private functions */
     /* set sinks function */
     void setSinks();
@@ -83,10 +100,10 @@ private:
     /* get insertion functions */
     void getElectronInsertion(const int);
     void getNeutronInsertion(const int);
-    void getIonInsertion(const int, const double, fstream&);
-    void getParticleInsertion(const int, const double, fstream&);    // deal with damage[0]
+    void getIonInsertion(const int, fstream&);
+    void getParticleInsertion(const int, fstream&);    // deal with damage[0]
     void getHeInsertion(const int);  // deal with damage[1]
-    void getHInsertion(const int, const double, fstream&);   // deal with damage[2]
+    void getHInsertion(const int, fstream&);   // deal with damage[2]
     /* write file funcitons*/
     void writeSinkFile(const Object* const, const long int n, const double);
     /* sinks.out only writes when sink reaction happens, now this function is not "writing things" but only updating sinks[][] */
@@ -114,7 +131,7 @@ public:
     void computeBulkRate();
     long double getBulkRate();
     Object* selectReaction(int64&, Reaction&, int&);  // select reaction
-    void processEvent(const Reaction, Object*, const int, const int64, const double, const double);    // deal with reactions
+    void processEvent(const Reaction, Object*, const int, const int64, const double);    // deal with reactions
     ~SCDWrapper();          /* destructor to delete everything newed */
     // get series functions that allow direct manipulation on private data member
     unordered_map<int64, Object*>* getAllObjects();
@@ -138,4 +155,18 @@ public:
     void drawHD(double&); /* this function draw all diagrams in H deposition process */
     void writeVacancy();
     double getTotalDpa();
+
+    /* Parallel functions */
+    void setDomain(int, int);
+    void computeSectorRate(int); /* Compute the total rate in the specified sector for this processor */
+    int computeSectorNumReactions(int); /* Compute the total number of reactions in the specified sector for this processor */
+    long double getSectorRate(int); /* Get the total rate in the specified sector */ 
+    long double findMaxAvgSectorRate();  /* Finds the average reaction rate in each sector, and returns the largest one */
+    Object* selectSectorReaction(int64&, Reaction&, int&, int); /* Select a reaction inside this specified sector */
+    int getStartIdx();  /* Returns the first spatial element's index that this processor is responsible for */
+    int getEndIdx();    /* Returns the last spatial element's index that this processor is responsible for */
+    void processBoundaryChanges(list<BoundaryChange*>*); /* Updates boundary configuration based on changes from neighbouring processors */
+    list<BoundaryChange*>* getLeftBoundaryChanges();     /* Returns the changes on the left boundary of this processor's domain */
+    list<BoundaryChange*>* getRightBoundaryChanges();    /* Returns the changes on the right boundary of this processor's domain */
+    void combineProcessors(const vector<SCDWrapper*> &);   /* Usually for the master srscd object to combine information from each thread */
 };
