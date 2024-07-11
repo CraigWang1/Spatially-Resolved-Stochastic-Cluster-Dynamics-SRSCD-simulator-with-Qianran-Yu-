@@ -78,6 +78,8 @@ for i in range(len(fluences)):
 		for line_hold in f:
 			line_hold = line_hold.split(", ")
 			depth_micrometer = float(line_hold[0])
+			# if depth_micrometer > 2:
+				# break
 			concentration_at = float(line_hold[1]) # at. % units
 			experiment_positions.append(depth_micrometer)
 			concentrations.append(concentration_at)
@@ -135,29 +137,27 @@ with open("species.txt") as f:
 	fs = 1 / (positions[1] - positions[0])  # Sampling frequency
 
 	# Create a 5-pole low-pass filter with an 80 Hz cutoff
-	b, a = scipy.signal.butter(5, 1.5, fs=fs)
+	b, a = scipy.signal.butter(5, 1.25, fs=fs)
 
 	# Apply the filter using Gustafsson's method
 	avg_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c, method="gust")
 
-	upto = 95
-	if plot_h:
-		# plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
-		plt.plot(positions[:upto], trapped_hydrogen_c[:upto], label="Simulation", alpha=0.3)
-		plt.plot(positions[:upto], avg_hydrogen_c[:upto], label="Simulation Filtered", color='blue', marker='^', linestyle='-', markersize=0)
-		# plt.plot(positions[:upto], all_hydrogen_c[:upto], label="Hydrogen Concentration")
-	# if plot_v:
-		# indices_to_delete = [i for i in range(len(vacancy_c)) if vacancy_c[i] == 0]		
-		# positions_vacancy = np.delete(positions, indices_to_delete)
-		# nonzero_vacancy_c = np.delete(vacancy_c, indices_to_delete)
-		# plt.plot(positions[:upto], vacancy_c[:upto], color='r', label="Vacancy Concentration")
-
-
 concentrations = [c*time/125 for c in concentrations]
 plt.plot(experiment_positions, concentrations, label="Experiment", color='r')
 
-plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
+upto = 95
+if plot_h:
+	# plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
+	plt.plot(positions[:upto], trapped_hydrogen_c[:upto], label="Simulation", alpha=0.3)
+	plt.plot(positions[:upto], avg_hydrogen_c[:upto], label="Simulation Filtered", color='blue', marker='^', linestyle='-', markersize=0)
+	# plt.plot(positions[:upto], all_hydrogen_c[:upto], label="Hydrogen Concentration")
+# if plot_v:
+	# indices_to_delete = [i for i in range(len(vacancy_c)) if vacancy_c[i] == 0]		
+	# positions_vacancy = np.delete(positions, indices_to_delete)
+	# nonzero_vacancy_c = np.delete(vacancy_c, indices_to_delete)
+	# plt.plot(positions[:upto], vacancy_c[:upto], color='r', label="Vacancy Concentration")
 
+plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
 plt.legend()
 plt.title("Trapped Hydrogen Concentration Vs. Depth\n $T = 300K, Fluence = 5 \cdot 10^{22}$ $[m^{-2}]$")
 plt.xlabel("Depth $[\mu m]$")
