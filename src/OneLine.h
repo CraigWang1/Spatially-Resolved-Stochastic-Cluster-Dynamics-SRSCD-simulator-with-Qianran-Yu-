@@ -7,7 +7,6 @@
 class OneLine {
 private:
     // private data member
-    int sinks[LEVELS+1][POINTS];
     long double diffRToF;            // diffusion rate from jth element to (j-1)th element
     long double diffRToB;            // diffusion rate from jth element to (j+1)th latter one
     long double sinkR;                 // go to sink reaction rate
@@ -21,13 +20,12 @@ private:
     void setOneLine(const Object* const, const int, unordered_map<int64, Object*>&); // build one line
     void computeDiffReaction(const Object* const, const int);  // compute diffusion rate
     void computeSinkReaction(const Object* const, const int);         // compute absorption reaction rate
-    void computeDissReaction(const Object* const, const int, const int); // compute dissociation reaction rate
     void computeSAVReaction(const Object* const, const int);   // compute super-abundant-vacancy rate
-    double computeCombReaction(const Object* const, const Object* const, const int);  // compute 2nd order reaction rate
-    double computeDimensionTerm(const double, const Object* const, const Object* const, const int);
+    double computeDimensionTerm(const double, const Object* const, const Object* const, const int) const;
     
 public:
     OneLine(const Object* const, const int, unordered_map<int64, Object*>&);
+    OneLine();  /* this constructor is used when the user only wants to calculate up to a couple rate and not all the rates for a temporary purpose */
     Reaction selectReaction(const Object* const,int64&, long double&);
     void addReaction(const Object* const, const Object* const, const int); /* add one reaction when a new object is been created */
     void removeReaction(const int64); /* delete one reaction when an object is deleted */
@@ -35,7 +33,9 @@ public:
     void updateLine(const Object* const, const int, unordered_map<int64, Object*>&); /* when number of this object has changed, rates in this line should be updated */
     void updateDiff(const Object* const, const int);
     const long double computeTotalRate();
-    const long double getDiffRateF() const;
-    const long double getDiffRateB() const;
+    long double computeDissReaction(const Object* const, const int, const int) const; // compute dissociation reaction rate
+    long double computeCombReaction(const Object* const, const Object* const, const int) const;  // compute 2nd order reaction rate
+    void setDissReaction(const int, long double);    // set this rate from an external source if they wish to correct it
+    void setCombReaction(const int64, long double);  // set this rate from an external source if they wish to correct it (i.e. net comb/diss rate)
     void display(const Object* const);
 };

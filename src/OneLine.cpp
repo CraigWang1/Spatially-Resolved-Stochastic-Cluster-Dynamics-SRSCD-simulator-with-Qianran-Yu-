@@ -15,7 +15,12 @@ OneLine::OneLine(
                  unordered_map<int64, Object*>& mobileObjects) :totalRate(0.0)
 {
     setOneLine(hostObject, count, mobileObjects);
-    
+}
+
+OneLine::OneLine() : diffRToF(0.0), diffRToB(0.0), sinkR(0.0), SAVR(0.0), totalRate(0.0)
+{
+    for (int i = 0; i < LEVELS; i++)
+        dissociationR[i] = 0.0;
 }
 
 Reaction OneLine::selectReaction(
@@ -137,17 +142,6 @@ const long double OneLine::computeTotalRate()
     return totalRate;
 }
 
-const long double OneLine::getDiffRateF() const
-{
-    return diffRToF;
-}
-
-const long double OneLine::getDiffRateB() const
-{
-    return diffRToB;
-}
-
-
 void OneLine::display(Object const * const hostObject)
 {
     ofstream fs;
@@ -175,7 +169,7 @@ void OneLine::setOneLine(
     computeDiffReaction(hostObject, count);
     computeSinkReaction(hostObject, count);
     for (int index = 0; index < LEVELS; index++) {
-        computeDissReaction(hostObject, index, count);
+        dissociationR[index] = computeDissReaction(hostObject, index, count);
     }
     unordered_map<int64, Object*>::iterator iter;
     for (iter = mobileObjects.begin(); iter != mobileObjects.end(); ++iter) {
@@ -268,15 +262,14 @@ void OneLine::computeSinkReaction(const Object* const hostObject, const int coun
     sinkR = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSink();
 }
 
-void OneLine::computeDissReaction(
+long double OneLine::computeDissReaction(
                                   const Object* const hostObject,
                                   const int index,
-                                  const int count)
+                                  const int count) const
 {
     if (!DISS_ON)
     {
-        dissociationR[index] = 0.0;
-        return;
+        return 0.0;
     }
 
 
@@ -291,24 +284,15 @@ void OneLine::computeDissReaction(
         int attr[LEVELS] = { 0 };
         attr[index] = hostObject->signof(hostObject->getAttri(index));
         Object tempObject(attr, count);
-        // if(count == 0 && hostObject->getKey() == 2){
-            // dissociationR[index] = 4.0 * PI * hostObject->getR1e() / avol * tempObject.getDiff() * hostObject->getBindSH() * hostObject->getNumber(count);
-            
-        // }else{
-            dissociationR[index] = 4.0 * PI * hostObject->getR1e() / avol * tempObject.getDiff() * hostObject->getBind(index) * hostObject->getNumber(count);
-            
-        // }
+        return 4.0 * PI * hostObject->getR1e() / avol * tempObject.getDiff() * hostObject->getBind(index) * hostObject->getNumber(count);
     }
-    else {
-        dissociationR[index] = 0.0;
-        
-    }
+    return 0.0;
 }
 
-double OneLine::computeCombReaction(
+long double OneLine::computeCombReaction(
                                     const Object* const hostObject,
                                     const Object* const mobileObject,
-                                    const int count)
+                                    const int count) const
 {    
     if (!COMB_ON)
     {
@@ -400,7 +384,7 @@ double OneLine::computeDimensionTerm(
                                      const double r12,
                                      const Object* const hostObject,
                                      const Object* const mobileObject,
-                                     const int count)
+                                     const int count) const
 {
     double term = 0.0;
     double hostDiff = hostObject->getDiff(), mobileDiff = mobileObject->getDiff();
@@ -427,3 +411,12 @@ double OneLine::computeDimensionTerm(
     return term;
 }
 
+void OneLine::setDissReaction(const int index, long double rate)
+{
+    dissociationR[index] = rate;
+}
+
+void OneLine::setCombReaction(const int64 mobileObjectKey, long double rate)
+{
+    secondR[mobileObjectKey] = rate;
+}

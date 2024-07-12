@@ -72,6 +72,8 @@ private:
     /* when one mobile object has been removed,
      ** rates of this object with other extisting objects should also be removed
      */
+    void updateCombDissRatePair(int combinedObjectAttr[], const int);
+    void updateNetCombDissRate(const Object* const hostObject, const int);
     void updateSinks(const int, const int*); /* only for restart use */
     /* process event functions */
     void processDiffEvent(Object*, const int, const char);     /* process diffusion reactionObject */
