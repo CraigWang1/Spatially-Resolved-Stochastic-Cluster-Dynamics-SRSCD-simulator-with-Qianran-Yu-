@@ -101,12 +101,7 @@ private:
     /* count ratio of H to V in the bulk and at the same time decide whether to supplement H to system */
     void sizeDistribution(); /* get size distribution */
     void writeReaction(); /* take down reactions for drawing */
-
-    double getHSaturationLimit(int m); /*calculate the saturation limit for H with correction terms based on Max vacancy cluter V number*/
-    double getVMonomerBindingE(int m); /*helper funciton for HSatE*/
-    double getVFreeFormationE(int m); /*helper funciton for HSatE*/
-   
-    int getMaxVNum(); /* retrieve the biggest number of V among all VmHn objects*/
+    double getHSaturationConcentration() const;
 
 public:  
     SCDWrapper();  // constructor: for start ;

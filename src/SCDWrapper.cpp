@@ -289,7 +289,7 @@ void SCDWrapper::processEvent(
         int lastPos = POINTS - 1;
         if (allObjects.find(HKey) != allObjects.end())
         {
-            double saturation_concentration = getHSaturationLimit(getMaxVNum());
+            double saturation_concentration = getHSaturationConcentration();
             lastElemSaturated = (allObjects[HKey]->getNumber(lastPos) / VOLUME > saturation_concentration);
         }
     }
@@ -1081,7 +1081,7 @@ void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
             HConcentration = allObjects[HKey]->getNumber(n) / VOLUME;
     }
 
-    double saturation_concentration = getHSaturationLimit(getMaxVNum());
+    double saturation_concentration = getHSaturationConcentration();
 
     // If it's not saturated, SAV doesn't need to create more vacancies
     if (HConcentration < saturation_concentration)
@@ -1622,59 +1622,30 @@ double SCDWrapper::getTotalDpa(){
     return totalDpa;
 }
 
-
-double SCDWrapper::getHSaturationLimit(int m)
+double SCDWrapper::getHSaturationConcentration() const
 {
-    if(HSaturationLimit.find(m) == HSaturationLimit.end())
+
+    double concentration = H_SATURATION_CONCENTRATION;
+    bool dimer = false;
+    bool vhpair = false;
+
+    for (unordered_map<int64, Object*>::const_iterator iter = allObjects.begin(); iter != allObjects.end() && !dimer && !vhpair; iter ++)
     {
-        double sum = 0;
-        for (int i = 1; i <= m; i++)
-        {   
-            sum += 4 * i * exp(-getVFreeFormationE(i) / KB / TEMPERATURE);
-        }
-        HSaturationLimit[m] =  H_SATURATION_CONCENTRATION + DENSITY * sum;
-    }
-    return HSaturationLimit[m];
-}
+        Object* tempObj = iter->second;
+        // if HH objects is present
 
-
-double SCDWrapper::getVFreeFormationE(int m)
-{
-    if (formationE.find(m) == formationE.end())
-    {
-        if (formationE.find(m-1) == formationE.end())
+        if (tempObj->getKey() == 2 && !dimer)
         {
-            cerr << "Free Formation E Error!";
-            exit(1);
+            concentration += DENSITY * 8 * exp(-(2 * H_FORM_E - HH_BIND_E) / KB / TEMPERATURE);
+            dimer = true;
         }
-        double value = V1_FORMATION_ENERGY + formationE[m-1] - getVMonomerBindingE(m - 1);
-        formationE[m] = value;
-    }
-        
-    return formationE[m];
-}
-
-
-double SCDWrapper::getVMonomerBindingE(int m)
-{
-    if (m <= 8)
-        return V_MONOMER_BINDING_ENERGY[m-2];
-    else
-        return V1_FORMATION_ENERGY + (getVMonomerBindingE(2)-V1_FORMATION_ENERGY)*pow(m, 2./3) - 1.71*pow(m-1, 2./3);// Table A1 in paper
-        // return 0.6158 * pow(m - 2.1, 0.3) - 0.00366;
-}
-
-int SCDWrapper::getMaxVNum()
-{
-    int64 max = 0;
-    unordered_map<int64, Object*>::iterator iter;
-    for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
-        int vNum = iter->second->getAttri(0);
-        if (vNum < 0) // actually a vacancy / vacancy cluster objects
+        // if mV-nH objects are present
+        if (tempObj->getAttri(0) <= -1 && tempObj->getAttri(2) >= 1 && !vhpair)
         {
-            if (-vNum > max)
-                max = -vNum;
+            concentration += DENSITY * 8 * exp(-(H_FORM_E + V_FORM_E - VH_BIND_E) / KB / TEMPERATURE);
+            vhpair = true;
         }
     }
-    return max;
+    return concentration;
+    // 8 is the coordination number in a BCC lattice
 }

@@ -41,6 +41,10 @@
 #define V1_FORMATION_ENERGY 3.23 // [eV] formation energy of V1
 #define SAV_ENERGY 0.95          // [eV] energy that controls SAV rate
 #define H_DEPOSITION_ENERGY 113.0 // [eV] energy of an H atom in the incident flux
+#define H_FORM_E 1.04           // [eV] Heat of solution of H in W (formation energy of H)
+#define V_FORM_E 3.23           // [eV] Formation Energy of 1 Vacancy
+#define VH_BIND_E 1.17486       // [eV] Binding Energy of V-H
+#define HH_BIND_E 0.02          // [eV] Binding Energy of H-H
 // Run parameters:
 #define ION               // Irradiation type.
 #define TOTAL_TIME 125   // [s] Total simulated time.
@@ -82,7 +86,7 @@ enum Reaction { DIFFUSETOF, DIFFUSETOB, SINK, DISSOCIATION, COMBINATION, SAV, NO
 const double AVG_ION_EN[POINTS] = {22342, 21202, 16767, 15427, 19102, 23477, 27934, 25724, 21525, 23409, 26167, 30148, 28405, 28622, 33293, 25380, 28119, 35640, 41737, 36054, 38115, 40023, 43367, 40388, 43523, 46082, 31469, 37833, 40849, 39033, 39739, 37562, 35608, 39525, 35038, 33527, 31842, 28732, 28872, 31789, 26140, 25478, 23078, 18575, 16248, 16883, 13112, 11587, 10769, 9441, 7145, 5443, 4832, 4088, 3359, 2229, 2682, 2621, 1144, 727, 630, 408, 514, 163, 207, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 const double H_SATURATION_CONCENTRATION = DENSITY * exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
 const double SURFACE_VOLUME = VOLUME + (VOLUME / 20. * SURFACE_THICKNESS); // surface element is the thin surface layer + one bulk element
-const double V_MONOMER_BINDING_ENERGY[7] = {-0.1, 0.04, 0.64, 0.72, 0.89, 0.72, 0.88}; /* Data from paper Table A1.*/
+
 
 const bool LOG_REACTIONS = false;
 
