@@ -807,26 +807,29 @@ void SCDWrapper::updateCombDissRatePair(int combinedObjectAttr[], const int coun
         combinedLine = new OneLine();
     }
 
-    long double baseCombRate = 0.0;
-    long double baseDissRate = 0.0;
-    if (hostLine != nullptr)
-        baseCombRate = hostLine->computeCombReaction(hostObject, mobileObject, count);
-    if (combinedLine != nullptr)
-        baseDissRate = combinedLine->computeDissReaction(combinedObject, attrIndex, count);
-    double ratio = 0.95;
-    if (baseCombRate > baseDissRate)
+    if (foundCombSpecies && foundCombResult)
     {
-        if (hostLine != nullptr && foundCombSpecies)
-            hostLine->setCombReaction(mobileObject->getKey(), baseCombRate - ratio*baseDissRate);
-        if (combinedLine != nullptr && foundCombResult)
-            combinedLine->setDissReaction(attrIndex, (1-ratio)*baseDissRate);
-    }
-    else  /* diss >= comb */
-    {
-        if (hostLine != nullptr && foundCombSpecies)
-            hostLine->setCombReaction(mobileObject->getKey(), (1-ratio)*baseCombRate);
-        if (combinedLine != nullptr && foundCombResult)
-            combinedLine->setDissReaction(attrIndex, baseDissRate - ratio*baseCombRate);
+        long double baseCombRate = 0.0;
+        long double baseDissRate = 0.0;
+        if (hostLine != nullptr)
+            baseCombRate = hostLine->computeCombReaction(hostObject, mobileObject, count);
+        if (combinedLine != nullptr)
+            baseDissRate = combinedLine->computeDissReaction(combinedObject, attrIndex, count);
+        double ratio = 0.01;
+        if (baseCombRate > baseDissRate)
+        {
+            if (hostLine != nullptr && foundCombSpecies)
+                hostLine->setCombReaction(mobileObject->getKey(), baseCombRate - baseDissRate);
+            if (combinedLine != nullptr && foundCombResult)
+                combinedLine->setDissReaction(attrIndex, 0.0);
+        }
+        else  /* diss >= comb */
+        {
+            if (hostLine != nullptr && foundCombSpecies)
+                hostLine->setCombReaction(mobileObject->getKey(), 0.0);
+            if (combinedLine != nullptr && foundCombResult)
+                combinedLine->setDissReaction(attrIndex, baseDissRate - baseCombRate);
+        }
     }
 
     if (!foundHObj)
