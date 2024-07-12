@@ -40,7 +40,7 @@
 #define HEAT_OF_SOLUTION 1.04   // [eV] Heat of solution of H in W.
 #define V1_FORMATION_ENERGY 3.23 // [eV] formation energy of V1
 #define SAV_ENERGY 0.95          // [eV] energy that controls SAV rate
-#define H_DEPOSITION_ENERGY 200.0 // [eV] energy of an H atom in the incident flux
+#define H_DEPOSITION_ENERGY 113.0 // [eV] energy of an H atom in the incident flux
 // Run parameters:
 #define ION               // Irradiation type.
 #define TOTAL_TIME 125   // [s] Total simulated time.
