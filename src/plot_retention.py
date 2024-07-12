@@ -78,8 +78,8 @@ for i in range(len(fluences)):
 		for line_hold in f:
 			line_hold = line_hold.split(", ")
 			depth_micrometer = float(line_hold[0])
-			# if depth_micrometer > 2:
-				# break
+			if depth_micrometer > 2:
+				break
 			concentration_at = float(line_hold[1]) # at. % units
 			experiment_positions.append(depth_micrometer)
 			concentrations.append(concentration_at)
