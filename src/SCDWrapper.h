@@ -145,7 +145,7 @@ public:
     void setDomain(const int&, const int&);
     void fillNoneReaction(const double&);
     void clearNoneReaction();
-    void implementBoundaryChanges(vector<BoundaryChange*>&);
+    void implementBoundaryChanges(vector<BoundaryChange*>*);
     void combineVolumeElements(const vector<SCDWrapper*> &);
     double getDomainRate() const;
 
@@ -156,7 +156,7 @@ public:
     void writeVacancy();
     double getTotalDpa();
     double getDomainDpa();
-    vector<BoundaryChange*> getTxBoundaryChangeQueue();
+    vector<BoundaryChange*>* getTxBoundaryChangeQueue();
     void clearTxBoundaryChangeQueue();
     void setRxBoundaryChangeQueue(vector<BoundaryChange*> queue);
     int getStartIdx();

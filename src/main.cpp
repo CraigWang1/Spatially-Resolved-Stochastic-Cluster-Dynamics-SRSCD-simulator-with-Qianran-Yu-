@@ -49,7 +49,7 @@ int main()
     master_srscd->drawSpeciesAndReactions(advTime);
     double prev_time = omp_get_wtime();
 
-    vector<BoundaryChange*> boundaryChanges[num_threads];
+    vector<BoundaryChange*>* boundaryChanges[num_threads];
     vector<SCDWrapper*> processors(num_threads);
 
     cout << H_SATURATION_CONCENTRATION * VOLUME << endl;
@@ -57,7 +57,6 @@ int main()
     // Run in parallel with multiple processors
     #pragma omp parallel private(theOtherKey, reaction, pointIndex, hostObject, advTime, accTime)
     {
-        vector<BoundaryChange*> neighborChanges;
         const int thread_id = omp_get_thread_num();
         const int left_neighbor = thread_id - 1;
         const int right_neighbor = thread_id + 1;
@@ -121,30 +120,18 @@ int main()
             // Wait for all threads to finish uploading boundary events
             #pragma omp barrier 
 
-            srscd->clearTxBoundaryChangeQueue();
-
             // Have processor read the boundary changes from its neighbors
-            neighborChanges.clear();
-            if (left_neighbor >= 0)
+            if (left_neighbor >= 0 && 
+                boundaryChanges[left_neighbor]->size() > 0)
             {
-                neighborChanges.insert(
-                    neighborChanges.end(), 
-                    boundaryChanges[left_neighbor].begin(),
-                    boundaryChanges[left_neighbor].end());
+                srscd->implementBoundaryChanges(boundaryChanges[left_neighbor]);
             }
-            if (right_neighbor < num_threads)
+            if (right_neighbor < num_threads &&
+                boundaryChanges[right_neighbor]->size() > 0)
             {
-                neighborChanges.insert(
-                    neighborChanges.end(),
-                    boundaryChanges[right_neighbor].begin(),
-                    boundaryChanges[right_neighbor].end());
+                srscd->implementBoundaryChanges(boundaryChanges[right_neighbor]);
             }
 
-            if (neighborChanges.size() > 0)
-            {
-                srscd->implementBoundaryChanges(neighborChanges);
-            }
-        
             if (iStep%PSTEPS == 0)
             {
                 processors[thread_id] = srscd;
@@ -236,6 +223,8 @@ int main()
             }
 
             #pragma omp barrier
+
+            srscd->clearTxBoundaryChangeQueue();
 
             #pragma omp master
             {

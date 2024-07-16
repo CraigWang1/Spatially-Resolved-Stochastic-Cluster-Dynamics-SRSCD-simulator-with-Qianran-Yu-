@@ -1647,11 +1647,12 @@ void SCDWrapper::clearNoneReaction()
     computeDomainRate();
 }
 
-void SCDWrapper::implementBoundaryChanges(vector<BoundaryChange*>& boundaryChanges)
+void SCDWrapper::implementBoundaryChanges(vector<BoundaryChange*>* boundaryChanges)
 {
     bool updateFront = false, updateBack = false;
-    for (BoundaryChange* bc: boundaryChanges)
+    for (size_t i = 0; i < boundaryChanges->size(); i++)
     {
+        BoundaryChange* bc = boundaryChanges->at(i);
         if (bc->pointIndex == startIndex     ||      // go one past the boundary because you need that info for diffusion rates out of the boundary
             bc->pointIndex == startIndex - 1 ||
             bc->pointIndex == endIndex       || 
@@ -1734,13 +1735,15 @@ double SCDWrapper::getDomainDpa()
     return dpa;
 }
 
-vector<BoundaryChange*> SCDWrapper::getTxBoundaryChangeQueue()
+vector<BoundaryChange*>* SCDWrapper::getTxBoundaryChangeQueue()
 {
-    return TxBoundaryChangeQueue;
+    return &TxBoundaryChangeQueue;
 }
 
 void SCDWrapper::clearTxBoundaryChangeQueue()
 {
+    for (BoundaryChange* bc: TxBoundaryChangeQueue)
+        delete bc;
     TxBoundaryChangeQueue.clear();
 }
 
