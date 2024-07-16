@@ -133,9 +133,6 @@ void SCDWrapper::computeMatrixRate(const int n)
     matrixRate[n] += damage.getTotalDamage(n);
     matrixRate[n] += sinkDissRate[0][n];
     matrixRate[n] += sinkDissRate[1][n];
-
-    if (n == endIndex)
-        matrixRate[n] += noneRate;
 }
 
 void SCDWrapper::updateMatrixRate(const int n, const Reaction reaction)
@@ -153,44 +150,7 @@ void SCDWrapper::updateMatrixRate(const int n, const Reaction reaction)
         affectedEnd = POINTS - 1;
 
     for (int i = affectedStart; i <= affectedEnd; i++) {
-        matrixRate[i] = 0;
-        matrixRate[i] += damage.getTotalDamage(i);
-        matrixRate[i] += sinkDissRate[0][i];
-        matrixRate[i] += sinkDissRate[1][i];
-        if (i == endIndex)
-            matrixRate[i] += noneRate;
-    }
-
-    unordered_map<int64, Object*>::iterator iter;
-    for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
-        int64 tempKey = iter->first;
-        Object* tempObject = iter->second;
-        int totalNumber = tempObject->getTotalNumber();
-        while(totalNumber == 0) {
-            iter++;
-            removeObjectFromMap(tempKey);
-            if (iter != allObjects.end()) {
-                tempObject = iter->second;
-                tempKey = iter->first;
-                totalNumber = tempObject->getTotalNumber();
-            }
-            else {
-                break;
-            }
-        }
-        if (iter == allObjects.end()) {
-            break;
-        }
-
-        for (int i = affectedStart; i <= affectedEnd; i++) {
-            Bundle* tempBundle = linePool[tempObject];
-            OneLine* tempLine = tempBundle->lines[i];
-            if (tempLine != nullptr) {
-                matrixRate[i] += tempLine->computeTotalRate();
-                //tempLine->display(tempObject);/* Qianran 0925 */
-            }
-        }
-
+        computeMatrixRate(i);
     }
 }
 
@@ -209,6 +169,7 @@ void SCDWrapper::computeDomainRate()
     {
         domainRate += matrixRate[i];
     }
+    domainRate += noneRate;
 }
 
 void SCDWrapper::examineDomainRate()
@@ -368,8 +329,9 @@ Object* SCDWrapper::selectDomainReaction(
     // Sometimes there is a case where randRate == bulkRate, which might result in a 
     // tiny bit of leftover number (eg. doing 9e14-9e14 gives 0.0001 when it should give 0)
     // causing the program to think that no event was selected
-    cout << "returned nullptr" << endl;
-    cout << randRate << " " << domainRate << " " << tempRandRate << endl;
+    reaction = NONE;
+    // cout << "returned nullptr" << endl;
+    // cout << randRate << " " << domainRate << " " << tempRandRate << endl;
     return tempObject;
 }
 
@@ -382,6 +344,9 @@ void SCDWrapper::processEvent(
                               const double dt
                               )
 {
+    if (reaction == NONE)
+        return;
+
     // Check if last element is saturated
     int HKey = 1;
     if (!lastElemSaturated)
@@ -1153,7 +1118,7 @@ void SCDWrapper::getIonInsertion(const int n, const double dt, fstream& fs)
     int64 clusterKey;
     //fstream fk;
     //fk.open("V_insertion.txt", ios::app);
-    doseIon[n] += damage.getDpaRate(n)*dt;
+    doseIon[n] += damage.getDpaRate(n) / damage.getTotalIonRate();
     totalDpa += doseIon[n];
     in_time += dt;
     //fk << damage.getDpaRate(n) << " * " << dt << "  " << in_time << "   ";
@@ -1289,7 +1254,7 @@ void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
         }
     }
     ofile.close();
-    
+    srscd->clearTxBoundaryChangeQueue();
 }
 
 int SCDWrapper::countDefectNumber(const int count, string type){
@@ -1676,15 +1641,13 @@ void SCDWrapper::fillNoneReaction(const double& maxDomainRate)
      * (Dunn 2016)
      */
     noneRate = maxDomainRate - domainRate;
-    matrixRate[endIndex] += noneRate;
-    domainRate += noneRate;
+    computeDomainRate();
 }
 
 void SCDWrapper::clearNoneReaction()
 {
-    domainRate -= noneRate;
-    matrixRate[endIndex] -= noneRate;
     noneRate = 0.0;
+    computeDomainRate();
 }
 
 void SCDWrapper::implementBoundaryChanges(vector<BoundaryChange*>& boundaryChanges)

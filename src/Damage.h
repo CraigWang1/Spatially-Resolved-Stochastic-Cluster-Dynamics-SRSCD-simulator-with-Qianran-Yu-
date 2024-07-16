@@ -13,6 +13,7 @@ private:
     double NRT[POINTS];
     double damage[POINTS][CHANNELS];
     double totalRate[POINTS];
+    double totalIonRate;
     // private functions:
     void readFile();
     void computeDamageZero(const int);
@@ -26,5 +27,6 @@ public:
     const double getTotalDamage(const int) const;
     double getDpaRate(const int);
     double getDamageTwo(const int);
+    double getTotalIonRate();
 };
 

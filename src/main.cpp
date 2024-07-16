@@ -258,10 +258,8 @@ int main()
 
             #pragma omp barrier
 
-            #pragma omp critical
-            {
-                dpa += srscd->getDomainDpa();
-            }
+            #pragma omp atomic
+            dpa += srscd->getDomainDpa();
 
             #pragma omp barrier
         }
