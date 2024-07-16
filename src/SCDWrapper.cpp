@@ -434,11 +434,8 @@ void SCDWrapper::processEvent(
     }
 
     // Keep track of affected reaction rates
-    if (reaction != NONE)
-    {
-        updateMatrixRate(n, reaction);
-        computeDomainRate();
-    }
+    updateMatrixRate(n, reaction);
+    computeDomainRate();
 
     fs.close();
 }

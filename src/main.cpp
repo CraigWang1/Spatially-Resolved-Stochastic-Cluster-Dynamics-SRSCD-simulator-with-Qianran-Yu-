@@ -83,18 +83,11 @@ int main()
         while(!done)
         {
             // Find the greatest domain rate, that all the other processors will adopt (Dunn 2016)
-            #pragma omp single
-            {
-                maxDomainRate = 0;
-            }
-
-            #pragma omp barrier
-
             srscd->clearNoneReaction();
+            double localDomainRate = srscd->getDomainRate();
 
             #pragma omp critical
             {
-                double localDomainRate = srscd->getDomainRate();
                 if (localDomainRate > maxDomainRate)
                 {
                     maxDomainRate = localDomainRate;
@@ -105,7 +98,7 @@ int main()
             #pragma omp barrier
 
             // Calculate global dt
-            #pragma omp single
+            #pragma omp master
             {
                 do {
                     random = (double)rand() / RAND_MAX;
@@ -152,15 +145,12 @@ int main()
                 srscd->implementBoundaryChanges(neighborChanges);
             }
         
-            #pragma omp barrier
-
-            if(iStep%PSTEPS == 0)
+            if (iStep%PSTEPS == 0)
             {
                 processors[thread_id] = srscd;
-                
                 #pragma omp barrier
 
-                #pragma omp single
+                #pragma omp master
                 {
                     // Keep track of all simulation elements between processors
                     master_srscd->combineVolumeElements(processors);
@@ -247,13 +237,11 @@ int main()
 
             #pragma omp barrier
 
-            accTime += dt;
-            advTime += dt;
-
-            #pragma omp single
+            #pragma omp master
             {
                 ++iStep;
                 dpa = 0;
+                maxDomainRate = 0.0;
             }
 
             #pragma omp barrier
@@ -261,7 +249,8 @@ int main()
             #pragma omp atomic
             dpa += srscd->getDomainDpa();
 
-            #pragma omp barrier
+            accTime += dt;
+            advTime += dt;
         }
 
         // Keep track of the combined simulation volume for logging
