@@ -321,22 +321,14 @@ long double OneLine::computeCombReaction(
 
     // H+H-->2H
     // Disable H clustering for now b/c not sure how it works with SAV
-    if (hostObject->getKey() == 1 && mobileObject->getKey() == 1){
-        return 0.0;
-    }
+    // if (hostObject->getKey() == 1 && mobileObject->getKey() == 1){
+    //     return 0.0;
+    // }
 
-    // Disable multiples of 1V-12H + 1H because vacancy can store max 12H, save sim time
+    // Disable multiples of 1V-12H + nH because vacancy can store max 12H, save sim time
     if (hostObject->getAttri(0) < 0 && 
         hostObject->getAttri(2) == abs(hostObject->getAttri(0))*12 &&
-        mobileObject->getKey() == 1)
-    {
-        return 0.0;
-    }
-
-    // Disable multiples of 1V-12H + 1H because vacancy can store max 12H, save sim time
-    if (hostObject->getAttri(0) < 0 && 
-        hostObject->getAttri(2) == abs(hostObject->getAttri(0))*12 &&
-        mobileObject->getKey() == 1)
+        (mobileObject->getAttri(0) == 0 && mobileObject->getAttri(2) > 0))
     {
         return 0.0;
     }
@@ -376,6 +368,10 @@ void OneLine::computeSAVReaction(
         if (numH > thresholdH)
         {
             SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * hostObject->getNumber(count);
+            if (hostObject->getAttri(0) == 0 && hostObject->getAttri(2) > 0)
+            {
+                // SAVR *= hostObject->getAttri(2); // if nH object
+            }
         }
     }
 }

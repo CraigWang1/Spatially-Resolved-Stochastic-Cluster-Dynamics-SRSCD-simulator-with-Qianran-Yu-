@@ -588,18 +588,22 @@ void Object::computeBindTerm()
         }else if (attributes[0]== 0) { // nH clusters, this is binding energy of nH cluster dissociating 1 H from Qin(2015)
             if (attributes[2]==1) { // H
                 energy_b = 0;
-            } else if (attributes[2]==2) { // 2H
-                energy_b = 0.02;
-            } else if (attributes[2]==3) { // 3H
-                energy_b = 0.08;
-            } else if (attributes[2]==4) { // 4H
-                energy_b = 0.20;
-            } else if (attributes[2]==5) { // 5H
-                energy_b = 0.27;
+            } 
+            // else if (attributes[2]==2) { // 2H
+            //     energy_b = 0.02;
+            // } else if (attributes[2]==3) { // 3H
+            //     energy_b = 0.08;
+            // } else if (attributes[2]==4) { // 4H
+            //     energy_b = 0.20;
+            // } else if (attributes[2]==5) { // 5H
+            //     energy_b = 0.27;
+            // }
+            else {
+                energy_b = 0.38 - 0.45*exp(-attributes[2]/12.04); // Hou 2018
             }
             energy_d[2] = energy_b + emh;
-            if (attributes[2] > 5) // nH(n>5) or higher
-                energy_d[2] = 0.0;
+            // if (attributes[2] > 5) // nH(n>5) or higher
+                // energy_d[2] = 0.0;
 
             bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
             bind[0] = 0; //because there's no V/SIA in cluster

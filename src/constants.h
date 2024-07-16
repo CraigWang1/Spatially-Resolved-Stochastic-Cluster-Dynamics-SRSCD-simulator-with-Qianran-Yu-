@@ -40,14 +40,14 @@
 #define HEAT_OF_SOLUTION 1.04   // [eV] Heat of solution of H in W.
 #define V1_FORMATION_ENERGY 3.23 // [eV] formation energy of V1
 #define SAV_ENERGY 0.95          // [eV] energy that controls SAV rate
-#define H_DEPOSITION_ENERGY 113.0 // [eV] energy of an H atom in the incident flux
+#define H_DEPOSITION_ENERGY 200.0 // [eV] energy of an H atom in the incident flux
 #define H_FORM_E 1.04           // [eV] Heat of solution of H in W (formation energy of H)
 #define V_FORM_E 3.23           // [eV] Formation Energy of 1 Vacancy
 #define VH_BIND_E 1.17486       // [eV] Binding Energy of V-H
 #define HH_BIND_E 0.02          // [eV] Binding Energy of H-H
 // Run parameters:
 #define ION               // Irradiation type.
-#define TOTAL_TIME 125   // [s] Total simulated time.
+#define TOTAL_TIME 26315   // [s] Total simulated time.
 #define TOTAL_DPA 2        // Total DPA damage to reach.
 #define VOLUME 1.0e-17    // [cm^3] System volume.
 #define DIVIDING_AREA 5.0e-12  // [cm^2] Area of the surface in between volume elements.
@@ -55,7 +55,7 @@
 //#define RATIO_HE 1.1       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_HE 0       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_H 0
-#define FLUX_H 4.0e16    // [1/(cm^2*s)]
+#define FLUX_H 1.9e14    // [1/(cm^2*s)]
 //#define DPA_RATE 0       //When only H exposure is available. no self-damage at all
 //#define DPA_RATE 3.55e-6   // [dpa/s] Damage rate.
 #define CHANNELS 3         // Irradiation channels used (1:W, 2:He, 3:H,...). the number of different particle insertion(irradiation) process.
@@ -63,7 +63,7 @@
 #define TSTEPS 50000 // Run these many steps.
 #define LEVELS 3
 #define EXP10 3 // number of 0s assigned to each group in object's key in hash table
-#define POINTS 100       // number of elements: one surface(Point 0), other bulk elements(NO.1,2,3,4,...,99)
+#define POINTS 300       // number of elements: one surface(Point 0), other bulk elements(NO.1,2,3,4,...,99)
 // Auxiliary definitions:
 enum Reaction { DIFFUSETOF, DIFFUSETOB, SINK, DISSOCIATION, COMBINATION, SAV, NONE, PARTICLE, HE, H, DISSV, DISSH, ERROR};
 

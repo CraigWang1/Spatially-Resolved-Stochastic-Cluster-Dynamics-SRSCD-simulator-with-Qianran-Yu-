@@ -611,6 +611,9 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
             mobileObjects.insert(newNode);
             addReactionToOther(newObject); /* add to other objects' lines */
         } /* add to mobile object if necessary */
+        if (newObject->getAttri(0) == 0 && newObject->getAttri(2) > 0) {
+            HObjects.insert(newNode);            
+        } /* Keep track of nH objects */
         Bundle* newBundle = new Bundle(newObject, mobileObjects);
         pair<Object*, Bundle*> bundle(newObject, newBundle);
         linePool.insert(bundle); /* add to line pool */
@@ -683,7 +686,7 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
         }
     }
 
-    updateNetCombDissRate(hostObject, count);
+    // updateNetCombDissRate(hostObject, count);
 }
 
 void SCDWrapper::addReactionToOther(Object const * const mobileObject)
@@ -719,6 +722,7 @@ void SCDWrapper::removeObjectFromMap(const int64 deleteKey)
     Object* deleteObject = allObjects[deleteKey];
     Bundle* tempBundle = linePool[deleteObject];
     double diffusivity = deleteObject->getDiff();
+    bool is_nH = deleteObject->getAttri(0) == 0 && deleteObject->getAttri(2) > 0;  // if it's an nH object
     delete tempBundle; /* delete bundle */
     linePool.erase(deleteObject); /* remove this object from map linePool */
     delete deleteObject;  /* delete the content of this object */
@@ -726,6 +730,9 @@ void SCDWrapper::removeObjectFromMap(const int64 deleteKey)
     if (diffusivity > 0) {
         mobileObjects.erase(deleteKey); /* delete this object from map mobileObjects */
         removeRateToOther(deleteKey);
+    }
+    if (is_nH) {
+        HObjects.erase(deleteKey);
     }
 }
 
@@ -815,7 +822,6 @@ void SCDWrapper::updateCombDissRatePair(int combinedObjectAttr[], const int coun
             baseCombRate = hostLine->computeCombReaction(hostObject, mobileObject, count);
         if (combinedLine != nullptr)
             baseDissRate = combinedLine->computeDissReaction(combinedObject, attrIndex, count);
-        double ratio = 0.01;
         if (baseCombRate > baseDissRate)
         {
             if (hostLine != nullptr && foundCombSpecies)
@@ -1039,7 +1045,7 @@ void SCDWrapper::processCombEvent(
     else if(hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && theOtherObject->getAttri(0)>0 && theOtherObject->getAttri(2)==0 && productAttr[0] < 0 && productAttr[2] > 4.75 + 4*abs(productAttr[0])){
         /* Vn-Hm + SIAx -> V(n-x)-Hm (n, m, and x are not zero) */
         /* change above reaction to Vn-Hm + SIAx -> V(n-x)-H(max) + (excess)*H */
-        int maxH = int(4.75 + abs(productAttr[0]) * 4);
+        int maxH = abs(productAttr[0]) * 4;
         int excessH = productAttr[2] - maxH;
         productAttr[2] = maxH;
         productKey = attrToKey(productAttr);
@@ -1071,14 +1077,16 @@ void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
      * Superabundant vacancy mechanism.
      * Eject an interstitial (which increases vacancy by 1)
      */
-    int64 HKey = 1;
+    const int64 HKey = 1;
     double HConcentration = 0;
-    if (allObjects.find(HKey) != allObjects.end())
+    unordered_map<int64, Object*>::iterator iter;
+    double volume = VOLUME;
+    if (n == 0)
+        volume = SURFACE_VOLUME;  // first mesh element is slightly bigger because of added surface layer
+    for (iter = HObjects.begin(); iter != HObjects.end(); ++iter)
     {
-        if (n == 0)
-            HConcentration = allObjects[HKey]->getNumber(n) / SURFACE_VOLUME;
-        else
-            HConcentration = allObjects[HKey]->getNumber(n) / VOLUME;
+        Object* HObject = iter->second;
+        HConcentration += HObject->getNumber(n) * HObject->getAttri(2) / volume;
     }
 
     double saturation_concentration = getHSaturationConcentration();
@@ -1097,8 +1105,16 @@ void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
     int productAttr[LEVELS] = { 0 };
     for (int i = 0; i < LEVELS; i++)
         productAttr[i] = hostObject->getAttri(i);
-
     productAttr[0] -= 1;
+
+    if (productAttr[0] < 0 && productAttr[2] > abs(productAttr[0])*4)
+    {
+        /* If the product has too many H per vacancy, eject the rest of the H */
+        int excessH = productAttr[2] - abs(productAttr[0])*4;
+        productAttr[2] -= excessH;
+        addToObjectMap(HKey, n, excessH);
+    }
+
     int64 productKey = attrToKey(productAttr);
 
     addToObjectMap(productKey, n);

@@ -17,6 +17,7 @@ private:
     /* private data member */
     unordered_map<int64, Object*> allObjects;  // map that store all object
     unordered_map<int64, Object*> mobileObjects;  // map that store mobile object
+    unordered_map<int64, Object*> HObjects;     // map that store nH objects
     unordered_map<Object*, Bundle*> linePool;
     unordered_map<int64, int> surface;
     unordered_map<int64, int> bottom;

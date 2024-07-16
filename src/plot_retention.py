@@ -13,7 +13,7 @@ from scipy.signal import butter, filtfilt
 
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 100                             # num spatial elements in the simulation (1 surface + 100 bulk)
+POINTS = 300                             # num spatial elements in the simulation (1 surface + 100 bulk)
 VOLUME = 1e-17                           # volume of a spatial element [cm^3]
 SURFACE_THICKNESS = 0.544                # [nm]
 SURFACE_VOLUME = VOLUME / 20 * SURFACE_THICKNESS + VOLUME # [cm^3]
@@ -78,8 +78,8 @@ for i in range(len(fluences)):
 		for line_hold in f:
 			line_hold = line_hold.split(", ")
 			depth_micrometer = float(line_hold[0])
-			if depth_micrometer > 2:
-				break
+			# if depth_micrometer > 2:
+				# break
 			concentration_at = float(line_hold[1]) # at. % units
 			experiment_positions.append(depth_micrometer)
 			concentrations.append(concentration_at)
@@ -89,7 +89,7 @@ for i in range(len(fluences)):
 # Plot Simulation
 # with open("/home/craig/Downloads/Spatially-Resolved-Stochastic-Cluster-Dynamics-SRSCD-simulator-with-Qianran-Yu-/src/species.txt") as f:
 with open("species.txt") as f:
-	positions = [0.010272 + i*.020 for i in range(100)]  #micrometer
+	positions = [0.010272 + i*.020 for i in range(POINTS)]  #micrometer
 	trapped_hydrogen_c = np.zeros(POINTS)
 	free_hydrogen_c = np.zeros(POINTS)
 	vacancy_c = np.zeros(POINTS)
@@ -137,15 +137,15 @@ with open("species.txt") as f:
 	fs = 1 / (positions[1] - positions[0])  # Sampling frequency
 
 	# Create a 5-pole low-pass filter with an 80 Hz cutoff
-	b, a = scipy.signal.butter(5, 1.25, fs=fs)
+	b, a = scipy.signal.butter(5, 1.25/3, fs=fs)
 
 	# Apply the filter using Gustafsson's method
 	avg_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c, method="gust")
 
-concentrations = [c*time/125 for c in concentrations]
+concentrations = [c*time/26315 for c in concentrations]
 plt.plot(experiment_positions, concentrations, label="Experiment", color='r')
 
-upto = 95
+upto = POINTS
 if plot_h:
 	# plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
 	plt.plot(positions[:upto], trapped_hydrogen_c[:upto], label="Simulation", alpha=0.3)
