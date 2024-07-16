@@ -209,12 +209,12 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     double concentration = 0;
     double frontConcentration = 0;
     double backConcentration = objectN[2] / VOLUME;
-    // if (count == 0)
-    // {
-    //     concentration = objectN[0] / SURFACE_VOLUME;
-    //     frontConcentration = H_SATURATION_CONCENTRATION;
-    // }
-    if (count == 1)
+    if (count == 0)
+    {
+        concentration = objectN[0] / SURFACE_VOLUME;  /* First mesh element has slightly larger volume of normal mesh element size + surface layer size */
+        frontConcentration = H_SATURATION_CONCENTRATION;
+    }
+    else if (count == 1)
     {
         concentration = objectN[0] / VOLUME;
         frontConcentration = objectN[1] / SURFACE_VOLUME;
