@@ -20,7 +20,7 @@ static int dissH = 0; //this only counts number of events
 /* public funciton */
 SCDWrapper::SCDWrapper():damage(), cpdf(), totalDpa(0)
 {
-    formationE[1] = V1_FORMATION_ENERGY; 
+    formationE[1] = V_FORM_E; 
 
     for (int i = 0; i < POINTS; ++i) {
         computeMatrixRate(i);
