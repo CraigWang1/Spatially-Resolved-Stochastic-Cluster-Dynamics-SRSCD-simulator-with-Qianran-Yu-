@@ -906,7 +906,7 @@ void SCDWrapper::processDiffEvent(Object* hostObject, const int n, const char si
             Object* tempObject = iter->second;
             if (tempObject->getAttri(0) < 0)
             {
-                numVacancies += abs(tempObject->getAttri(0));
+                numVacancies += tempObject->getNumber(n)*abs(tempObject->getAttri(0));
             }
         }
         double acceptProbability = exp(-numVacancies/69.09);   // Regression based on data from Li-Fang Wang 2020, more vacancies means diffusion rate is decreased
