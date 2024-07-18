@@ -284,7 +284,14 @@ long double OneLine::computeDissReaction(
         int attr[LEVELS] = { 0 };
         attr[index] = hostObject->signof(hostObject->getAttri(index));
         Object tempObject(attr, count);
-        return 4.0 * PI * hostObject->getR1e() / avol * tempObject.getDiff() * hostObject->getBind(index) * hostObject->getNumber(count);
+
+        double r = 0;
+        if (hostObject->getAttri(0) < 0)
+            r = pow(abs(hostObject->getAttri(0)) * 3. * avol / 4. / PI, 1./3);
+        else if (hostObject->getAttri(0) > 0)
+            r = sqrt(hostObject->getAttri(0) * avol / jumped / PI);
+        return jumped / (jumped + r) * 4.0 * PI * r * r / ALATT / ALATT * NU0 * hostObject->getBind(index) * hostObject->getNumber(count);
+        // return 4.0 * PI * hostObject->getR1e() / avol * tempObject.getDiff() * hostObject->getBind(index) * hostObject->getNumber(count);
     }
     return 0.0;
 }
@@ -350,7 +357,19 @@ long double OneLine::computeCombReaction(
     }
     */
 
-    r12 = hostObject->getR1() + mobileObject->getR1();
+    double r1 = 0;
+    if (hostObject->getAttri(0) < 0)
+        r1 = pow(abs(hostObject->getAttri(0)) * 3. * avol / 4. / PI, 1./3);
+    else if (hostObject->getAttri(0) > 0)
+        r1 = sqrt(hostObject->getAttri(0) * avol / jumped / PI);
+
+    double r2 = 0;
+    if (mobileObject->getAttri(0) < 0)
+        r2 = pow(abs(mobileObject->getAttri(0)) * 3. * avol / 4. / PI, 1./3);
+    else if (mobileObject->getAttri(0) > 0)
+        r2 = sqrt(mobileObject->getAttri(0) * avol / jumped / PI);
+
+    r12 = r1 + r2;
     dimensionTerm = computeDimensionTerm(r12, hostObject, mobileObject, count);
     return 4.0*PI*concentration*r12*dimensionTerm;
 }

@@ -142,7 +142,7 @@ with open("species.txt") as f:
 	# Apply the filter using Gustafsson's method
 	avg_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c, method="gust")
 
-concentrations = [c*time/125 for c in concentrations]
+concentrations = [c*time/26315 for c in concentrations]
 plt.plot(experiment_positions, concentrations, label="Experiment", color='r')
 
 upto = POINTS

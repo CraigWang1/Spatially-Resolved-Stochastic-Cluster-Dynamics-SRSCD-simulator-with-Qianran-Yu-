@@ -683,7 +683,7 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
         }
     }
 
-    updateNetCombDissRate(hostObject, count);
+    // updateNetCombDissRate(hostObject, count);
 }
 
 void SCDWrapper::addReactionToOther(Object const * const mobileObject)
@@ -894,12 +894,30 @@ void SCDWrapper::updateSinks(const int point, const int* number){
     }
 }
 
+double getDiffCoeffFromVacancy(int numVacancy)
+{
+    double vacancyConcentration = numVacancy / VOLUME / DENSITY * 100.; // at%
+    double prefactor = exp(-12.03 - 4.66*exp(-vacancyConcentration/0.45));
+    double energy = 1.61 - 1.41*exp(-vacancyConcentration/0.53);
+    return prefactor*exp(-energy/KB/TEMPERATURE) * 1.0e4; // convert m^2 to cm^2
+}
+
+double getDiffCoeffFromSIA(int numSIA)
+{
+    double SIAConcentration = numSIA / VOLUME / DENSITY * 100.; // at. %
+    double dislocationLength = 36.78 * sqrt(SIAConcentration);
+    double prefactor = exp(-16.71 + 0.02872*dislocationLength);
+    double energy = 0.21 + 0.0091*dislocationLength;
+    return prefactor*exp(-energy/KB/TEMPERATURE) * 1.0e4; // convert m^2 to cm^2
+}
+
 /* private function */
 void SCDWrapper::processDiffEvent(Object* hostObject, const int n, const char signal)
 {
     if (hostObject->getKey() == 1)
     {
         int numVacancies = 0;
+        int numSIA = 0;
         unordered_map<int64, Object*>::iterator iter;
         for (iter = allObjects.begin(); iter != allObjects.end(); ++iter)
         {
@@ -908,8 +926,15 @@ void SCDWrapper::processDiffEvent(Object* hostObject, const int n, const char si
             {
                 numVacancies += tempObject->getNumber(n)*abs(tempObject->getAttri(0));
             }
+            else if (tempObject->getAttri(0) > 0)
+            {
+                numSIA += tempObject->getNumber(n)*tempObject->getAttri(0);
+            }
         }
-        double acceptProbability = exp(-numVacancies/69.09);   // Regression based on data from Li-Fang Wang 2020, more vacancies means diffusion rate is decreased
+        // double acceptProbability = exp(-numVacancies/69.09);   // Regression based on data from Li-Fang Wang 2020, more vacancies means diffusion rate is decreased
+        double acceptProbabilityWithVac = getDiffCoeffFromVacancy(numVacancies) / getDiffCoeffFromVacancy(0);
+        double acceptProbabilityWithSIA = getDiffCoeffFromSIA(numSIA) / getDiffCoeffFromSIA(0);
+        double acceptProbability = acceptProbabilityWithVac * acceptProbabilityWithSIA;
         if ((double) rand() / RAND_MAX > acceptProbability)
         {
             return;

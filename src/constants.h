@@ -47,7 +47,7 @@
 #define HH_BIND_E 0.02          // [eV] Binding Energy of H-H
 // Run parameters:
 #define ION               // Irradiation type.
-#define TOTAL_TIME 125   // [s] Total simulated time.
+#define TOTAL_TIME 26315   // [s] Total simulated time.
 #define TOTAL_DPA 2        // Total DPA damage to reach.
 #define VOLUME 1.0e-17    // [cm^3] System volume.
 #define DIVIDING_AREA 5.0e-12  // [cm^2] Area of the surface in between volume elements.
@@ -55,7 +55,7 @@
 //#define RATIO_HE 1.1       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_HE 0       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_H 0
-#define FLUX_H 4.0e16    // [1/(cm^2*s)]
+#define FLUX_H 1.9e14    // [1/(cm^2*s)]
 //#define DPA_RATE 0       //When only H exposure is available. no self-damage at all
 //#define DPA_RATE 3.55e-6   // [dpa/s] Damage rate.
 #define CHANNELS 3         // Irradiation channels used (1:W, 2:He, 3:H,...). the number of different particle insertion(irradiation) process.
