@@ -283,35 +283,35 @@ void SCDWrapper::processEvent(
                               )
 {
     // Check if last element is saturated
-    int HKey = 1;
-    if (!lastElemSaturated)
-    {
-        int lastPos = POINTS - 1;
-        if (allObjects.find(HKey) != allObjects.end())
-        {
-            double saturation_concentration = getHSaturationConcentration();
-            lastElemSaturated = (allObjects[HKey]->getNumber(lastPos) / VOLUME > saturation_concentration);
-        }
-    }
+    // int HKey = 1;
+    // if (!lastElemSaturated)
+    // {
+    //     int lastPos = POINTS - 1;
+    //     if (allObjects.find(HKey) != allObjects.end())
+    //     {
+    //         double saturation_concentration = getHSaturationConcentration();
+    //         lastElemSaturated = (allObjects[HKey]->getNumber(lastPos) / VOLUME > saturation_concentration);
+    //     }
+    // }
 
-    // Don't touch H count if H is saturated
-    if (lastElemSaturated)
-    {
-        if (n == POINTS - 1)
-        {
-            if (hostObject->getKey() == HKey || theOtherKey == HKey)
-            {
-                return;
-            }
-        }
-        if (n == POINTS - 2)
-        {
-            if (hostObject->getKey() == HKey && reaction == DIFFUSETOB)
-            {
-                return;
-            }
-        }
-    }
+    // // Don't touch H count if H is saturated
+    // if (lastElemSaturated)
+    // {
+    //     if (n == POINTS - 1)
+    //     {
+    //         if (hostObject->getKey() == HKey || theOtherKey == HKey)
+    //         {
+    //             return;
+    //         }
+    //     }
+    //     if (n == POINTS - 2)
+    //     {
+    //         if (hostObject->getKey() == HKey && reaction == DIFFUSETOB)
+    //         {
+    //             return;
+    //         }
+    //     }
+    // }
 
     ++event;
     fs.open("Reactions.txt", ios::app);
@@ -807,8 +807,8 @@ void SCDWrapper::updateCombDissRatePair(int combinedObjectAttr[], const int coun
         combinedLine = new OneLine();
     }
 
-    if (foundCombSpecies && foundCombResult)
-    {
+    // if (foundCombSpecies && foundCombResult)
+    // {
         long double baseCombRate = 0.0;
         long double baseDissRate = 0.0;
         if (hostLine != nullptr)
@@ -830,7 +830,7 @@ void SCDWrapper::updateCombDissRatePair(int combinedObjectAttr[], const int coun
             if (combinedLine != nullptr && foundCombResult)
                 combinedLine->setDissReaction(attrIndex, baseDissRate - baseCombRate);
         }
-    }
+    // }
 
     if (!foundHObj)
         delete mobileObject;
@@ -897,6 +897,25 @@ void SCDWrapper::updateSinks(const int point, const int* number){
 /* private function */
 void SCDWrapper::processDiffEvent(Object* hostObject, const int n, const char signal)
 {
+    if (hostObject->getKey() == 1)
+    {
+        int numVacancies = 0;
+        unordered_map<int64, Object*>::iterator iter;
+        for (iter = allObjects.begin(); iter != allObjects.end(); ++iter)
+        {
+            Object* tempObject = iter->second;
+            if (tempObject->getAttri(0) < 0)
+            {
+                numVacancies += abs(tempObject->getAttri(0));
+            }
+        }
+        double acceptProbability = exp(-numVacancies/69.09);   // Regression based on data from Li-Fang Wang 2020, more vacancies means diffusion rate is decreased
+        if ((double) rand() / RAND_MAX > acceptProbability)
+        {
+            return;
+        }
+    }
+
     int64 key = hostObject->getKey();
     
     if (signal == 'f') {

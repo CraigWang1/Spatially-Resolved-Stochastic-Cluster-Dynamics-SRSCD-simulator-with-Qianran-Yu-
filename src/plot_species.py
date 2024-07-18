@@ -10,14 +10,14 @@ from textwrap import wrap
 
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 100                             # num spatial elements in the simulation (1 surface + 100 bulk)
+POINTS = 300                             # num spatial elements in the simulation (1 surface + 100 bulk)
 VOLUME = 1e-17                           # volume of a spatial element [cm^3]
 SURFACE_THICKNESS = 0.544                # [nm]
 SURFACE_VOLUME = VOLUME / 20 * SURFACE_THICKNESS + VOLUME # [cm^3]
 DENSITY = 6.30705e+22                      # [atoms/cm^3] Atomic density for W.
 HEAT_OF_SOLUTION = 1.04                    # [eV] Heat of solution of H in W.
 KB = 8.617e-05                             # [ev/K] Boltzmann's constant.
-TEMPERATURE = 1000
+TEMPERATURE = 300
 H_SATURATION_CONCENTRATION = DENSITY * math.exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
 
 
@@ -58,13 +58,14 @@ def vacancies_per_cluster(obj_key):
 
 # out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 40.0, (640,480))
 
-positions = [10.272 + i*20 for i in range(100)]
+positions = [10.272 + i*20 for i in range(POINTS)]
 dpi = 100
 count = 0
 
 # for filename in tqdm(sorted(os.listdir("1700K AllH"), key=lambda x:float(re.findall("(\d+)",x)[0]))):
 count += 1
-while True:
+# while True:
+for i in range(1):
 	with open(f"species.txt") as f:
 		trapped_hydrogen_c = np.zeros(POINTS)
 		free_hydrogen_c = np.zeros(POINTS)
@@ -102,7 +103,7 @@ while True:
 
 		plt.figure(figsize=(640/dpi, 480/dpi), dpi=dpi)
 		plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
-		upto = 100
+		upto = POINTS
 		if plot_h:
 			plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
 			# plt.plot(positions[:upto], trapped_hydrogen_c[:upto], label="Trapped Hydrogen Concentration", color='darkgreen', marker='^', linestyle='-', markersize=0)
@@ -119,11 +120,11 @@ while True:
 		# if not plot_v:
 		# plt.ylim(0, 6e25)
 		plt.legend()
-		plt.draw()
+		plt.show()
 		# plt.tight_layout()
 		# plt.savefig("fig.png")
-		plt.pause(5)
-		plt.close()
+		# plt.pause(5)
+		# plt.close()
 		# img = cv2.imread("fig.png")
 		# out.write(img)
 

@@ -40,7 +40,7 @@
 #define HEAT_OF_SOLUTION 1.04   // [eV] Heat of solution of H in W.
 #define V1_FORMATION_ENERGY 3.23 // [eV] formation energy of V1
 #define SAV_ENERGY 0.95          // [eV] energy that controls SAV rate
-#define H_DEPOSITION_ENERGY 113.0 // [eV] energy of an H atom in the incident flux
+#define H_DEPOSITION_ENERGY 200.0 // [eV] energy of an H atom in the incident flux
 #define H_FORM_E 1.04           // [eV] Heat of solution of H in W (formation energy of H)
 #define V_FORM_E 3.23           // [eV] Formation Energy of 1 Vacancy
 #define VH_BIND_E 1.17486       // [eV] Binding Energy of V-H
@@ -63,7 +63,7 @@
 #define TSTEPS 50000 // Run these many steps.
 #define LEVELS 3
 #define EXP10 3 // number of 0s assigned to each group in object's key in hash table
-#define POINTS 100       // number of elements: one surface(Point 0), other bulk elements(NO.1,2,3,4,...,99)
+#define POINTS 300       // number of elements: one surface(Point 0), other bulk elements(NO.1,2,3,4,...,99)
 // Auxiliary definitions:
 enum Reaction { DIFFUSETOF, DIFFUSETOB, SINK, DISSOCIATION, COMBINATION, SAV, NONE, PARTICLE, HE, H, DISSV, DISSH, ERROR};
 
