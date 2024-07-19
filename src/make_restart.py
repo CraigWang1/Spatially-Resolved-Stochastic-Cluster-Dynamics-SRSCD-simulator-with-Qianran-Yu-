@@ -1,9 +1,10 @@
-VOLUME = 1e-23
-LENGTH = 20
-SURFACE_LEN = 0.544
-SURFACE_VOLUME = VOLUME / LENGTH * SURFACE_LEN
+VOLUME = 1e-17  #cm^3
+LENGTH = 20     #nm
+SURFACE_LEN = 0.544  #nm
+SURFACE_VOLUME = VOLUME / LENGTH * SURFACE_LEN + VOLUME  #cm^3
+POINTS = 300
 
-num = 202
+num = 3
 num_surface = round(num / VOLUME * SURFACE_VOLUME)
 
 
@@ -11,8 +12,8 @@ with open('restart.txt', 'w') as f:
     f.write("step = 0\n")
     f.write("time = 0.0\n")
     f.write("fluenceH = 0.0\n")
-    f.write(f"object 1    {num_surface}")
-    for i in range(100):
+    f.write(f"object -1000000    {num_surface}")
+    for i in range(POINTS):
         f.write(f"    {num}")
     f.write("\n")
 

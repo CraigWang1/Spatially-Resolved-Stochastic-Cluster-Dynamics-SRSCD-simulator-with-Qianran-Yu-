@@ -683,7 +683,7 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
         }
     }
 
-    updateNetCombDissRate(hostObject, count);
+    // updateNetCombDissRate(hostObject, count);
 }
 
 void SCDWrapper::addReactionToOther(Object const * const mobileObject)
