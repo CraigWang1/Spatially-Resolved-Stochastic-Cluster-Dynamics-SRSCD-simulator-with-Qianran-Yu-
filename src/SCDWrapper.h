@@ -17,6 +17,7 @@ private:
     /* private data member */
     unordered_map<int64, Object*> allObjects;  // map that store all object
     unordered_map<int64, Object*> mobileObjects;  // map that store mobile object
+    unordered_map<int64, Object*> HObjects;    // map that stores nH objects
     unordered_map<Object*, Bundle*> linePool;
     unordered_map<int64, int> surface;
     unordered_map<int64, int> bottom;
@@ -60,7 +61,7 @@ private:
     /* add to map by object pointer */
     void addToObjectMap(const int64, const int, const int number=1);
     /* general-use function to add a number of instances to an object in the nth mesh element */
-    void reduceFromObjectMap(const int64, const int);
+    void reduceFromObjectMap(const int64, const int, const int number=1);
     /* general-use function to remove one instance of an object in the nth mesh element */
     void removeObjectFromMap(const int64); 
     /* remove one object from map */
@@ -81,6 +82,7 @@ private:
     void processDissoEvent(Object*, const int, const int64, fstream& ); /* process dissociation event */
     void processCombEvent(Object*, const int, const int64, fstream& );  /* process combination reaction */
     void processSAVEvent(Object*, const int);      /* process super-abundant-vacancy reaction */
+    void processRecombEvent(Object*, const int);   /* process surface recombination event: 1H+1H forms H2 and leaves material surface */
     void processSinkDissEvent(const int, const int); /* process dissociation from sink event */
     /* get insertion functions */
     void getElectronInsertion(const int);

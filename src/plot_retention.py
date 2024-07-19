@@ -61,7 +61,7 @@ def vacancies_per_cluster(obj_key):
 
 # out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 40.0, (640,480))
 
-plt.figure(figsize=(640/dpi, 480/dpi), dpi=dpi)
+# plt.figure(figsize=(640/dpi, 480/dpi), dpi=dpi)
 
 fluences = [
 	"5e22",
@@ -142,8 +142,8 @@ with open("species.txt") as f:
 	# Apply the filter using Gustafsson's method
 	avg_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c, method="gust")
 
-concentrations = [c*time/125 for c in concentrations]
-plt.plot(experiment_positions, concentrations, label="Experiment", color='r')
+concentrations = [c*time/26315*3 for c in concentrations]
+plt.plot(experiment_positions, concentrations, label="Experiment", color='r', linewidth=0, marker="^")
 
 upto = POINTS
 if plot_h:

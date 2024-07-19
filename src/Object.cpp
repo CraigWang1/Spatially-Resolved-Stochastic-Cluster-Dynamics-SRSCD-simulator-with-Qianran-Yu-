@@ -29,6 +29,7 @@ Object::Object(const int64 key, const int *number):oKey(key), totalNumber(0)
     setAttributes(key);
     dimensionality = setDimensionality();
     computeDiffCoeff();
+    computeRecombCoeff();
     computeBindTerm();
     computeR1R1e();
     computeSinks();
@@ -72,6 +73,10 @@ double Object::getDiff() const
     return diffusivity;
 }
 
+double Object::getRecomb() const
+{
+    return recombCoeff;
+}
 
 int Object::getNumber(const int count) const
 {
@@ -319,6 +324,23 @@ void Object::computeDiffCoeff()
     }
     /* All data from [CS Becquart et al., J Nucl Mater 403 (2010) 75] */
     diffusivity = prefactor*exp(-energy_m / KB / TEMPERATURE);
+}
+
+void Object::computeRecombCoeff()
+{
+    /* Surface recombination coefficient for H in W (Causey 2002) */
+    if (attributes[0] == 0 &&
+        attributes[1] == 0 &&
+        attributes[2] == 1)
+    {   /* Only 1H can recombine at surface to form H2 and leave material */
+        double prefactor = 3.2e-7;
+        double energy = 1.16; 
+        recombCoeff = prefactor * exp(-energy/KB/TEMPERATURE);
+    }
+    else
+    {
+        recombCoeff = 0.0;
+    }
 }
 
 void Object::computeBindTerm()
@@ -588,17 +610,21 @@ void Object::computeBindTerm()
         }else if (attributes[0]== 0) { // nH clusters, this is binding energy of nH cluster dissociating 1 H from Qin(2015)
             if (attributes[2]==1) { // H
                 energy_b = 0;
-            } else if (attributes[2]==2) { // 2H
-                energy_b = 0.02;
-            } else if (attributes[2]==3) { // 3H
-                energy_b = 0.08;
-            } else if (attributes[2]==4) { // 4H
-                energy_b = 0.20;
-            } else if (attributes[2]==5) { // 5H
-                energy_b = 0.27;
             }
+            else {
+                energy_b = 0.38 - 0.45*exp(-attributes[2]/12.04); // Hou 2019
+            }
+            // } else if (attributes[2]==2) { // 2H
+            //     energy_b = 0.02;
+            // } else if (attributes[2]==3) { // 3H
+            //     energy_b = 0.08;
+            // } else if (attributes[2]==4) { // 4H
+            //     energy_b = 0.20;
+            // } else if (attributes[2]==5) { // 5H
+            //     energy_b = 0.27;
+            // }
             energy_d[2] = energy_b + emh;
-            if (attributes[2] > 5) // nH(n>5) or higher
+            if (attributes[2] >= 100000)
                 energy_d[2] = 0.0;
 
             bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
@@ -712,6 +738,7 @@ void Object::setProperties(const int count, const int n)
     addNumber(count, n);
     dimensionality = setDimensionality();
     computeDiffCoeff();
+    computeRecombCoeff();
     computeBindTerm();
     computeR1R1e();
     computeSinks();

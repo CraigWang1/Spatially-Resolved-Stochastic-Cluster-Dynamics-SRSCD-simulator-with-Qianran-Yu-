@@ -282,37 +282,6 @@ void SCDWrapper::processEvent(
                               const double dt
                               )
 {
-    // Check if last element is saturated
-    int HKey = 1;
-    if (!lastElemSaturated)
-    {
-        int lastPos = POINTS - 1;
-        if (allObjects.find(HKey) != allObjects.end())
-        {
-            double saturation_concentration = getHSaturationConcentration();
-            lastElemSaturated = (allObjects[HKey]->getNumber(lastPos) / VOLUME > saturation_concentration);
-        }
-    }
-
-    // Don't touch H count if H is saturated
-    if (lastElemSaturated)
-    {
-        if (n == POINTS - 1)
-        {
-            if (hostObject->getKey() == HKey || theOtherKey == HKey)
-            {
-                return;
-            }
-        }
-        if (n == POINTS - 2)
-        {
-            if (hostObject->getKey() == HKey && reaction == DIFFUSETOB)
-            {
-                return;
-            }
-        }
-    }
-
     ++event;
     fs.open("Reactions.txt", ios::app);
     switch (reaction) {
@@ -344,6 +313,16 @@ void SCDWrapper::processEvent(
             processSAVEvent(hostObject, n);
             if (LOG_REACTIONS)
                 fs << hostObject->getKey() << "  in element " << n << " experiences SAV (ejects interstitial)" << endl;
+            break;
+        case RECOMBTOF:
+            processRecombEvent(hostObject, n);
+            if (LOG_REACTIONS)
+                fs << hostObject->getKey() << "  in element " << n << " experiences a recombination to form H2 and leave the front of the material" << endl;
+            break;
+        case RECOMBTOB:
+            processRecombEvent(hostObject, n);
+            if (LOG_REACTIONS)
+                fs << hostObject->getKey() << "  in element " << n << " experiences a recombination to form H2 and leave the back of the material" << endl;
             break;
         case PARTICLE:
             getParticleInsertion(n, dt, fs);
@@ -611,6 +590,9 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
             mobileObjects.insert(newNode);
             addReactionToOther(newObject); /* add to other objects' lines */
         } /* add to mobile object if necessary */
+        if (newObject->getAttri(0) == 0 && newObject->getAttri(2) > 0) {
+            HObjects.insert(newNode);
+        } /* Keep track of nH objects */
         Bundle* newBundle = new Bundle(newObject, mobileObjects);
         pair<Object*, Bundle*> bundle(newObject, newBundle);
         linePool.insert(bundle); /* add to line pool */
@@ -636,10 +618,10 @@ void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
     }
 }
 
-void SCDWrapper::reduceFromObjectMap(const int64 key, const int n)
+void SCDWrapper::reduceFromObjectMap(const int64 key, const int n, const int number)
 {
     /* Count is mesh element index, number is number to add to object population */
-    addToObjectMap(key, n, -1);
+    addToObjectMap(key, n, -number);
 }
 
 void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
@@ -719,6 +701,7 @@ void SCDWrapper::removeObjectFromMap(const int64 deleteKey)
     Object* deleteObject = allObjects[deleteKey];
     Bundle* tempBundle = linePool[deleteObject];
     double diffusivity = deleteObject->getDiff();
+    bool is_nH = deleteObject->getAttri(0) == 0 && deleteObject->getAttri(2) > 0;  // if it's an nH object
     delete tempBundle; /* delete bundle */
     linePool.erase(deleteObject); /* remove this object from map linePool */
     delete deleteObject;  /* delete the content of this object */
@@ -726,6 +709,9 @@ void SCDWrapper::removeObjectFromMap(const int64 deleteKey)
     if (diffusivity > 0) {
         mobileObjects.erase(deleteKey); /* delete this object from map mobileObjects */
         removeRateToOther(deleteKey);
+    }
+    if (is_nH) {
+        HObjects.erase(deleteKey);
     }
 }
 
@@ -815,7 +801,6 @@ void SCDWrapper::updateCombDissRatePair(int combinedObjectAttr[], const int coun
             baseCombRate = hostLine->computeCombReaction(hostObject, mobileObject, count);
         if (combinedLine != nullptr)
             baseDissRate = combinedLine->computeDissReaction(combinedObject, attrIndex, count);
-        double ratio = 0.01;
         if (baseCombRate > baseDissRate)
         {
             if (hostLine != nullptr && foundCombSpecies)
@@ -1007,6 +992,25 @@ void SCDWrapper::processCombEvent(
                                   const int64 theOtherKey,
                                   fstream& fs)
 {
+    if (hostObject->getAttri(0) == 0 && hostObject->getAttri(2) > 0 && theOtherKey < 1000000 && theOtherKey > 0)
+    {   /* If we have a nH + nH combination */
+        double criticalConcentration = DENSITY * (1.0 / (exp(0.38/KB/TEMPERATURE) + 1.0) );  // Data from Hou 2018
+        double HConcentration = 0;
+        unordered_map<int64, Object*>::iterator iter;
+        double volume = VOLUME;
+        if (n == 0)
+            volume = SURFACE_VOLUME;
+        for (iter = HObjects.begin(); iter != HObjects.end(); ++iter)
+        {
+            Object* tempObject = iter->second;
+            HConcentration += tempObject->getNumber(n) * tempObject->getAttri(2) / volume;
+        }
+        if (HConcentration < criticalConcentration)
+        {
+            return; // Don't cluster when the H concentration is less than the critical concentration (Hou 2018)
+        }
+    }
+
     ++reactions[4][n];
     /* 1. find the other reactant */
     Object* theOtherObject = allObjects[theOtherKey];
@@ -1039,7 +1043,7 @@ void SCDWrapper::processCombEvent(
     else if(hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && theOtherObject->getAttri(0)>0 && theOtherObject->getAttri(2)==0 && productAttr[0] < 0 && productAttr[2] > 4.75 + 4*abs(productAttr[0])){
         /* Vn-Hm + SIAx -> V(n-x)-Hm (n, m, and x are not zero) */
         /* change above reaction to Vn-Hm + SIAx -> V(n-x)-H(max) + (excess)*H */
-        int maxH = int(4.75 + abs(productAttr[0]) * 4);
+        int maxH = abs(productAttr[0]) * 4;
         int excessH = productAttr[2] - maxH;
         productAttr[2] = maxH;
         productKey = attrToKey(productAttr);
@@ -1071,14 +1075,16 @@ void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
      * Superabundant vacancy mechanism.
      * Eject an interstitial (which increases vacancy by 1)
      */
-    int64 HKey = 1;
+    const int64 HKey = 1;
     double HConcentration = 0;
-    if (allObjects.find(HKey) != allObjects.end())
+    unordered_map<int64, Object*>::iterator iter;
+    double volume = VOLUME;
+    if (n == 0)
+        volume = SURFACE_VOLUME;  // first mesh element is slightly bigger because of added surface layer
+    for (iter = HObjects.begin(); iter != HObjects.end(); ++iter)
     {
-        if (n == 0)
-            HConcentration = allObjects[HKey]->getNumber(n) / SURFACE_VOLUME;
-        else
-            HConcentration = allObjects[HKey]->getNumber(n) / VOLUME;
+        Object* HObject = iter->second;
+        HConcentration += HObject->getNumber(n) * HObject->getAttri(2) / volume;
     }
 
     double saturation_concentration = getHSaturationConcentration();
@@ -1099,11 +1105,31 @@ void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
         productAttr[i] = hostObject->getAttri(i);
 
     productAttr[0] -= 1;
+
+    if (productAttr[0] < 0 && productAttr[2] > abs(productAttr[0])*4)
+    {
+        /* If the product has too many H per vacancy, eject the rest of the H */
+        int excessH = productAttr[2] - abs(productAttr[0])*4;
+        productAttr[2] -= excessH;
+        addToObjectMap(HKey, n, excessH);
+    }
+
     int64 productKey = attrToKey(productAttr);
 
     addToObjectMap(productKey, n);
 
     reduceFromObjectMap(hostObject->getKey(), n);
+}
+
+void SCDWrapper::processRecombEvent(Object* hostObject, const int n)
+{
+    /* 
+     * Recombination: Two 1H instances combine to form H2 molecule, which
+     * leaves the material through either the front or the back of the material 
+     */
+
+    // The implementation is easy: just remove two 1H objects
+    reduceFromObjectMap(hostObject->getKey(), n, 2);
 }
 
 void SCDWrapper::processSinkDissEvent(const int type, const int point)
