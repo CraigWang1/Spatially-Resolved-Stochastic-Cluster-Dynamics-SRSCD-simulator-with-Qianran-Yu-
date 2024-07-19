@@ -17,7 +17,7 @@ OneLine::OneLine(
     setOneLine(hostObject, count, mobileObjects);
 }
 
-OneLine::OneLine() : diffRToF(0.0), diffRToB(0.0), sinkR(0.0), SAVR(0.0), totalRate(0.0)
+OneLine::OneLine() : diffRToF(0.0), diffRToB(0.0), sinkR(0.0), SAVR(0.0), recombRToF(0.0), recombRToB(0.0), totalRate(0.0)
 {
     for (int i = 0; i < LEVELS; i++)
         dissociationR[i] = 0.0;
@@ -58,6 +58,18 @@ Reaction OneLine::selectReaction(
     }
     else {
         tempRate -= SAVR;
+    }
+    if (recombRToF >= tempRate) {
+        return RECOMBTOF;
+    }
+    else {
+        tempRate -= recombRToF;
+    }
+    if (recombRToB >= tempRate) {
+        return RECOMBTOB;
+    }
+    else {
+        tempRate -= recombRToB;
     }
     while (index < LEVELS) {
         if (dissociationR[index] >= tempRate) {
@@ -133,6 +145,8 @@ const long double OneLine::computeTotalRate()
     totalRate += diffRToB; /* add another diffusion rate*/
     totalRate += sinkR;    /* add sink rate */
     totalRate += SAVR;     /* add super abundant vacancy rate */
+    totalRate += recombRToF; /* add one recombination rate */
+    totalRate += recombRToB; /* add another recombination rate */
     for (i = 0; i < LEVELS; i++) {
         totalRate += dissociationR[i];
     }
@@ -155,7 +169,8 @@ void OneLine::display(Object const * const hostObject)
     for (iter = secondR.begin(); iter != secondR.end(); ++iter) {
         fs << "(" << iter->first << ")" << iter->second << "    ";
     }
-    fs << "(SAV)" << SAVR;
+    fs << "(SAV)" << SAVR << "    ";
+    fs << "(recomb)" << recombRToF << ", " << recombRToB;
     fs << endl;
     fs.close();
 }
@@ -178,6 +193,7 @@ void OneLine::setOneLine(
         secondR.insert(oneReaction);
     }
     computeSAVReaction(hostObject, count);
+    computeRecombReaction(hostObject, count);
     computeTotalRate();
 }
 
@@ -239,9 +255,9 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         diffRToF = 0.0;
     }
     /* 2. compute diffusion rate to the back element
-     * Object not allowed to diffuse out thorugh the back
+     * Object are allowed to diffuse out through the back (assume infinite W sample)
      */
-    if (concentration > backConcentration && count != POINTS - 1) {
+    if (concentration > backConcentration) {
         /* if diffusable */
         prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthb;
         diffRToB = prefactor*(concentration - backConcentration);
@@ -328,15 +344,7 @@ long double OneLine::computeCombReaction(
     // Disable multiples of 1V-12H + 1H because vacancy can store max 12H, save sim time
     if (hostObject->getAttri(0) < 0 && 
         hostObject->getAttri(2) == abs(hostObject->getAttri(0))*12 &&
-        mobileObject->getKey() == 1)
-    {
-        return 0.0;
-    }
-
-    // Disable multiples of 1V-12H + 1H because vacancy can store max 12H, save sim time
-    if (hostObject->getAttri(0) < 0 && 
-        hostObject->getAttri(2) == abs(hostObject->getAttri(0))*12 &&
-        mobileObject->getKey() == 1)
+        mobileObject->getAttri(0) == 0 && mobileObject->getAttri(2) > 0)
     {
         return 0.0;
     }
@@ -377,6 +385,33 @@ void OneLine::computeSAVReaction(
         {
             SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * hostObject->getNumber(count);
         }
+    }
+}
+
+void OneLine::computeRecombReaction(
+                                    const Object* const hostObject,
+                                    const int count)
+{
+    recombRToF = 0.0;
+    recombRToB = 0.0;
+
+    if (!RECOMB_ON)
+    {
+        return;
+    }
+
+    if (hostObject->getKey() == 1 && hostObject->getNumber(count) >= 2) // only H can recombine at surface to form H2 and leave material
+    {
+        double volume = VOLUME;
+        if (count == 0)
+            volume = SURFACE_VOLUME;
+        double concentration = hostObject->getNumber(count) / volume;
+        double rate = hostObject->getRecomb() * concentration * concentration * DIVIDING_AREA;
+
+        if (count == 0)
+            recombRToF = rate;
+        // else if (count == POINTS - 1)
+            // recombRToB = rate;
     }
 }
 

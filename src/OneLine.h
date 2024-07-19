@@ -12,6 +12,8 @@ private:
     long double sinkR;                 // go to sink reaction rate
     long double dissociationR[LEVELS];
     long double SAVR;                // super abundant vacancy reaction rate
+    long double recombRToF;          // surface recombination rate at front surface of material (i.e. for H+H = H2 and leaves material at surface)
+    long double recombRToB;          // surface recombination rate at back surface of material
     // dissociation reaction rate
     long double totalRate;             // totalRate of the line;
     std::unordered_map<int64, long double> secondR;  // second reaction rate
@@ -21,6 +23,7 @@ private:
     void computeDiffReaction(const Object* const, const int);  // compute diffusion rate
     void computeSinkReaction(const Object* const, const int);         // compute absorption reaction rate
     void computeSAVReaction(const Object* const, const int);   // compute super-abundant-vacancy rate
+    void computeRecombReaction(const Object* const, const int);
     double computeDimensionTerm(const double, const Object* const, const Object* const, const int) const;
     
 public:
