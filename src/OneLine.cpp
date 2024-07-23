@@ -269,7 +269,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
 
 void OneLine::computeSinkReaction(const Object* const hostObject, const int count)
 {
-    if (!SINK_ON)
+    if (!SINK_ON || count == 0)
     {
         sinkR = 0.0;
         return;
@@ -283,7 +283,7 @@ long double OneLine::computeDissReaction(
                                   const int index,
                                   const int count) const
 {
-    if (!DISS_ON)
+    if (!DISS_ON || count == 0)
     {
         return 0.0;
     }
@@ -310,7 +310,7 @@ long double OneLine::computeCombReaction(
                                     const Object* const mobileObject,
                                     const int count) const
 {    
-    if (!COMB_ON)
+    if (!COMB_ON || count == 0)
     {
         return 0.0;
     }
@@ -369,7 +369,7 @@ void OneLine::computeSAVReaction(
 {
     SAVR = 0;
 
-    if (!SAV_ON)
+    if (!SAV_ON || count == 0)
     {
         return;
     }

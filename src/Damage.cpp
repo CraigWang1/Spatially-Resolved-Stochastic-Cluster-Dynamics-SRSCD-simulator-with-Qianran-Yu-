@@ -1,12 +1,9 @@
 #include "Damage.h"
 // Damage.cpp --  implementations of the damage class
 
-Damage::Damage()
+Damage::Damage(unordered_map<int64, Object*>& allObjects)
 {
     int index;
-    for (index = 0; index < POINTS; ++index) {
-        totalRate[index] = 0.0;
-    }
     readFile();
     //for(index=0; index<1; ++index){
     for (index = 0; index < POINTS; ++index) {
@@ -15,7 +12,7 @@ Damage::Damage()
             computeDamageOne(index);
         }
         if (CHANNELS > 2) {
-            computeDamageTwo(index);
+            computeDamageTwo(index, allObjects);
         }
         if (CHANNELS > 3) {
             int iindex;
@@ -32,8 +29,9 @@ Reaction Damage::selectDamage(const int n, long double & randRate)
     int index = 0;
     long double tempRate = randRate;
 
-    if (totalRate[n] < randRate) {
-        randRate -= totalRate[n];
+    double totalRate = getTotalDamage(n);
+    if (totalRate < randRate) {
+        randRate -= totalRate;
         return NONE;
         /* this block will never be excuted */
     }
@@ -63,12 +61,17 @@ void Damage::display(const int count) const
     for (int i = 0; i < CHANNELS; i++) {
         cout << "Damage[" << i << "]: " << damage[count][i] << endl;
     }
-    cout << "Total Damage Rate: " << totalRate[count] << endl;
+    cout << "Total Damage Rate: " << getTotalDamage(count) << endl;
 }
 
 const double Damage::getTotalDamage(const int n) const
 {
-    return totalRate[n];
+    double totalRate = 0.0;
+    for (int i = 0; i < CHANNELS; i++)
+    {
+        totalRate += damage[n][i];
+    }
+    return totalRate;
 }
 
 /* private method implementation */
@@ -109,17 +112,15 @@ void Damage::computeDamageZero(const int n)
     }
 
     //damage[n][0] = DPA_RATE[n] * DENSITY*VOLUME / NRT[n];
-    totalRate[n] += damage[n][0];
 }
 
 void Damage::computeDamageOne(const int n)
 {
     damage[n][1]= 0.;
     // damage[n][1]= RATIO_HE*1.0e-06*DPA_RATE[n]*DENSITY*VOLUME;
-    totalRate[n] += damage[n][1];
 }
 
-void Damage::computeDamageTwo(const int n)
+void Damage::computeDamageTwo(const int n, unordered_map<int64, Object*>& allObjects)
 {
     if (!HYDROGEN_ON)
     {
@@ -127,20 +128,30 @@ void Damage::computeDamageTwo(const int n)
         return;
     }
 
+    double reflectionCoeff = -0.074 * log(H_DEPOSITION_ENERGY) + 0.96; // Data regression from Ogorodnikova 2015
+    double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);   // insertion rate formula form Zhenhou Wang 2020
+    double surfaceConc = 0.0;
+
+    int64 HKey = 1;
+    if (allObjects.find(HKey) != allObjects.end())
+        surfaceConc = allObjects[HKey]->getNumber(0) / DIVIDING_AREA;  // [cm^-2] concentration
+
+    double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
+
     if (n == 0) {
-        double reflectionCoeff = -0.074 * log(H_DEPOSITION_ENERGY) + 0.96; // Data regression from Ogorodnikova 2015
-        damage[n][2] = FLUX_H * DIVIDING_AREA * (1 - reflectionCoeff);  // insert the H atoms that are not reflected
+        damage[n][2] = FLUX_H * (1 - reflectionCoeff) * (1 - surfaceSaturationFraction) * (1 - H_DIRECT_IMPLANTATION_FRACTION) * DIVIDING_AREA;
+    }
+    else if (n == 1) {
+        damage[n][2] = FLUX_H * (1 - reflectionCoeff) * (1 - surfaceSaturationFraction) * H_DIRECT_IMPLANTATION_FRACTION * DIVIDING_AREA;
     }
     else {
         damage[n][2] = 0.0;
     }
-    totalRate[n] += damage[n][2];
 }
 
 void Damage::computeDamageOther(const int n, const int m)
 {
     damage[n][m] = 0.0;
-    totalRate[n] += damage[n][m];
 }
 
 double Damage::getDpaRate(const int n){
@@ -150,4 +161,9 @@ double Damage::getDpaRate(const int n){
 double Damage::getDamageTwo(const int n)
 {
     return damage[n][2];
+}
+
+void Damage::updateDamageTwo(const int n, unordered_map<int64, Object*>& allObjects)
+{
+    computeDamageTwo(n, allObjects);
 }
