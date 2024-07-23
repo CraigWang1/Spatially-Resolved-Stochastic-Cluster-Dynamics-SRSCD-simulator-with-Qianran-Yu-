@@ -18,7 +18,7 @@ static int generationNumber = 0;
 static int dissV = 0; //this only counts number of events
 static int dissH = 0; //this only counts number of events
 /* public funciton */
-SCDWrapper::SCDWrapper():damage(), cpdf(), totalDpa(0)
+SCDWrapper::SCDWrapper():allObjects(), damage(allObjects), cpdf(), totalDpa(0)
 {
     formationE[1] = V_FORM_E; 
 
@@ -663,6 +663,11 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
                 tempLine->updateDiff(hostObject, count + 1);
             }
         }
+    }
+
+    if (hostObject->getKey() == 1) // if is 1H object
+    {
+        damage.updateDamageTwo(count, allObjects);
     }
 
     // updateNetCombDissRate(hostObject, count);

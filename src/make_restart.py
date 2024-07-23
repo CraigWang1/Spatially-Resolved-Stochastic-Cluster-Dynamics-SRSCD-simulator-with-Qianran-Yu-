@@ -4,7 +4,7 @@ SURFACE_LEN = 0.544  #nm
 SURFACE_VOLUME = VOLUME / LENGTH * SURFACE_LEN + VOLUME  #cm^3
 POINTS = 300
 
-num = 3
+num = 30
 num_surface = round(num / VOLUME * SURFACE_VOLUME)
 
 

@@ -88,7 +88,7 @@ for i in range(len(fluences)):
 
 # Plot Simulation
 # with open("/home/craig/Downloads/Spatially-Resolved-Stochastic-Cluster-Dynamics-SRSCD-simulator-with-Qianran-Yu-/src/species.txt") as f:
-with open("species.txt") as f:
+with open("restart_store14.txt") as f:
 	positions = [0.010272 + i*.020 for i in range(POINTS)]  #micrometer
 	trapped_hydrogen_c = np.zeros(POINTS)
 	free_hydrogen_c = np.zeros(POINTS)
@@ -142,7 +142,7 @@ with open("species.txt") as f:
 	# Apply the filter using Gustafsson's method
 	avg_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c, method="gust")
 
-concentrations = [c*time/26315*3 for c in concentrations]
+concentrations = [c*time/26315 for c in concentrations]
 plt.plot(experiment_positions, concentrations, label="Experiment", color='r', linewidth=0, marker="^")
 
 upto = POINTS

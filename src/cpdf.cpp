@@ -9,11 +9,11 @@ Cpdf::Cpdf()
     for(int i=0; i<POINTS; i++){
         maxPossibility[i] = 0;
     }
-    for(int fileNumber = 0; fileNumber < 100; fileNumber++){
-    	/* first point is surface */
+    for(int fileNumber = 1; fileNumber < 101; fileNumber++){
+    	/* 0th point is surface */
         vector<double> tempEnergy, tempCumul;
         double energy= 0.0 , cumul = 0.0;
-        sprintf(cpdf,"cpdf%d.txt",fileNumber+1);  // points are zero-indexed, while cpdf files are 1-indexed
+        sprintf(cpdf,"cpdf%d.txt",fileNumber);
         fc.open(cpdf);
         string oneLine;
         stringstream lineHold;
