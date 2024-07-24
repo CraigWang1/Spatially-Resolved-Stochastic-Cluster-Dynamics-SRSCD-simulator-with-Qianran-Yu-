@@ -233,8 +233,8 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     }
 
     // Account for special cases from 2020 Zhenhou Wang
-    if((count == 1 && hostObject->getKey() == 1 && concentration > frontConcentration) ||
-        (count == 0 && hostObject->getKey() == 0 && concentration > backConcentration))
+    if((count == 1 && hostObject->getKey() == 1) ||
+        (count == 0 && hostObject->getKey() == 1))
     {
         double surfaceConc = 0.0; 
         int64 HKey = 1;
@@ -242,23 +242,31 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
             surfaceConc = allObjects[HKey]->getNumber(0) / DIVIDING_AREA;  // [cm^-2] concentration
 
         // special case for 1H diffusion from Bulk to Surface 
-        if (concentration > frontConcentration)
+        if (count == 1)
         {
             double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);
             double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
             double jumpingDist = maxSurfaceConc / 6 / DENSITY;
-            double freq = 1e13 * exp(-0.39 / KB / TEMPERATURE); // Ed = 0.39 eV
+            double freq = NU0 * exp(-0.39 / KB / TEMPERATURE); // Ed = 0.39 eV
         
             prefactor = freq * jumpingDist * (1 - surfaceSaturationFraction) * DIVIDING_AREA;
-            // TODO: discuss if to use absolute concentration / no subsurface con
             diffRToF = prefactor * concentration;
             diffRToB = 0.0;
+
+            // Normal Diffusion to the second bulk element
+            if (concentration > backConcentration)
+            {
+                double lengthb = ELEMENT_THICKNESS * NM_TO_CM; // first element to second element distance (20nm) 
+                /* if diffusable */
+                prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthb;
+                diffRToB = prefactor*(concentration - backConcentration);
+            }
             return;
         }
         // special case for 1H diffusion from Surface to Bulk
-        else if (concentration > backConcentration)
+        else if (count == 0)
         {
-            double freq = 1e13 * exp(-1.43 / KB / TEMPERATURE); // Eabs = Ech + Eperm = 0.7 + 0.73 eV
+            double freq = NU0 * exp(-1.43 / KB / TEMPERATURE); // Eabs = Ech + Eperm = 0.7 + 0.73 eV
             prefactor = freq * surfaceConc * DIVIDING_AREA;
             diffRToB = prefactor;
             diffRToF = 0.0;
@@ -444,18 +452,28 @@ void OneLine::computeRecombReaction(
 
     double surfaceConc = 0.0;
     int64 HKey = 1;
+    int numH = allObjects[HKey]->getNumber(0);
     if (allObjects.find(HKey) != allObjects.end())
-        surfaceConc = allObjects[HKey]->getNumber(0) / DIVIDING_AREA;  // [cm^-2] concentration
+        surfaceConc = numH / DIVIDING_AREA;  // [cm^-2] concentration
 
     // Calculate ER recomb rate
-    double crossSectionERRecomb = 1.7e-17; // [cm^2] cross-section of ER recombination from Zhenhou Wang 2020
-    recombRER = FLUX_H * crossSectionERRecomb * surfaceConc * DIVIDING_AREA; 
+    if (numH >= 1)
+    {
+        double crossSectionERRecomb = 1.7e-17; // [cm^2] cross-section of ER recombination from Zhenhou Wang 2020
+        recombRER = FLUX_H * crossSectionERRecomb * surfaceConc * DIVIDING_AREA; 
+    }
+    else
+        recombRER = 0.0;
     
     // Calculate LH recomb rate
-    double desorptionR = 1e13 * pow(pow(DENSITY, -3), 2); // [cm^2 s^-1]
-    double Ech = 0.7; // [eV] activate energy of incident H atom at chemiorption site from Zhenhou Wang 2020
-    // TODO: discuss if 2 is needed
-    recombRLH = 2 * desorptionR * exp(-2 * Ech / KB / TEMPERATURE) * surfaceConc * surfaceConc * DIVIDING_AREA;
+    if (numH >= 2)
+    {
+        double desorptionR = NU0 * pow(ALATT, 2); // [cm^2 s^-1]
+        double Ech = 0.7; // [eV] activate energy of incident H atom at chemiorption site from Zhenhou Wang 2020
+        recombRLH = desorptionR * exp(-2 * Ech / KB / TEMPERATURE) * surfaceConc * surfaceConc * DIVIDING_AREA;
+    }
+    else
+        recombRLH = 0.0;
 }
 
 double OneLine::computeDimensionTerm(

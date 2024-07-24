@@ -142,7 +142,7 @@ void Damage::computeDamageTwo(const int n, unordered_map<int64, Object*>& allObj
         damage[n][2] = FLUX_H * (1 - reflectionCoeff) * (1 - surfaceSaturationFraction) * (1 - H_DIRECT_IMPLANTATION_FRACTION) * DIVIDING_AREA;
     }
     else if (n == 1) {
-        damage[n][2] = FLUX_H * (1 - reflectionCoeff) * (1 - surfaceSaturationFraction) * H_DIRECT_IMPLANTATION_FRACTION * DIVIDING_AREA;
+        damage[n][2] = FLUX_H * (1 - reflectionCoeff) * H_DIRECT_IMPLANTATION_FRACTION * DIVIDING_AREA;
     }
     else {
         damage[n][2] = 0.0;
