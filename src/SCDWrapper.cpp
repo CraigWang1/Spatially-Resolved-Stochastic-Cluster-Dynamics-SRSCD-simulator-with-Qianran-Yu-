@@ -314,15 +314,15 @@ void SCDWrapper::processEvent(
             if (LOG_REACTIONS)
                 fs << hostObject->getKey() << "  in element " << n << " experiences SAV (ejects interstitial)" << endl;
             break;
-        case RECOMBTOF:
-            processRecombEvent(hostObject, n);
+        case RECOMBER:
+            processRecombEvent(hostObject, n, true);
             if (LOG_REACTIONS)
-                fs << hostObject->getKey() << "  in element " << n << " experiences a recombination to form H2 and leave the front of the material" << endl;
+                fs << hostObject->getKey() << "  in element " << n << " experiences an ER recombination to form H2 and leave the front of the material" << endl;
             break;
-        case RECOMBTOB:
-            processRecombEvent(hostObject, n);
+        case RECOMBLH:
+            processRecombEvent(hostObject, n, false);
             if (LOG_REACTIONS)
-                fs << hostObject->getKey() << "  in element " << n << " experiences a recombination to form H2 and leave the back of the material" << endl;
+                fs << hostObject->getKey() << "  in element " << n << " experiences a LH recombination to form H2 and leave the back of the material" << endl;
             break;
         case PARTICLE:
             getParticleInsertion(n, dt, fs);
@@ -593,7 +593,7 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
         if (newObject->getAttri(0) == 0 && newObject->getAttri(2) > 0) {
             HObjects.insert(newNode);
         } /* Keep track of nH objects */
-        Bundle* newBundle = new Bundle(newObject, mobileObjects);
+        Bundle* newBundle = new Bundle(newObject, mobileObjects, allObjects);
         pair<Object*, Bundle*> bundle(newObject, newBundle);
         linePool.insert(bundle); /* add to line pool */
     }/* if this object is valid, add it to map */
@@ -632,7 +632,7 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
     int number = hostObject->getNumber(count);
     if (tempLine != nullptr) {
         if (number > 0) {
-            tempLine->updateLine(hostObject, count, mobileObjects);
+            tempLine->updateLine(hostObject, count, mobileObjects, allObjects);
         }
         else {
             delete tempLine;
@@ -641,7 +641,7 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
     }
     else {
         if (number > 0) {
-            tempLine = new OneLine(hostObject, count, mobileObjects);
+            tempLine = new OneLine(hostObject, count, mobileObjects, allObjects);
             linePool[hostObject]->lines[count] = tempLine;
         }
     }
@@ -654,13 +654,13 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
         if((count-1) >= 0){
             OneLine* tempLine = linePool[hostObject]->lines[count - 1];
             if(tempLine != nullptr){
-                tempLine->updateDiff(hostObject, count - 1);
+                tempLine->updateDiff(hostObject, count - 1, allObjects);
             }
         }
         if((count + 1) < POINTS){
             OneLine* tempLine = linePool[hostObject]->lines[count + 1];
             if(tempLine != nullptr){
-                tempLine->updateDiff(hostObject, count + 1);
+                tempLine->updateDiff(hostObject, count + 1, allObjects);
             }
         }
     }
@@ -1126,15 +1126,20 @@ void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
     reduceFromObjectMap(hostObject->getKey(), n);
 }
 
-void SCDWrapper::processRecombEvent(Object* hostObject, const int n)
+void SCDWrapper::processRecombEvent(Object* hostObject, const int n, bool ER)
 {
+    if (n != 0)
+        cerr << "Recomb Error" << endl;
     /* 
      * Recombination: Two 1H instances combine to form H2 molecule, which
      * leaves the material through either the front or the back of the material 
      */
 
-    // The implementation is easy: just remove two 1H objects
-    reduceFromObjectMap(hostObject->getKey(), n, 2);
+    // The implementation is easy: just remove one 1H object for ER Recomb and two 1H objects for LH Recomb
+    if (ER)
+        reduceFromObjectMap(hostObject->getKey(), n, 1);
+    else
+        reduceFromObjectMap(hostObject->getKey(), n, 2);
 }
 
 void SCDWrapper::processSinkDissEvent(const int type, const int point)
