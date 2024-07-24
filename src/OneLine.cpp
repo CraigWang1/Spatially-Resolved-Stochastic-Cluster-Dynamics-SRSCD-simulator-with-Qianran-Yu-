@@ -251,7 +251,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         
             prefactor = freq * jumpingDist * (1 - surfaceSaturationFraction) * DIVIDING_AREA;
             // TODO: discuss if to use absolute concentration / no subsurface con
-            diffRToF = prefactor * frontConcentration;
+            diffRToF = prefactor * concentration;
             diffRToB = 0.0;
             return;
         }
