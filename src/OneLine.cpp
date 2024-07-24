@@ -12,12 +12,13 @@ using namespace std;
 OneLine::OneLine(
                  const Object* const hostObject,
                  const int count,
-                 unordered_map<int64, Object*>& mobileObjects) :totalRate(0.0)
+                 unordered_map<int64, Object*>& mobileObjects,
+                 unordered_map<int64, Object*>& allObjects) :totalRate(0.0)
 {
-    setOneLine(hostObject, count, mobileObjects);
+    setOneLine(hostObject, count, mobileObjects, allObjects);
 }
 
-OneLine::OneLine() : diffRToF(0.0), diffRToB(0.0), sinkR(0.0), SAVR(0.0), recombRToF(0.0), recombRToB(0.0), totalRate(0.0)
+OneLine::OneLine() : diffRToF(0.0), diffRToB(0.0), sinkR(0.0), SAVR(0.0), recombRER(0.0), recombRLH(0.0), totalRate(0.0)
 {
     for (int i = 0; i < LEVELS; i++)
         dissociationR[i] = 0.0;
@@ -59,17 +60,17 @@ Reaction OneLine::selectReaction(
     else {
         tempRate -= SAVR;
     }
-    if (recombRToF >= tempRate) {
-        return RECOMBTOF;
+    if (recombRER >= tempRate) {
+        return RECOMBER;
     }
     else {
-        tempRate -= recombRToF;
+        tempRate -= recombRER;
     }
-    if (recombRToB >= tempRate) {
-        return RECOMBTOB;
+    if (recombRLH >= tempRate) {
+        return RECOMBLH;
     }
     else {
-        tempRate -= recombRToB;
+        tempRate -= recombRLH;
     }
     while (index < LEVELS) {
         if (dissociationR[index] >= tempRate) {
@@ -123,17 +124,19 @@ void OneLine::updateReaction(
 void OneLine::updateLine(
                          const Object* const hostObject,
                          const int count,
-                         unordered_map<int64, Object*>& mobileObjects)
+                         unordered_map<int64, Object*>& mobileObjects,
+                         unordered_map<int64, Object*>& allObjects)
 {
     secondR.clear();
-    setOneLine(hostObject, count, mobileObjects);
+    setOneLine(hostObject, count, mobileObjects, allObjects);
 }
 
 void OneLine::updateDiff(
                         const Object* const hostObject, 
-                        const int count)
+                        const int count,
+                        unordered_map<int64, Object*>& allObjects)
 {
-    computeDiffReaction(hostObject, count);
+    computeDiffReaction(hostObject, count, allObjects);
 }
 
 const long double OneLine::computeTotalRate()
@@ -145,8 +148,8 @@ const long double OneLine::computeTotalRate()
     totalRate += diffRToB; /* add another diffusion rate*/
     totalRate += sinkR;    /* add sink rate */
     totalRate += SAVR;     /* add super abundant vacancy rate */
-    totalRate += recombRToF; /* add one recombination rate */
-    totalRate += recombRToB; /* add another recombination rate */
+    totalRate += recombRER; /* add one recombination rate */
+    totalRate += recombRLH; /* add another recombination rate */
     for (i = 0; i < LEVELS; i++) {
         totalRate += dissociationR[i];
     }
@@ -170,7 +173,7 @@ void OneLine::display(Object const * const hostObject)
         fs << "(" << iter->first << ")" << iter->second << "    ";
     }
     fs << "(SAV)" << SAVR << "    ";
-    fs << "(recomb)" << recombRToF << ", " << recombRToB;
+    fs << "(recomb)" << recombRER << ", " << recombRLH;
     fs << endl;
     fs.close();
 }
@@ -179,9 +182,10 @@ void OneLine::display(Object const * const hostObject)
 void OneLine::setOneLine(
                          const Object* const hostObject,
                          const int count,
-                         unordered_map<int64, Object*>& mobileObjects)
+                         unordered_map<int64, Object*>& mobileObjects,
+                         unordered_map<int64, Object*>& allObjects)
 {
-    computeDiffReaction(hostObject, count);
+    computeDiffReaction(hostObject, count, allObjects);
     computeSinkReaction(hostObject, count);
     for (int index = 0; index < LEVELS; index++) {
         dissociationR[index] = computeDissReaction(hostObject, index, count);
@@ -193,11 +197,11 @@ void OneLine::setOneLine(
         secondR.insert(oneReaction);
     }
     computeSAVReaction(hostObject, count);
-    computeRecombReaction(hostObject, count);
+    computeRecombReaction(hostObject, count, allObjects);
     computeTotalRate();
 }
 
-void OneLine::computeDiffReaction(const Object* const hostObject, const int count)
+void OneLine::computeDiffReaction(const Object* const hostObject, const int count, unordered_map<int64, Object*>& allObjects)
 {
     if (!DIFF_ON)
     {
@@ -205,19 +209,6 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         diffRToB = 0.0;
         return;
     }
-
-    /* by having two diffusion rates, this rate will never be less than 0 */
-    /* length measured in cm */
-	double lengthf = 0.0, lengthb = 0.0;
-	if(count == 0){
-		lengthf = (ELEMENT_THICKNESS + SURFACE_THICKNESS) / 2. * NM_TO_CM; // thickness of W surface is 0.544nm, this length is centroid to vacuum 
-        lengthb =  (ELEMENT_THICKNESS + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
-    }else if(count == 1){
-        lengthf =  (ELEMENT_THICKNESS + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
-		lengthb = ELEMENT_THICKNESS * NM_TO_CM; // first element to second element distance (20nm) 
-	}else{
-		lengthf = lengthb = ELEMENT_THICKNESS * NM_TO_CM; /* other element distances */
-	}
 
     double prefactor = 0.0;
     int objectN[3];   
@@ -241,29 +232,78 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         frontConcentration = objectN[1] / VOLUME;
     }
 
-    /* 
-     * 1. compute diffusion rate to the front element 
-     * Diffusion goes from area of higher concentration to lower concentration
-     * Object not allowed to diffuse out through the front
-     */
-    if (concentration > frontConcentration && count != 0) {
-        /* if diffusable, surface objects diffusing into vacuum is considered */
-        prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthf;
-        diffRToF = prefactor*(concentration - frontConcentration);
+    // Account for special cases from 2020 Zhenhou Wang
+    if((count == 1 && hostObject->getKey() == 1 && concentration > frontConcentration) ||
+        (count == 0 && hostObject->getKey() == 0 && concentration > backConcentration))
+    {
+        double surfaceConc = 0.0; 
+        int64 HKey = 1;
+        if (allObjects.find(HKey) != allObjects.end())
+            surfaceConc = allObjects[HKey]->getNumber(0) / DIVIDING_AREA;  // [cm^-2] concentration
+
+        // special case for 1H diffusion from Bulk to Surface 
+        if (concentration > frontConcentration)
+        {
+            double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);
+            double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
+            double jumpingDist = maxSurfaceConc / 6 / DENSITY;
+            double freq = 1e13 * exp(-0.39 / KB / TEMPERATURE); // Ed = 0.39 eV
+        
+            prefactor = freq * jumpingDist * (1 - surfaceSaturationFraction) * DIVIDING_AREA;
+            // TODO: discuss if to use absolute concentration / no subsurface con
+            diffRToF = prefactor * frontConcentration;
+            diffRToB = 0.0;
+            return;
+        }
+        // special case for 1H diffusion from Surface to Bulk
+        else if (concentration > backConcentration)
+        {
+            double freq = 1e13 * exp(-1.43 / KB / TEMPERATURE); // Eabs = Ech + Eperm = 0.7 + 0.73 eV
+            prefactor = freq * surfaceConc * DIVIDING_AREA;
+            diffRToB = prefactor;
+            diffRToF = 0.0;
+            return;
+        }
     }
-    else {
-        diffRToF = 0.0;
-    }
-    /* 2. compute diffusion rate to the back element
-     * Object are allowed to diffuse out through the back (assume infinite W sample)
-     */
-    if (concentration > backConcentration) {
-        /* if diffusable */
-        prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthb;
-        diffRToB = prefactor*(concentration - backConcentration);
-    }
-    else {
-        diffRToB = 0.0;
+    else // avoid unnecessary calculation if we are processing special cases
+    {
+        /* by having two diffusion rates, this rate will never be less than 0 */
+        /* length measured in cm */
+        double lengthf = 0.0, lengthb = 0.0;
+        if(count == 0){
+            lengthf = (ELEMENT_THICKNESS + SURFACE_THICKNESS) / 2. * NM_TO_CM; // thickness of W surface is 0.544nm, this length is centroid to vacuum 
+            lengthb =  (ELEMENT_THICKNESS + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
+        }else if(count == 1){
+            lengthf =  (ELEMENT_THICKNESS + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
+            lengthb = ELEMENT_THICKNESS * NM_TO_CM; // first element to second element distance (20nm) 
+        }else{
+            lengthf = lengthb = ELEMENT_THICKNESS * NM_TO_CM; /* other element distances */
+        }
+
+        /* 
+        * 1. compute diffusion rate to the front element 
+        * Diffusion goes from area of higher concentration to lower concentration
+        * Object not allowed to diffuse out through the front
+        */
+        if (concentration > frontConcentration && count != 0) {
+            /* if diffusable, surface objects diffusing into vacuum is considered */
+            prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthf;
+            diffRToF = prefactor*(concentration - frontConcentration);
+        }
+        else {
+            diffRToF = 0.0;
+        }
+        /* 2. compute diffusion rate to the back element
+        * Object are allowed to diffuse out through the back (assume infinite W sample)
+        */
+        if (concentration > backConcentration) {
+            /* if diffusable */
+            prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthb;
+            diffRToB = prefactor*(concentration - backConcentration);
+        }
+        else {
+            diffRToB = 0.0;
+        }
     }
 }
 
@@ -390,29 +430,32 @@ void OneLine::computeSAVReaction(
 
 void OneLine::computeRecombReaction(
                                     const Object* const hostObject,
-                                    const int count)
+                                    const int count,
+                                    unordered_map<int64, Object*>& allObjects)
 {
-    recombRToF = 0.0;
-    recombRToB = 0.0;
+    recombRER = 0.0;
+    recombRLH = 0.0;
 
-    if (!RECOMB_ON)
+    // only H can recombine at surface and leave surface
+    if (!RECOMB_ON || count != 0 || hostObject->getKey() != 1)
     {
         return;
     }
 
-    if (hostObject->getKey() == 1 && hostObject->getNumber(count) >= 2) // only H can recombine at surface to form H2 and leave material
-    {
-        double volume = VOLUME;
-        if (count == 0)
-            volume = SURFACE_VOLUME;
-        double concentration = hostObject->getNumber(count) / volume;
-        double rate = hostObject->getRecomb() * concentration * concentration * DIVIDING_AREA;
+    double surfaceConc = 0.0;
+    int64 HKey = 1;
+    if (allObjects.find(HKey) != allObjects.end())
+        surfaceConc = allObjects[HKey]->getNumber(0) / DIVIDING_AREA;  // [cm^-2] concentration
 
-        if (count == 0)
-            recombRToF = rate;
-        // else if (count == POINTS - 1)
-            // recombRToB = rate;
-    }
+    // Calculate ER recomb rate
+    double crossSectionERRecomb = 1.7e-17; // [cm^2] cross-section of ER recombination from Zhenhou Wang 2020
+    recombRER = FLUX_H * crossSectionERRecomb * surfaceConc * DIVIDING_AREA; 
+    
+    // Calculate LH recomb rate
+    double desorptionR = 1e13 * pow(pow(DENSITY, -3), 2); // [cm^2 s^-1]
+    double Ech = 0.7; // [eV] activate energy of incident H atom at chemiorption site from Zhenhou Wang 2020
+    // TODO: discuss if 2 is needed
+    recombRLH = 2 * desorptionR * exp(-2 * Ech / KB / TEMPERATURE) * surfaceConc * surfaceConc * DIVIDING_AREA;
 }
 
 double OneLine::computeDimensionTerm(
