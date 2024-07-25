@@ -1,6 +1,7 @@
 // SRSCD -- Spatially Resolved Stochastic Cluster Dynamics
 // Q Yu, January 2017.
 
+#include<mpi.h>
 #include<ctime>
 #include<unistd.h>
 #include<time.h>
