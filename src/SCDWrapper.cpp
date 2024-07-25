@@ -18,7 +18,7 @@ static int generationNumber = 0;
 static int dissV = 0; //this only counts number of events
 static int dissH = 0; //this only counts number of events
 /* public funciton */
-SCDWrapper::SCDWrapper():allObjects(), damage(allObjects), cpdf(), totalDpa(0)
+SCDWrapper::SCDWrapper():allObjects(), damage(allObjects), cpdf(), startIndex(0), endIndex(0), totalDpa(0)
 {
     formationE[1] = V_FORM_E; 
 
@@ -195,9 +195,33 @@ void SCDWrapper::computeBulkRate()
     }
 }
 
+void SCDWrapper::computeDomainRate()
+{
+    domainRate = 0.0;
+    for (int i = startIndex; i <= endIndex; i++)
+    {
+        domainRate += matrixRate[i];
+    }
+    domainRate += noneRate;
+}
+
+void SCDWrapper::examineDomainRate()
+{
+    for (int i = startIndex; i <= endIndex; i++)
+    {
+        computeMatrixRate(i);
+    }
+    computeDomainRate();
+}
+
 long double SCDWrapper::getBulkRate()
 {
     return bulkRate;
+}
+
+long double SCDWrapper::getDomainRate()
+{
+    return domainRate;
 }
 
 Object* SCDWrapper::selectReaction(
@@ -273,6 +297,82 @@ Object* SCDWrapper::selectReaction(
     return tempObject;
 }
 
+Object* SCDWrapper::selectDomainReaction(
+                                   int64& theOtherKey,
+                                   Reaction& reaction,
+                                   int& count)
+{
+    ofstream fs;
+    fs.open("selectReaction.txt", ios::app);
+    int pointIndex;
+
+    // Generate a random number
+    // Create a random device to seed the random number engine
+    std::random_device rd;
+
+    // Initialize the random number engine with the seed
+    std::default_random_engine engine(rd());
+
+    // Create a uniform real distribution that produces values in the range [0.0, 1.0)
+    std::uniform_real_distribution<long double> distribution(0.0L, 1.0L);
+
+    // Generate a random long double
+    long double randomNum = distribution(engine);
+
+    long double randRate = randomNum * domainRate;
+    // long double randRate = ((double)rand() / (RAND_MAX+1.0))*bulkRate; // add 1 to make the random rate [0, 1)
+    long double tempRandRate = randRate;
+    Object* tempObject = nullptr;
+    Bundle* tempBundle;
+    OneLine* tempLine;
+    //fs << "BulkRate = " << bulkRate << "RandRate = " << randRate << endl;
+    for (pointIndex = startIndex; pointIndex <= endIndex; ++pointIndex) {
+        if (matrixRate[pointIndex] < tempRandRate) {
+            tempRandRate -= matrixRate[pointIndex];
+            continue;
+        }/* if the event is not positioned in this element, move on to the next one */
+        else {
+            reaction = NONE;
+            unordered_map<int64, Object*>::iterator iter = allObjects.begin();
+            while (reaction == NONE && iter != allObjects.end()) {
+                tempObject = iter->second;
+                tempBundle = linePool[tempObject];
+                tempLine = tempBundle->lines[pointIndex];
+                if (tempLine != nullptr) {
+                    reaction = tempLine->selectReaction(tempObject, theOtherKey, tempRandRate);
+                }
+                ++iter;
+            }
+            if (reaction == NONE) {
+                reaction = damage.selectDamage(pointIndex, tempRandRate);
+            }
+            if (reaction == NONE){
+                if(sinkDissRate[0][pointIndex] >= tempRandRate){
+                    reaction = DISSV;
+                }else{
+                    tempRandRate -= sinkDissRate[0][pointIndex];
+                    if (sinkDissRate[1][pointIndex] >= tempRandRate){
+                        reaction = DISSH;
+                    }
+                }
+            }
+            
+            count = pointIndex;
+            if (LOG_REACTIONS)
+                fs << "Element = " << pointIndex + 1 <<", "<< "Reaction = " << reaction << endl << endl;
+            fs.close();
+            return tempObject;
+        }
+    }
+    // Sometimes there is a case where randRate == bulkRate, which might result in a 
+    // tiny bit of leftover number (eg. doing 9e14-9e14 gives 0.0001 when it should give 0)
+    // causing the program to think that no event was selected
+    reaction = NONE;
+    // cout << "returned nullptr" << endl;
+    // cout << randRate << " " << domainRate << " " << tempRandRate << endl;
+    return tempObject;
+}
+
 void SCDWrapper::processEvent(
                               const Reaction reaction,
                               Object* hostObject,
@@ -282,6 +382,9 @@ void SCDWrapper::processEvent(
                               const double dt
                               )
 {
+    if (reaction == NONE)
+        return;
+
     ++event;
     fs.open("Reactions.txt", ios::app);
     switch (reaction) {
@@ -616,6 +719,21 @@ void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
         anObject = new Object(key, n, number);
         addNewObjectToMap(anObject);
     }
+
+    bool leftBoundary = (
+        (n == startIndex || n == startIndex - 1) && n != 0
+    );
+
+    bool rightBoundary = (
+        (n == endIndex || n == endIndex + 1) && n != POINTS - 1
+    );
+
+    if (leftBoundary)
+        leftBoundaryChangeQ.push_back(
+            BoundaryChange(key, n, number));
+    else if (rightBoundary)  
+        rightBoundaryChangeQ.push_back(
+            BoundaryChange(key, n, number)); 
 }
 
 void SCDWrapper::reduceFromObjectMap(const int64 key, const int n, const int number)
@@ -1351,6 +1469,7 @@ void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
     }
     ofile.close();
     
+    clearBoundaryChangeQs();
 }
 
 int SCDWrapper::countDefectNumber(const int count, string type){
@@ -1666,7 +1785,7 @@ double SCDWrapper::getTotalDpa(){
 
 double SCDWrapper::getHSaturationConcentration() const
 {
-
+    return H_SATURATION_CONCENTRATION;
     double concentration = H_SATURATION_CONCENTRATION;
     bool dimer = false;
     bool vhpair = false;
@@ -1690,4 +1809,43 @@ double SCDWrapper::getHSaturationConcentration() const
     }
     return concentration;
     // 8 is the coordination number in a BCC lattice
+}
+
+void SCDWrapper::setDomain(int start, int end)
+{
+    startIndex = start;
+    endIndex = end;
+}
+
+void SCDWrapper::fillNoneReaction(const double& maxDomainRate)
+{
+    /*
+     * Fill the remainder of the domain rate with NONE reaction
+     * so that each processor can move at the same time step in parallel
+     * (Dunn 2016)
+     */
+    noneRate = maxDomainRate - domainRate;
+    computeDomainRate();
+}
+
+void SCDWrapper::clearNoneReaction()
+{
+    noneRate = 0.0;
+    computeDomainRate();
+}
+
+vector<BoundaryChange>* SCDWrapper::getLeftBoundaryChangeQ()
+{
+    return &leftBoundaryChangeQ;
+}
+
+vector<BoundaryChange>* SCDWrapper::getRightBoundaryChangeQ()
+{
+    return &rightBoundaryChangeQ;
+}
+
+void SCDWrapper::clearBoundaryChangeQs()
+{
+    leftBoundaryChangeQ.clear();
+    rightBoundaryChangeQ.clear();
 }

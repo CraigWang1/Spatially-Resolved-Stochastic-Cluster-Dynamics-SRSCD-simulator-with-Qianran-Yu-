@@ -5,6 +5,7 @@
 #include"cpdf.h"
 #include"rvgs.h"
 #include"CascadeDamage.h"
+#include"BoundaryChange.h"
 #include"constants.h"
 // #include"gnuplot_i.h"
 #include <string>
@@ -23,6 +24,7 @@ private:
     unordered_map<int64, int> bottom;
     unordered_map<int, double> formationE; 
     unordered_map<int, double> HSaturationLimit; // look up table for HSaturationLimit
+    vector<BoundaryChange> leftBoundaryChangeQ, rightBoundaryChangeQ;
 
     Damage damage;
     Cpdf cpdf;
@@ -30,10 +32,13 @@ private:
     long double sinkDissRate[2][POINTS];
     // dissociation rate of V/H from dislocations
     int reactions[8][POINTS];
+    int startIndex, endIndex; // the indices of which points this processor is responsible for
     
     /* hold reactions, 1st dimension is reaction type, second dimension is element, value is total number of this reaction */
     long double matrixRate[POINTS];    // total rate in every element(point)
     long double bulkRate;  // total rate in the whole bulk;
+    long double domainRate; // total rate in the volume elements that this processor is responsible for
+    long double noneRate;  // the total rate of null event occuring in the domain that this processor is responsible for
     double totalDpa;
     bool lastElemSaturated;
     enum InsertStyle {INTERSTITIAL, SUBSTITUTIONAL};
@@ -111,8 +116,11 @@ public:
     void computeMatrixRate(const int n);  // computes total rate in element n
     void updateMatrixRate(const int n, const Reaction reaction); // computes total rate in elements that are affected by reaction
     void computeBulkRate();
+    void computeDomainRate();
     long double getBulkRate();
+    long double getDomainRate();
     Object* selectReaction(int64&, Reaction&, int&);  // select reaction
+    Object* selectDomainReaction(int64&, Reaction&, int&);
     void processEvent(const Reaction, Object*, const int, const int64, const double, const double);    // deal with reactions
     ~SCDWrapper();          /* destructor to delete everything newed */
     // get series functions that allow direct manipulation on private data member
@@ -120,6 +128,7 @@ public:
     unordered_map<int64, Object*>* getMobileObjects();
     unordered_map<Object*, Bundle*>* getLinePool();
     void examineRate(); /* computes matrix rate in all points*/
+    void examineDomainRate(); /* computes matrix rate in points that this processor is responsible for */
     /* output file functions */
     void displayDamage();
     void displayAllObject();
@@ -137,4 +146,12 @@ public:
     void drawHD(double&); /* this function draw all diagrams in H deposition process */
     void writeVacancy();
     double getTotalDpa();
+
+    /* Additional parallel processing functions */
+    void setDomain(int, int);
+    void fillNoneReaction(const double&);
+    void clearNoneReaction();
+    vector<BoundaryChange>* getLeftBoundaryChangeQ();
+    vector<BoundaryChange>* getRightBoundaryChangeQ();
+    void clearBoundaryChangeQs();
 };
