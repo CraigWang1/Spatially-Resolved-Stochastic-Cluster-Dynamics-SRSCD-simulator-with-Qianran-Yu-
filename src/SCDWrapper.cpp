@@ -517,12 +517,16 @@ void SCDWrapper::writeSinkFile(const Object * const hostObject, const long int n
     }
 }
 
-void SCDWrapper::writeSpeciesFile(const double time, const long int n)
+void SCDWrapper::writeSpeciesFile(const double time, const long int n, const int threadID)
 {
+    if (threadID == 0)
+    {
+        fluenceH = FLUX_H * time; // Only take simulation progress parameters from thread id 0
+    }
+
     ofstream fo;
     unordered_map<int64, Object*>::iterator iter;
-    // fo.open(std::string("species") + std::to_string(time) + std::string(".txt"), ios::out);
-    fo.open("species.txt", ios::out);
+    fo.open(std::string("species") + std::to_string(threadID) + std::string(".txt"), ios::out);
     fo << "step = " << n << endl;
     fo << "time = " << time << endl;
     fo << "fluenceH = " << fluenceH << endl;
@@ -586,11 +590,11 @@ void SCDWrapper::writeClusterFile(const double time, const long int n)
     fc.close();
 }
 
-void SCDWrapper::writeSinkFile(const double time, const long int n)
+void SCDWrapper::writeSinkFile(const double time, const long int n, const int threadID)
 {
     int i, j;
     ofstream fs;
-    fs.open("sink.txt", ios::out);
+    fs.open("sink" + std::to_string(threadID) + ".txt", ios::out);
     //fs << "Aggregate time = " << time << "  step = " << n << endl;
     for (i = 0; i < POINTS; ++i) {
         for (j = 0; j < LEVELS + 1; ++j) {
@@ -618,10 +622,10 @@ void SCDWrapper::displayAllObject(){
     }
 }
 
-void SCDWrapper::writeFile(const double time, const long int n)
+void SCDWrapper::writeFile(const double time, const long int n, const int threadID)
 {
-    writeSpeciesFile(time, n);
-    writeSinkFile(time, n);
+    writeSpeciesFile(time, n, threadID);
+    writeSinkFile(time, n, threadID);
     //writeClusterFile(time, n);
 }
 
@@ -1332,7 +1336,7 @@ void SCDWrapper::getIonInsertion(const int n, const double dt, fstream& fs)
     int64 clusterKey;
     //fstream fk;
     //fk.open("V_insertion.txt", ios::app);
-    doseIon[n] += damage.getDpaRate(n)*dt;
+    doseIon[n] += damage.getDpaRate(n) / damage.getTotalIonRate();
     totalDpa += doseIon[n];
     in_time += dt;
     //fk << damage.getDpaRate(n) << " * " << dt << "  " << in_time << "   ";
@@ -1469,7 +1473,7 @@ void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
     }
     ofile.close();
     
-    clearBoundaryChangeQs();
+    srscd->clearBoundaryChangeQs();
 }
 
 int SCDWrapper::countDefectNumber(const int count, string type){
@@ -1848,4 +1852,35 @@ void SCDWrapper::clearBoundaryChangeQs()
 {
     leftBoundaryChangeQ.clear();
     rightBoundaryChangeQ.clear();
+}
+
+void SCDWrapper::implementBoundaryChanges(vector<BoundaryChange>& boundaryChanges)
+{
+    bool updateFront = false, updateBack = false;
+    for (BoundaryChange& bc: boundaryChanges)
+    {
+        if (allObjects.find(bc.objKey) != allObjects.end()) {
+            /* object found! then number of instances in this element increase */
+            Object* anObject = allObjects[bc.objKey];
+            anObject->addNumber(bc.pointIndex, bc.change); // negative change accounts for decrease
+            // cout << "object: " << bc->objKey << " add " << bc->change << " at " << bc->pointIndex << endl;
+            updateObjectInMap(anObject, bc.pointIndex);
+        }
+        else {
+            /* object didn't find! build new object and insert it into map */
+            Object* anObject = new Object(bc.objKey, bc.pointIndex, bc.change);
+            addNewObjectToMap(anObject);
+        }
+
+        if (bc.pointIndex == startIndex || bc.pointIndex == startIndex - 1)
+            updateFront = true;
+        else
+            updateBack = true;
+    }
+
+    if (updateFront)
+        updateMatrixRate(startIndex, Reaction::NONE);
+    if (updateBack)
+        updateMatrixRate(endIndex, Reaction::NONE);
+    computeDomainRate();
 }

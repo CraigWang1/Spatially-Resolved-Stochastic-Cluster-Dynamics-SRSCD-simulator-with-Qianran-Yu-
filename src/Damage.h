@@ -14,6 +14,7 @@ private:
     double DPA_RATE[POINTS];
     double NRT[POINTS];
     double damage[POINTS][CHANNELS];
+    double totalIonRate;
     // private functions:
     void readFile();
     void computeDamageZero(const int);
@@ -28,5 +29,6 @@ public:
     double getDpaRate(const int);
     double getDamageTwo(const int);
     void updateDamageTwo(const int, unordered_map<int64, Object*>&);
+    double getTotalIonRate();
 };
 

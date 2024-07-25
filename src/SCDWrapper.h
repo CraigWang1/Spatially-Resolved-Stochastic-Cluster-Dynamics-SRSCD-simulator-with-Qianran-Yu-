@@ -99,7 +99,7 @@ private:
     /* write file funcitons*/
     void writeSinkFile(const Object* const, const long int n, const double);
     /* sinks.out only writes when sink reaction happens, now this function is not "writing things" but only updating sinks[][] */
-    void writeSpeciesFile(const double, const long int);
+    void writeSpeciesFile(const double, const long int, const int);
     void writeClusterFile(const double, const long int);
     /* distinguish reaction type function */
     int countDefectNumber(const int, string);
@@ -132,9 +132,9 @@ public:
     /* output file functions */
     void displayDamage();
     void displayAllObject();
-    void writeFile(const double, const long int);
+    void writeFile(const double, const long int, const int);
     /* testing functions which includes display/output file functions that might be used when debugging */
-    void writeSinkFile(const double, const long int);
+    void writeSinkFile(const double, const long int, const int);
     void display() const;   // display rateMatrix within in one element
     friend void restart(long int&, double&, SCDWrapper*);
     /* test functions, don't need in the future */
@@ -154,4 +154,5 @@ public:
     vector<BoundaryChange>* getLeftBoundaryChangeQ();
     vector<BoundaryChange>* getRightBoundaryChangeQ();
     void clearBoundaryChangeQs();
+    void implementBoundaryChanges(vector<BoundaryChange>&);
 };

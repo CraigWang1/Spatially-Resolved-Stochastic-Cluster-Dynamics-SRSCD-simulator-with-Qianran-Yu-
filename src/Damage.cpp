@@ -5,7 +5,7 @@ Damage::Damage(unordered_map<int64, Object*>& allObjects)
 {
     int index;
     readFile();
-    //for(index=0; index<1; ++index){
+    totalIonRate = 0.0;
     for (index = 0; index < POINTS; ++index) {
         computeDamageZero(index);
         if (CHANNELS > 1) {
@@ -111,6 +111,7 @@ void Damage::computeDamageZero(const int n)
         damage[n][0] = 0.0;
     }
 
+    totalIonRate += damage[n][0];
     //damage[n][0] = DPA_RATE[n] * DENSITY*VOLUME / NRT[n];
 }
 
@@ -166,4 +167,9 @@ double Damage::getDamageTwo(const int n)
 void Damage::updateDamageTwo(const int n, unordered_map<int64, Object*>& allObjects)
 {
     computeDamageTwo(n, allObjects);
+}
+
+double Damage::getTotalIonRate()
+{
+    return totalIonRate;
 }
