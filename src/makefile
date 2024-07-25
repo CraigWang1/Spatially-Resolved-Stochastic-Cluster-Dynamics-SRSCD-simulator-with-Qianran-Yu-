@@ -1,5 +1,5 @@
 # Specify which compiler to use:
-CXX= g++
+CXX= mpic++
 
 # Use CXXFLAGS to specify additional compiler options to use:
 CXXFLAGS = -Wall -std=c++0x -O3 
