@@ -8,9 +8,9 @@ from tqdm import tqdm
 from textwrap import wrap
 from math import floor, ceil
 from scipy.signal import butter, filtfilt
+from make_speciesfile import combine_species_files
 
-# matplotlib.style.use('ggplot')
-
+combine_species_files()
 
 # Change data files list, times list, and flux for custom use case
 POINTS = 301                             # num spatial elements in the simulation (1 surface + 100 bulk)

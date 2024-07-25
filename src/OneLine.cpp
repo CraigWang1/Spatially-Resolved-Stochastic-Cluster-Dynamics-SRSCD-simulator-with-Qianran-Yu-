@@ -266,7 +266,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         // special case for 1H diffusion from Surface to Bulk
         else if (count == 0)
         {
-            double freq = NU0 * exp(-1.43 / KB / TEMPERATURE); // Eabs = Ech + Eperm = 0.7 + 0.73 eV
+            double freq = NU0 * exp(-1.39 / KB / TEMPERATURE); // Eabs = Ech + Eperm = 0.7 + 0.69 eV
             prefactor = freq * surfaceConc * DIVIDING_AREA;
             diffRToB = prefactor;
             diffRToF = 0.0;
