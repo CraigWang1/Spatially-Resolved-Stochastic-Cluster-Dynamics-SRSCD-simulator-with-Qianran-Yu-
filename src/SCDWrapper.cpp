@@ -696,7 +696,13 @@ void SCDWrapper::updateRateToOther(Object const * const mobileObject, const int 
         Bundle* tempBundle = iter->second;
         OneLine* tempLine = tempBundle->lines[count];
         if (tempLine != nullptr) {
-            tempLine->updateReaction(hostObject, mobileObject, count);
+            /* If both are mobile objects, mobileObject will have already recorded the combination rate, no need to record it again */
+            if (hostObject->getDiff() > 0 && mobileObject->getKey() != hostObject->getKey()) {
+                tempLine->setCombReaction(mobileObject->getKey(), 0.0);
+            }
+            else {
+                tempLine->updateReaction(hostObject, mobileObject, count);
+            }
         }
     }
 }
