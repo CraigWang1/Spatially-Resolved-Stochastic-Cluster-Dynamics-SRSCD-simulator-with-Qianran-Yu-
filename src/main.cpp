@@ -8,13 +8,23 @@
 #include <cassert>
 #include"SCDWrapper.h"
 
-int main() 
+int main(int argc, char** argv) 
 {
+    int threadID, numThreads;
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &numThreads);
+    MPI_Comm_rank(MPI_COMM_WORLD, &threadID);
+
+    int rightNeighbor = threadID + 1;
+    int leftNeighbor = threadID - 1;
+
     SCDWrapper* srscd = new SCDWrapper(); /* establish spatially resolved scd */
     int64 theOtherKey = 0;
     Object* hostObject = nullptr;
     Reaction reaction = ERROR;
     int pointIndex = -1;
+    int rootThreadID = 0;
     long int iStep = 0;
     double random;
     double advTime = 0.0;
@@ -41,17 +51,53 @@ int main()
     srscd->examineRate();
     /* check ended */
     srand(time(0));
-    srscd->displayAllObject();
-    srscd->drawSpeciesAndReactions(advTime);
-    clock_t prev_time = clock();
+    if (threadID == 0)
+    {
+        srscd->displayAllObject();
+        srscd->drawSpeciesAndReactions(advTime);
+    }
+
+    // Assign volume elements to this processor
+    double indexIncrement = (double) POINTS / numThreads;
+    double splitIndex = 0;
+    int startIndex = threadID * indexIncrement;
+    int endIndex = (threadID + 1) * indexIncrement - 1;
+    srscd->setDomain(startIndex, endIndex);
+    srscd->examineDomainRate();
+
+    double prev_time = MPI_Wtime();
     cout << H_SATURATION_CONCENTRATION * VOLUME << endl;
+    
     while(!done)
     {
-        hostObject = srscd->selectReaction(theOtherKey, reaction, pointIndex);/* choose an event */
+        srscd->clearNoneReaction();
+        long double localDomainRate = srscd->getDomainRate();
+        long double maxDomainRate;
+
+        // Each MPI process sends its rate to reduction, every thread collects result
+        MPI_Allreduce(&localDomainRate, &maxDomainRate, 1, MPI_LONG_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+        
+        srscd->fillNoneReaction(maxDomainRate);
+        hostObject = srscd->selectDomainReaction(theOtherKey, reaction, pointIndex);/* choose an event */
         srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
+        
         if(reaction == Reaction::H || reaction == Reaction::PARTICLE)
         {
             accTime = 0.0;
+        }
+
+        // Even processors send to right, odd processors receive from left
+        vector<BoundaryChange>* leftBoundaryChanges = srscd->getLeftBoundaryChangeQ();
+        vector<BoundaryChange>* rightBoundaryChanges = srscd->getRightBoundaryChangeQ();
+        if (threadID % 2 == 0 && rightNeighbor < numThreads)
+        {
+            for (size_t i = 0; i < leftBoundaryChanges->size(); i++)
+            {
+                BoundaryChange& bc = leftBoundaryChanges->at(i);
+                long int data = {bc.objKey, bc.pointIndex, bc.change};
+                MPI_SEND()
+            }
+            MPI_Send()
         }
         
         bulkRate = srscd->getBulkRate(); /* calculate the bulk rate */
@@ -66,10 +112,10 @@ int main()
 
         if(iStep%PSTEPS == 0)
         {
-            system_dt = (clock() - prev_time) / (double)CLOCKS_PER_SEC;
-            prev_time = clock();
+            system_dt = (MPI_Wtime() - prev_time);
+            prev_time = MPI_Wtime();
             st.open("st.txt", ios::app);
-            st << (float)prev_time/CLOCKS_PER_SEC << "  "<< dpa << endl;
+            st << (float)prev_time << "  "<< dpa << endl;
 
             // Chose between dpa or time to calculate progress
             if (IRRADIATION_ON)
