@@ -13,7 +13,7 @@ from scipy.signal import butter, filtfilt
 
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 300                             # num spatial elements in the simulation (1 surface + 100 bulk)
+POINTS = 301                             # num spatial elements in the simulation (1 surface + 100 bulk)
 VOLUME = 1e-17                           # volume of a spatial element [cm^3]
 SURFACE_THICKNESS = 0.544                # [nm]
 SURFACE_VOLUME = VOLUME / 20 * SURFACE_THICKNESS + VOLUME # [cm^3]
@@ -88,7 +88,7 @@ for i in range(len(fluences)):
 
 # Plot Simulation
 # with open("/home/craig/Downloads/Spatially-Resolved-Stochastic-Cluster-Dynamics-SRSCD-simulator-with-Qianran-Yu-/src/species.txt") as f:
-with open("restart_store14.txt") as f:
+with open("species.txt") as f:
 	positions = [0.010272 + i*.020 for i in range(POINTS)]  #micrometer
 	trapped_hydrogen_c = np.zeros(POINTS)
 	free_hydrogen_c = np.zeros(POINTS)
@@ -156,7 +156,7 @@ if plot_h:
 	# positions_vacancy = np.delete(positions, indices_to_delete)
 	# nonzero_vacancy_c = np.delete(vacancy_c, indices_to_delete)
 	# plt.plot(positions[:upto], vacancy_c[:upto], color='r', label="Vacancy Concentration")
-
+print(np.sum(trapped_hydrogen_c))
 plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
 plt.legend()
 plt.title("Trapped Hydrogen Concentration Vs. Depth\n $T = 300K, Fluence = 5 \cdot 10^{22}$ $[m^{-2}]$")
