@@ -193,8 +193,11 @@ int main(int argc, char** argv)
             receivedBoundaryChanges.clear();
         }
 
-        double localDpa = srscd->getTotalDpa();
-        MPI_Reduce(&localDpa, &dpa, 1, MPI_DOUBLE, MPI_SUM, rootThreadID, MPI_COMM_WORLD);
+        if (IRRADIATION_ON)
+        {
+            double localDpa = srscd->getTotalDpa();
+            MPI_Reduce(&localDpa, &dpa, 1, MPI_DOUBLE, MPI_SUM, rootThreadID, MPI_COMM_WORLD);
+        }
 
         if (threadID == rootThreadID)
         {
