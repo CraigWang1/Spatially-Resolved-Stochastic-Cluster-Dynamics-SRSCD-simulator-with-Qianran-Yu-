@@ -10,7 +10,7 @@ from textwrap import wrap
 
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 300                             # num spatial elements in the simulation (1 surface + 100 bulk)
+POINTS = 301                             # num spatial elements in the simulation (1 surface + 100 bulk)
 VOLUME = 1e-17                           # volume of a spatial element [cm^3]
 SURFACE_THICKNESS = 0.544                # [nm]
 SURFACE_VOLUME = VOLUME / 20 * SURFACE_THICKNESS + VOLUME # [cm^3]
@@ -104,7 +104,7 @@ for i in range(1):
 		plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
 		upto = POINTS
 		if plot_h:
-			plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
+			plt.plot(positions[1:upto], free_hydrogen_c[1:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
 			# plt.plot(positions[:upto], trapped_hydrogen_c[:upto], label="Trapped Hydrogen Concentration", color='darkgreen', marker='^', linestyle='-', markersize=0)
 			# plt.plot(positions[:upto], all_hydrogen_c[:upto], label="Hydrogen Concentration")
 		if plot_v:
@@ -112,7 +112,7 @@ for i in range(1):
 			positions_vacancy = np.delete(positions, indices_to_delete)
 			nonzero_vacancy_c = np.delete(vacancy_c, indices_to_delete)
 			plt.plot(positions_vacancy, nonzero_vacancy_c[:upto], label="Nonzero Vacancy Concentration", color='r', linestyle='-', linewidth=0, marker='x')
-			plt.plot(positions[:upto], vacancy_c[:upto], color='r')
+			plt.plot(positions[1:upto], vacancy_c[1:upto], color='r')
 		plt.title(f"Hydrogen Concentration vs. Depth\n$T = {TEMPERATURE} K, t = {round(t*1e6, 1)} \mu s$" + "$, Flux=4.0 \cdot 10^{23}$ $[cm^{-2}s^{-1}]$")
 		plt.xlabel("Depth $[nm]$")
 		plt.ylabel("Concentration $[cm^{-3}]$")

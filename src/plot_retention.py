@@ -88,7 +88,7 @@ for i in range(len(fluences)):
 
 # Plot Simulation
 # with open("/home/craig/Downloads/Spatially-Resolved-Stochastic-Cluster-Dynamics-SRSCD-simulator-with-Qianran-Yu-/src/species.txt") as f:
-with open("species.txt") as f:
+with open("restart_store16.txt") as f:
 	positions = [0.010272 + i*.020 for i in range(POINTS)]  #micrometer
 	trapped_hydrogen_c = np.zeros(POINTS)
 	free_hydrogen_c = np.zeros(POINTS)
