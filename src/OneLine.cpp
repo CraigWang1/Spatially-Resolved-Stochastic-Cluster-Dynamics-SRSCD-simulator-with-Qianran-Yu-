@@ -259,7 +259,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
 
         // special case for 1H diffusion from Bulk to Surface 
-        if (count == SURFACE_INDEX)
+        if (count == 1)
         {
             double jumpingDist = maxSurfaceConc / 6.0 / DENSITY;
             double freq = NU0 * exp(-H_MIGRATION_ENERGY / KB / TEMPERATURE);
@@ -279,7 +279,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
             return;
         }
         // special case for 1H diffusion from Surface to Bulk
-        else if (count == 0)
+        else if (count == SURFACE_INDEX)
         {
             double absorbE = 1.10 + 0.939*( 1.0 / ( 1.0 + exp( (surfaceSaturationFraction - 0.232)/0.0683 ) ) );  // absorption energy barrier into bulk from Hodille 2020
             double freq = NU0 * exp(-absorbE / KB / TEMPERATURE);
@@ -320,7 +320,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         /* by having two diffusion rates, this rate will never be less than 0 */
         /* length measured in cm */
         double lengthf = 0.0, lengthb = 0.0;
-        if(count == 0){
+        if(count == SURFACE_INDEX){
             lengthf = (ELEMENT_THICKNESS + SURFACE_THICKNESS) / 2. * NM_TO_CM; // thickness of W surface is 0.544nm, this length is centroid to vacuum 
             lengthb =  (ELEMENT_THICKNESS + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
         }else if(count == 1){

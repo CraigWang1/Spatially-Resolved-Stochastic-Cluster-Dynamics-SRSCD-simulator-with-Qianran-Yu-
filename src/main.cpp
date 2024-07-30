@@ -6,7 +6,6 @@
 #include<unistd.h>
 #include<time.h>
 #include <cassert>
-#include<iostream>
 #include"SCDWrapper.h"
 
 int main(int argc, char** argv) 
@@ -60,22 +59,15 @@ int main(int argc, char** argv)
         srscd->drawSpeciesAndReactions(advTime);
     }
 
-    // // Assign volume elements to this processor
-    int startIndex, endIndex;
-    double indexIncrement = POINTS / numThreads;
-    int remainder = POINTS % numThreads;
-    startIndex = threadID * indexIncrement;
-    if (POINTS - (threadID + 1) * indexIncrement != remainder)
-        endIndex = (threadID + 1) * indexIncrement - 1;
-    else
-        endIndex = POINTS - 1;
-
+    // Assign volume elements to this processor
+    double indexIncrement = (double) POINTS / numThreads;
+    int startIndex = threadID * indexIncrement;
+    int endIndex = (threadID + 1) * indexIncrement - 1;
+    srscd->setDomain(startIndex, endIndex);
     srscd->examineDomainRate();
 
     double prev_time = MPI_Wtime();
-
     cout << H_SATURATION_CONCENTRATION * VOLUME << endl;
-    cout << "Thread ID: "<< threadID << " | (start, end): " << startIndex << ", " << endIndex << endl;
     
     while(!done)
     {
@@ -212,7 +204,6 @@ int main(int argc, char** argv)
             do {
                 random = (double)rand() / RAND_MAX;
             } while (random == 0);
-            cout << "Rate:" << maxDomainRate << endl;
             dt = (-1) / maxDomainRate*log(random);
             accTime += dt;
             advTime += dt;
@@ -297,6 +288,5 @@ int main(int argc, char** argv)
     srscd->writeSinkFile(advTime, iStep, threadID);
     cout<<"dpa = "<<dpa<<endl;
     cout << "Finished, Bye" << endl;
-    MPI_Finalize();
     return 0;
 }
