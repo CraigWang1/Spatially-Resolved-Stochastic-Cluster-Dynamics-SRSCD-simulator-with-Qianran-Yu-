@@ -214,9 +214,9 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     int objectN[3];   
     hostObject->getThreeNumber(count, objectN);
     double concentration = 0;
-    double frontConcentration = 0;
+    double frontConcentration = objectN[1] / VOLUME;
     double backConcentration = objectN[2] / VOLUME;
-    if (count == 0)
+    if (count == SURFACE_INDEX)
     {
         concentration = objectN[0] / SURFACE_VOLUME;  /* First mesh element has slightly larger volume of normal mesh element size + surface layer size */
         frontConcentration = H_SATURATION_CONCENTRATION;
@@ -226,15 +226,30 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         concentration = objectN[0] / VOLUME;
         frontConcentration = objectN[1] / SURFACE_VOLUME;
     }
+    else if (count == HUGE_INDEX - 1)
+    {
+        concentration = objectN[0] / VOLUME;
+        backConcentration = objectN[2] / HUGE_VOLUME;
+    }
+    else if (count == HUGE_INDEX)
+    {  
+        concentration = objectN[0] / HUGE_VOLUME;
+        backConcentration = objectN[2] / SURFACE_VOLUME;
+    }
+    else if (count == BACKSURFACE_INDEX)
+    {
+        concentration = objectN[0] / SURFACE_VOLUME;
+        frontConcentration = objectN[1] / HUGE_VOLUME;
+        backConcentration = 0.0;
+    }
     else
     {
         concentration = objectN[0] / VOLUME;
-        frontConcentration = objectN[1] / VOLUME;
     }
 
-    // Account for special cases from 2020 Zhenhou Wang
-    if((count == 1 && hostObject->getKey() == 1) ||
-        (count == 0 && hostObject->getKey() == 1))
+    // Account for special cases from 2020 Zhenhou Wang for surface and back surface
+    if((hostObject -> getKey() == 1)
+        && (count == SURFACE_INDEX || count == 1 || count == HUGE_INDEX || count == BACKSURFACE_INDEX))
     {
         double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);
         double surfaceConc = 0.0; 
@@ -244,7 +259,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
 
         // special case for 1H diffusion from Bulk to Surface 
-        if (count == 1)
+        if (count == SURFACE_INDEX)
         {
             double jumpingDist = maxSurfaceConc / 6.0 / DENSITY;
             double freq = NU0 * exp(-H_MIGRATION_ENERGY / KB / TEMPERATURE);
@@ -270,6 +285,33 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
             double freq = NU0 * exp(-absorbE / KB / TEMPERATURE);
             diffRToB = freq * surfaceConc * DIVIDING_AREA;
             diffRToF = 0.0;
+            return;
+        }
+        else if (count == HUGE_INDEX)
+        {
+            double jumpingDist = maxSurfaceConc / 6.0 / DENSITY;
+            double freq = NU0 * exp(-H_MIGRATION_ENERGY / KB / TEMPERATURE);
+        
+            prefactor = freq * jumpingDist * (1 - surfaceSaturationFraction) * DIVIDING_AREA;
+            diffRToB = prefactor * concentration;
+            diffRToF = 0.0;
+
+            // Normal Diffusion to the regular bulk element before the Huge element
+            if (concentration > backConcentration)
+            {
+                double lengthf = (ELEMENT_THICKNESS / 2.0 + HUGE_THICKNESS / 2.0) * NM_TO_CM; // first element to second element distance (20nm) 
+                /* if diffusable */
+                prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthf;
+                diffRToF = prefactor*(concentration - backConcentration);
+            }
+            return;
+        }
+        else if (count == BACKSURFACE_INDEX)
+        {
+            double absorbE = 1.10 + 0.939*( 1.0 / ( 1.0 + exp( (surfaceSaturationFraction - 0.232)/0.0683 ) ) );  // absorption energy barrier into bulk from Hodille 2020
+            double freq = NU0 * exp(-absorbE / KB / TEMPERATURE);
+            diffRToF = freq * surfaceConc * DIVIDING_AREA;
+            diffRToB = 0.0;
             return;
         }
     }
@@ -317,7 +359,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
 
 void OneLine::computeSinkReaction(const Object* const hostObject, const int count)
 {
-    if (!SINK_ON || count == 0)
+    if (!SINK_ON || count == SURFACE_INDEX || count == HUGE_INDEX || count == BACKSURFACE_INDEX)
     {
         sinkR = 0.0;
         return;
@@ -331,7 +373,7 @@ long double OneLine::computeDissReaction(
                                   const int index,
                                   const int count) const
 {
-    if (!DISS_ON || count == 0)
+    if (!DISS_ON || count == SURFACE_INDEX || count == HUGE_INDEX || count == BACKSURFACE_INDEX)
     {
         return 0.0;
     }
@@ -358,7 +400,7 @@ long double OneLine::computeCombReaction(
                                     const Object* const mobileObject,
                                     const int count) const
 {    
-    if (!COMB_ON || count == 0)
+    if (!COMB_ON || count == SURFACE_INDEX || count == HUGE_INDEX || count == BACKSURFACE_INDEX)
     {
         return 0.0;
     }
@@ -367,11 +409,16 @@ long double OneLine::computeCombReaction(
     double r12;
     double dimensionTerm;
     double volume;
-    if(count == 0){
+    if(count == SURFACE_INDEX || count == BACKSURFACE_INDEX){
         volume = SURFACE_VOLUME;
         // volume on surface layer = volume/20nm * 0.54nm
         
-    }else{
+    }
+    else if (count == HUGE_INDEX)
+    {
+        volume = HUGE_VOLUME;
+    }
+    else{
         volume = VOLUME;
     }
     
@@ -417,7 +464,8 @@ void OneLine::computeSAVReaction(
 {
     SAVR = 0;
 
-    if (!SAV_ON || count == 0)
+    // TODO: no SAV for huge as well
+    if (!SAV_ON || count == SURFACE_INDEX || count == HUGE_INDEX || count == BACKSURFACE_INDEX)
     {
         return;
     }
@@ -445,7 +493,7 @@ void OneLine::computeRecombReaction(
     recombRLH = 0.0;
 
     // only H can recombine at surface and leave surface
-    if (!RECOMB_ON || count != 0 || hostObject->getKey() != 1)
+    if (!RECOMB_ON || count != SURFACE_INDEX || count != BACKSURFACE_INDEX|| hostObject->getKey() != 1)
     {
         return;
     }
@@ -458,7 +506,7 @@ void OneLine::computeRecombReaction(
         surfaceConc = numH / DIVIDING_AREA;  // [cm^-2] concentration
 
     // Calculate ER recomb rate
-    if (numH >= 1)
+    if (count == SURFACE_INDEX && numH >= 1)
     {
         double crossSectionERRecomb = 1.7e-17; // [cm^2] cross-section of ER recombination from Zhenhou Wang 2020
         recombRER = FLUX_H * crossSectionERRecomb * surfaceConc * DIVIDING_AREA; 
@@ -484,14 +532,27 @@ double OneLine::computeDimensionTerm(
                                      const Object* const mobileObject,
                                      const int count) const
 {
+    double volume;
+    if(count == SURFACE_INDEX || count == BACKSURFACE_INDEX)
+    {
+        volume = SURFACE_VOLUME; 
+    }
+    else if (count == HUGE_INDEX)
+    {
+        volume = HUGE_VOLUME;
+    }
+    else{
+        volume = VOLUME;
+    }
+
     double term = 0.0;
     double hostDiff = hostObject->getDiff(), mobileDiff = mobileObject->getDiff();
     int hostDim = hostObject->getDim(), mobileDim = mobileObject->getDim();
     int hostN = hostObject->getNumber(count), mobileN = mobileObject->getNumber(count);
     // int dimsum = hostDim + mobileDim; 
     int dimsum = 6;
-    double alpha_a = -log(PI*PI*pow(r12, 3.0) / VOLUME / hostN);
-    double alpha_b = -log(PI*PI*pow(r12, 3.0) / VOLUME / mobileN);
+    double alpha_a = -log(PI*PI*pow(r12, 3.0) / volume / hostN);
+    double alpha_b = -log(PI*PI*pow(r12, 3.0) / volume / mobileN);
     switch (dimsum) {
         case 6: // 3D + 3D
             term = hostDiff + mobileDiff;
