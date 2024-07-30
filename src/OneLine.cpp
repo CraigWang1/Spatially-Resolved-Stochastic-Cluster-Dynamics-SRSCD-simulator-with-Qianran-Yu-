@@ -297,12 +297,12 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
             diffRToF = 0.0;
 
             // Normal Diffusion to the regular bulk element before the Huge element
-            if (concentration > backConcentration)
+            if (concentration > frontConcentration)
             {
                 double lengthf = (ELEMENT_THICKNESS / 2.0 + HUGE_THICKNESS / 2.0) * NM_TO_CM; // first element to second element distance (20nm) 
                 /* if diffusable */
                 prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthf;
-                diffRToF = prefactor*(concentration - backConcentration);
+                diffRToF = prefactor*(concentration - frontConcentration);
             }
             return;
         }
@@ -320,13 +320,33 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         /* by having two diffusion rates, this rate will never be less than 0 */
         /* length measured in cm */
         double lengthf = 0.0, lengthb = 0.0;
-        if(count == SURFACE_INDEX){
+        if(count == SURFACE_INDEX)
+        {
             lengthf = (ELEMENT_THICKNESS + SURFACE_THICKNESS) / 2. * NM_TO_CM; // thickness of W surface is 0.544nm, this length is centroid to vacuum 
-            lengthb =  (ELEMENT_THICKNESS + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
-        }else if(count == 1){
-            lengthf =  (ELEMENT_THICKNESS + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
+            lengthb =  (ELEMENT_THICKNESS + SURFACE_THICKNESS) / 2. * NM_TO_CM; /* surface to first element distance */
+        }
+        else if(count == 1)
+        {
+            lengthf = (ELEMENT_THICKNESS + SURFACE_THICKNESS) / 2. * NM_TO_CM; /* surface to first element distance */
             lengthb = ELEMENT_THICKNESS * NM_TO_CM; // first element to second element distance (20nm) 
-        }else{
+        }
+        else if (count == HUGE_INDEX)
+        {
+            lengthf = (ELEMENT_THICKNESS + HUGE_THICKNESS) / 2.0 * NM_TO_CM;
+            lengthb = (HUGE_THICKNESS + SURFACE_THICKNESS) / 2.0 * NM_TO_CM;
+        }
+        else if (count == HUGE_INDEX - 1)
+        {  
+            lengthf = ELEMENT_THICKNESS * NM_TO_CM;
+            lengthb = (ELEMENT_THICKNESS + HUGE_THICKNESS) / 2.0 * NM_TO_CM;
+        }
+        else if (count == BACKSURFACE_INDEX)
+        {
+            lengthf = (HUGE_THICKNESS + SURFACE_THICKNESS) / 2.0 * NM_TO_CM;
+            lengthb = (ELEMENT_THICKNESS + SURFACE_THICKNESS) / 2.0 * NM_TO_CM; // in accordance with the lengthf of surface
+        }
+        else
+        {
             lengthf = lengthb = ELEMENT_THICKNESS * NM_TO_CM; /* other element distances */
         }
 
