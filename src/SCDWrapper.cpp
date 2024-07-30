@@ -1789,7 +1789,7 @@ double SCDWrapper::getTotalDpa(){
 
 double SCDWrapper::getHSaturationConcentration() const
 {
-    return H_SATURATION_CONCENTRATION;
+    // return H_SATURATION_CONCENTRATION;
     double concentration = H_SATURATION_CONCENTRATION;
     bool dimer = false;
     bool vhpair = false;

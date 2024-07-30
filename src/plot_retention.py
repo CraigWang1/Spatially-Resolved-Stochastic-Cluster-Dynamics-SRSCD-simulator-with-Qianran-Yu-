@@ -10,7 +10,6 @@ from math import floor, ceil
 from scipy.signal import butter, filtfilt
 from make_speciesfile import combine_species_files
 
-combine_species_files()
 
 # Change data files list, times list, and flux for custom use case
 POINTS = 301                             # num spatial elements in the simulation (1 surface + 100 bulk)
@@ -23,6 +22,8 @@ KB = 8.617e-05                             # [ev/K] Boltzmann's constant.
 TEMPERATURE = 300
 H_SATURATION_CONCENTRATION = DENSITY * math.exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE) / DENSITY * 100
 dpi = 100
+
+combine_species_files(POINTS)
 
 def getConcentration(x, t):
 	""" 
