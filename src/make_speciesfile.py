@@ -53,3 +53,6 @@ def combine_species_files(POINTS):
 		f.write("\n")
 
 	f.close()
+
+if __name__ == '__main__':
+	combine_species_files(POINTS=301)

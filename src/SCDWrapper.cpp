@@ -723,6 +723,10 @@ void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
         anObject = new Object(key, n, number);
         addNewObjectToMap(anObject);
     }
+    else
+    {
+        return;
+    }
 
     bool leftBoundary = (
         (n == startIndex || n == startIndex - 1) && n != 0
@@ -732,12 +736,19 @@ void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
         (n == endIndex || n == endIndex + 1) && n != POINTS - 1
     );
 
-    if (leftBoundary)
-        leftBoundaryChangeQ.push_back(
-            BoundaryChange(key, n, number));
-    else if (rightBoundary)  
-        rightBoundaryChangeQ.push_back(
-            BoundaryChange(key, n, number)); 
+    // Only need to update changes in objects that can diffuse to other processors
+    //     because they can diffuse into other processor's domain, or a change
+    //     in the population of a mobile species in this boundary could affect 
+    //     diffusion rates into this boundary from the other processor and vice versa. 
+    if (anObject->getDiff() > 0)
+    {
+        if (leftBoundary)
+            leftBoundaryChangeQ.push_back(
+                BoundaryChange(key, n, number));
+        else if (rightBoundary)  
+            rightBoundaryChangeQ.push_back(
+                BoundaryChange(key, n, number)); 
+    }
 }
 
 void SCDWrapper::reduceFromObjectMap(const int64 key, const int n, const int number)
