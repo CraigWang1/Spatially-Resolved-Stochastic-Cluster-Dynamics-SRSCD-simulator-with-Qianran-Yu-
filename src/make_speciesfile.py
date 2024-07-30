@@ -5,9 +5,8 @@ Combine multiple speciesx.txt files from different processors into one species.t
 import numpy as np
 from math import *
 
-def combine_species_files():
+def combine_species_files(POINTS):
 	NUM_PROCS = 4
-	POINTS = 301
 	indexIncrement = POINTS / NUM_PROCS
 	partitions = []
 	objCounts = {}

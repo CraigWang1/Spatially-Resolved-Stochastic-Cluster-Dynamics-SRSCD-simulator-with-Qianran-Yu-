@@ -7,7 +7,6 @@ from tqdm import tqdm
 from textwrap import wrap
 from make_speciesfile import combine_species_files
 
-combine_species_files()
 
 # Change data files list, times list, and flux for custom use case
 POINTS = 301                             # num spatial elements in the simulation (1 surface + 100 bulk)
@@ -17,9 +16,10 @@ SURFACE_VOLUME = VOLUME / 20 * SURFACE_THICKNESS + VOLUME # [cm^3]
 DENSITY = 6.30705e+22                      # [atoms/cm^3] Atomic density for W.
 HEAT_OF_SOLUTION = 1.04                    # [eV] Heat of solution of H in W.
 KB = 8.617e-05                             # [ev/K] Boltzmann's constant.
-TEMPERATURE = 1000
+TEMPERATURE = 300
 H_SATURATION_CONCENTRATION = DENSITY * math.exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
 
+combine_species_files(POINTS)
 
 def getConcentration(x, t):
 	""" 
@@ -116,6 +116,7 @@ for i in range(1):
 		plt.title(f"Hydrogen Concentration vs. Depth\n$T = {TEMPERATURE} K, t = {round(t*1e6, 1)} \mu s$" + "$, Flux=4.0 \cdot 10^{23}$ $[cm^{-2}s^{-1}]$")
 		plt.xlabel("Depth $[nm]$")
 		plt.ylabel("Concentration $[cm^{-3}]$")
+
 		# if not plot_v:
 		# plt.ylim(0, 6e25)
 		plt.legend()
