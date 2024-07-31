@@ -12,7 +12,7 @@ from make_speciesfile import combine_species_files
 
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 301                             # num spatial elements in the simulation (1 surface + 100 bulk)
+POINTS = 302                             # num spatial elements in the simulation (1 surface + 100 bulk)
 VOLUME = 1e-17                           # volume of a spatial element [cm^3]
 SURFACE_THICKNESS = 0.544                # [nm]
 SURFACE_VOLUME = VOLUME / 20 * SURFACE_THICKNESS + VOLUME # [cm^3]

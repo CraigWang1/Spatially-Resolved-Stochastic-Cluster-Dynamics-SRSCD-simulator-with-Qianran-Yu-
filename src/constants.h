@@ -32,7 +32,7 @@
 #define GRAIN_SIZE 0.0002 //[cm]
 #define FOIL_THICKNESS 0.0002 //[cm] Foil thickness from UCSD (2000nm)
 #define ELEMENT_THICKNESS 20.0 // [nm] thickness of bulk spatial element
-#define HUGE_THICKNESS 800.0 // [nm] thickness of the Huge bulk element
+#define HUGE_THICKNESS 6000 // [nm] thickness of the Huge bulk element at back of simulation volume
 #define SURFACE_THICKNESS 0.544 //[nm] thickness of surface (conrresponds to two monolayers of tungsten)
 #define NU0 1.0e+13           // [Hz] Attempt frequency.
 #define C_DENSITY 10        // [appm] C-atom density
@@ -67,10 +67,9 @@
 #define EXP10 3 // number of 0s assigned to each group in object's key in hash table
 
 // Material Structure: surface + bulk * n + huge + surface
-#define POINTS 302 // number of elements: one surface(Point 0), other bulk elements(NO.1,2,3,4,...,99), huge bulk element (NO.100), back surface (NO. 101)
+#define POINTS 302 // number of elements: one surface(Point 0), other bulk elements(NO.1,2,3,4,...,300), huge bulk element (NO.100)
 #define SURFACE_INDEX 0
-#define HUGE_INDEX POINTS - 2
-#define BACKSURFACE_INDEX POINTS - 1
+#define HUGE_INDEX POINTS - 1
 // Auxiliary defigitnitions:
 enum Reaction { DIFFUSETOF, DIFFUSETOB, SINK, DISSOCIATION, COMBINATION, SAV, RECOMBER, RECOMBLH, NONE, PARTICLE, HE, H, DISSV, DISSH, ERROR};
 

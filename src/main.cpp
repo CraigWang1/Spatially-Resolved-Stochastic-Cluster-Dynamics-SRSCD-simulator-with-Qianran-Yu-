@@ -64,6 +64,7 @@ int main(int argc, char** argv)
     int startIndex = threadID * indexIncrement;
     int endIndex = (threadID + 1) * indexIncrement - 1;
     srscd->setDomain(startIndex, endIndex);
+    srscd->clearNoneReaction();
     srscd->examineDomainRate();
 
     double prev_time = MPI_Wtime();
@@ -71,7 +72,6 @@ int main(int argc, char** argv)
     
     while(!done)
     {
-        srscd->clearNoneReaction();
         long double localDomainRate = srscd->getDomainRate();
         long double maxDomainRate;
 
@@ -81,7 +81,8 @@ int main(int argc, char** argv)
         srscd->fillNoneReaction(maxDomainRate);
         hostObject = srscd->selectDomainReaction(theOtherKey, reaction, pointIndex);/* choose an event */
         srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
-        
+        srscd->clearNoneReaction();
+
         if(reaction == Reaction::H || reaction == Reaction::PARTICLE)
         {
             accTime = 0.0;

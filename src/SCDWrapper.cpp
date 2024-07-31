@@ -176,14 +176,15 @@ void SCDWrapper::updateMatrixRate(const int n, const Reaction reaction)
         }
 
         for (int i = affectedStart; i <= affectedEnd; i++) {
-            Bundle* tempBundle = linePool[tempObject];
-            OneLine* tempLine = tempBundle->lines[i];
-            if (tempLine != nullptr) {
-                matrixRate[i] += tempLine->computeTotalRate();
-                //tempLine->display(tempObject);/* Qianran 0925 */
+            if (tempObject->getNumber(i) > 0) {
+                Bundle* tempBundle = linePool[tempObject];
+                OneLine* tempLine = tempBundle->lines[i];
+                if (tempLine != nullptr) {
+                    matrixRate[i] += tempLine->computeTotalRate();
+                    //tempLine->display(tempObject);/* Qianran 0925 */
+                }
             }
         }
-
     }
 }
 
@@ -452,7 +453,6 @@ void SCDWrapper::processEvent(
 
     // Keep track of affected reaction rates
     updateMatrixRate(n, reaction);
-    computeBulkRate();
 
     fs.close();
 }

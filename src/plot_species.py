@@ -9,10 +9,12 @@ from make_speciesfile import combine_species_files
 
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 301                             # num spatial elements in the simulation (1 surface + 100 bulk)
+POINTS = 302                             # num spatial elements in the simulation (1 surface + 100 bulk)
 VOLUME = 1e-17                           # volume of a spatial element [cm^3]
 SURFACE_THICKNESS = 0.544                # [nm]
-SURFACE_VOLUME = VOLUME / 20 * SURFACE_THICKNESS + VOLUME # [cm^3]
+HUGE_THICKNESS = 6000                  # [nm]
+SURFACE_VOLUME = VOLUME / 20 * SURFACE_THICKNESS  # [cm^3]
+HUGE_VOLUME = VOLUME / 20 * HUGE_THICKNESS        # [cm^3]
 DENSITY = 6.30705e+22                      # [atoms/cm^3] Atomic density for W.
 HEAT_OF_SOLUTION = 1.04                    # [eV] Heat of solution of H in W.
 KB = 8.617e-05                             # [ev/K] Boltzmann's constant.
@@ -59,6 +61,7 @@ def vacancies_per_cluster(obj_key):
 # out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 40.0, (640,480))
 
 positions = [10.272 + i*20 for i in range(POINTS)]
+# positions[-1] += HUGE_THICKNESS
 dpi = 100
 count = 0
 
@@ -93,6 +96,10 @@ for i in range(1):
 		trapped_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
 		free_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
 		vacancy_c[0] *= VOLUME / SURFACE_VOLUME
+
+		trapped_hydrogen_c[-1] *= VOLUME / HUGE_VOLUME
+		free_hydrogen_c[-1] *= VOLUME / HUGE_VOLUME
+		vacancy_c[-1] *= VOLUME / HUGE_VOLUME
 
 		trapped_hydrogen_c /= VOLUME
 		free_hydrogen_c /= VOLUME
