@@ -81,7 +81,7 @@ int main(int argc, char** argv)
         srscd->fillNoneReaction(maxDomainRate);
         hostObject = srscd->selectDomainReaction(theOtherKey, reaction, pointIndex);/* choose an event */
         srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
-        
+
         if(reaction == Reaction::H || reaction == Reaction::PARTICLE)
         {
             accTime = 0.0;
