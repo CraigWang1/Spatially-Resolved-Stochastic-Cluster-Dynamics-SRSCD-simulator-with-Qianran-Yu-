@@ -15,8 +15,8 @@ struct BoundaryChange
     int64 objKey;
     int pointIndex;
     int change;
-
-    BoundaryChange(int64, int, int); // Constructor
+    
+    BoundaryChange(int64, int, int); // Constructor for object
 };
 
 #endif

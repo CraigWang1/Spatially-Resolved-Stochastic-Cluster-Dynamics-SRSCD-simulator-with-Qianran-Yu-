@@ -23,7 +23,7 @@ TEMPERATURE = 300
 H_SATURATION_CONCENTRATION = DENSITY * math.exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE) / DENSITY * 100
 dpi = 100
 
-combine_species_files(POINTS)
+combine_species_files()
 
 def getConcentration(x, t):
 	""" 

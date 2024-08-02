@@ -5,22 +5,12 @@ Combine multiple speciesx.txt files from different processors into one species.t
 import numpy as np
 from math import *
 
-def combine_species_files(POINTS):
+def combine_species_files():
 	NUM_PROCS = 4
-	indexIncrement = POINTS / NUM_PROCS
 	partitions = []
 	objCounts = {}
 
-	partitions = []
 	for i in range(NUM_PROCS):
-		startIdx = floor(i * indexIncrement)
-		endIdx = floor((i + 1) * indexIncrement - 1)
-		partitions.append((startIdx, endIdx))
-
-	for i in range(len(partitions)):
-		partition = partitions[i]
-		startIdx = partition[0]
-		endIdx = partition[1]
 		with open(f"species{i}.txt") as f:
 			if i == 0:
 				step = int(f.readline().split()[2])
@@ -29,11 +19,14 @@ def combine_species_files(POINTS):
 			else:
 				for i in range(3):
 					f.readline()
+			startIdx = int(f.readline().split()[2])
+			endIdx = int(f.readline().split()[2])
+			print(startIdx, endIdx)
 			for line in f:
 				line = line.split()
 				objKey = int(line[1])
 				line = line[2:]
-				counts = np.zeros(POINTS, dtype=int)
+				counts = np.zeros(len(line), dtype=int)
 				for j in range(startIdx, endIdx+1):
 					counts[j] = int(line[j])
 				if objKey in objCounts:
@@ -53,3 +46,6 @@ def combine_species_files(POINTS):
 		f.write("\n")
 
 	f.close()
+
+if __name__ == "__main__":
+	combine_species_files()

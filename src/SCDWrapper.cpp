@@ -469,6 +469,9 @@ SCDWrapper::~SCDWrapper()
     for (iter1 = allObjects.begin(); iter1 != allObjects.end(); ++iter1) {
         delete iter1->second;
     }
+    for (iter1 = HObjects.begin(); iter1 != HObjects.end(); ++iter1) {
+        delete iter1->second;
+    }
 }
 
 unordered_map<int64, Object*>* SCDWrapper::getAllObjects()
@@ -530,6 +533,8 @@ void SCDWrapper::writeSpeciesFile(const double time, const long int n, const int
     fo << "step = " << n << endl;
     fo << "time = " << time << endl;
     fo << "fluenceH = " << fluenceH << endl;
+    fo << "startIndex = " << startIndex << endl;
+    fo << "endIndex = " << endIndex << endl;
     
     for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
         fo << "object " << iter->second->getKey() << "    ";
@@ -595,6 +600,8 @@ void SCDWrapper::writeSinkFile(const double time, const long int n, const int th
     int i, j;
     ofstream fs;
     fs.open("sink" + std::to_string(threadID) + ".txt", ios::out);
+    fs << "startIndex = " << startIndex << endl;
+    fs << "endIndex = " << endIndex << endl;
     //fs << "Aggregate time = " << time << "  step = " << n << endl;
     for (i = 0; i < POINTS; ++i) {
         for (j = 0; j < LEVELS + 1; ++j) {
@@ -722,6 +729,10 @@ void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
         /* object wasn't found! build new object and insert it into map */
         anObject = new Object(key, n, number);
         addNewObjectToMap(anObject);
+    }
+    else
+    {
+        return;
     }
 
     bool leftBoundary = (
@@ -1883,4 +1894,72 @@ void SCDWrapper::implementBoundaryChanges(vector<BoundaryChange>& boundaryChange
     if (updateBack)
         updateMatrixRate(endIndex, Reaction::NONE);
     computeDomainRate();
+}
+
+int SCDWrapper::getStartIndex()
+{
+    return startIndex;
+}
+
+int SCDWrapper::getEndIndex()
+{
+    return endIndex;
+}
+
+vector<BoundaryChange> SCDWrapper::getSpatialElement(int n)
+{
+    /* Return all of the object counts (not including sinks) at this spatial element */
+    vector<BoundaryChange> objects;
+    unordered_map<int64, Object*>::iterator iter;
+    for (iter = allObjects.begin(); iter != allObjects.end(); ++iter)
+    {
+        Object* obj = iter->second;
+        if (obj->getNumber(n) > 0)
+        {
+            objects.push_back(BoundaryChange(obj->getKey(), n, obj->getNumber(n)));
+        }
+    }
+    return objects;
+}
+
+void SCDWrapper::getSink(int n, int* output)
+{
+    for (int level = 0; level < LEVELS+1; level++)  // levels + 1 because vacancy and sia each have their own levels, so vac + sia + helium + H = 4 levels = 3 + 1
+    {
+        output[level] = sinks[level][n];
+    }
+}
+
+void SCDWrapper::addSpatialElement(int newGhostIndex, vector<BoundaryChange> newGhostObjects, int newBoundaryIndex, int* newBoundarySinks)
+{
+    /* Clear out spatial element to use as our new ghost index */
+    unordered_map<int64, Object*>::iterator iter;
+    for (iter = allObjects.begin(); iter != allObjects.end(); ++iter)
+    {
+        Object* obj = iter->second;
+        if (obj->getNumber(newGhostIndex) > 0)
+        {
+            reduceFromObjectMap(obj->getKey(), newGhostIndex, obj->getNumber(newGhostIndex));
+        } 
+    }
+
+    /* Put in new objects into our new ghost index */
+    for (BoundaryChange& bc: newGhostObjects)
+    {
+        if (bc.pointIndex != newGhostIndex)
+            cout << "BRUH" << endl;
+        addToObjectMap(bc.objKey, bc.pointIndex, bc.change);
+    }
+
+    /* Put it new sink counts into our new boundary index */
+    for (int level = 0; level < LEVELS+1; level++)
+    {
+        sinks[level][newBoundaryIndex] = newBoundarySinks[level];
+        if (level == 0)
+            computeSinkDissRate(0, newBoundaryIndex);  // V Diss rate
+        else if (level == 3)
+            computeSinkDissRate(1, newBoundaryIndex);  // H Diss rate
+    }
+
+    clearBoundaryChangeQs();  // from the add/reduceToObjectMap calls
 }
