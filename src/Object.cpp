@@ -352,7 +352,7 @@ void Object::computeBindTerm()
     double efv = 3.23, emv = 1.66;
     double eb2v = -0.1, eb2i = 2.12, eb2he = 1.03;
     double efhe = 4.0, emhe = 0.01;
-    double emh = 0.39;
+    double emh = H_MIGRATION_ENERGY;
     int check_all = 0, check_He = 0, check_H = 0;
     int i;
     

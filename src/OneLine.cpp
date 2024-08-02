@@ -247,7 +247,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
             double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);
             double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
             double jumpingDist = maxSurfaceConc / 6 / DENSITY;
-            double freq = NU0 * exp(-0.39 / KB / TEMPERATURE); // Ed = 0.39 eV
+            double freq = NU0 * exp(-H_MIGRATION_ENERGY / KB / TEMPERATURE);
         
             prefactor = freq * jumpingDist * (1 - surfaceSaturationFraction) * DIVIDING_AREA;
             diffRToF = prefactor * concentration;
