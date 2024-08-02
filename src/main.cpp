@@ -41,6 +41,8 @@ int main(int argc, char** argv)
     double prev_eta_min = 0.0;
     double write_time = 0.2;
     double write_increment = 0.2;
+    long double avgDomainRate = 0.0;
+    unsigned int transferTurn = 0;
     int barWidth, pos; /* progress bar parameters */
     int numDigits = 7;
     int magnitude = 0;
@@ -64,6 +66,7 @@ int main(int argc, char** argv)
     int startIndex = threadID * indexIncrement;
     int endIndex = (threadID + 1) * indexIncrement - 1;
     srscd->setDomain(startIndex, endIndex);
+    srscd->clearNoneReaction();
     srscd->examineDomainRate();
 
     double prev_time = MPI_Wtime();
@@ -71,7 +74,6 @@ int main(int argc, char** argv)
     
     while(!done)
     {
-        srscd->clearNoneReaction();
         long double localDomainRate = srscd->getDomainRate();
         long double maxDomainRate;
 
@@ -81,11 +83,15 @@ int main(int argc, char** argv)
         srscd->fillNoneReaction(maxDomainRate);
         hostObject = srscd->selectDomainReaction(theOtherKey, reaction, pointIndex);/* choose an event */
         srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
+        srscd->clearNoneReaction();
 
         if(reaction == Reaction::H || reaction == Reaction::PARTICLE)
         {
             accTime = 0.0;
         }
+
+        // Update average domain rate (running average)
+        avgDomainRate += 0.0001*(localDomainRate - avgDomainRate);
 
         // Even processors send to right, odd processors receive from left
         vector<BoundaryChange>* leftBoundaryChanges = srscd->getLeftBoundaryChangeQ();
@@ -279,6 +285,256 @@ int main(int argc, char** argv)
                 prev_eta_min = eta_min;
                 prev_progress = progress;
                 st.close();
+            }
+
+            // Transfer spatial elements between processors to increase parallel efficiency
+            if (iStep%(10*PSTEPS) == 0)
+            {
+                if (transferTurn % 2 == 0)
+                {
+                    // Even processors transfer spatial element with left processor if necessary
+                    if (threadID % 2 == 0 && leftNeighbor >= 0)
+                    {
+                        long double otherAvgDomainRate = 0;
+                        MPI_Send(&avgDomainRate, 1, MPI_LONG_DOUBLE, leftNeighbor, tag, MPI_COMM_WORLD); // Don't give spatial element if we only have one remaining
+                        MPI_Recv(&otherAvgDomainRate, 1, MPI_LONG_DOUBLE, leftNeighbor, tag, MPI_COMM_WORLD, &status);
+
+                        bool canGiveSpatialElement = srscd->getStartIndex() < srscd->getEndIndex();
+                        bool otherCanGiveMeSpatialElement;
+                        MPI_Send(&canGiveSpatialElement, 1, MPI_CXX_BOOL, leftNeighbor, tag, MPI_COMM_WORLD);
+                        MPI_Recv(&otherCanGiveMeSpatialElement, 1, MPI_CXX_BOOL, leftNeighbor, tag, MPI_COMM_WORLD, &status);
+
+                        if (canGiveSpatialElement &&
+                            avgDomainRate > otherAvgDomainRate)
+                        {
+                            /* If we can give a spatial element to the left neighbor */
+                            /* Give up a mesh element by transferring information of the spatial element just before the boundary, which is the other processor's new ghost region */
+                            vector<BoundaryChange> transferChanges = srscd->getSpatialElement(srscd->getStartIndex()+1);
+                            for (BoundaryChange& bc: transferChanges)
+                            {
+                                long int data[3] = {bc.objKey, bc.pointIndex, bc.change};
+                                MPI_Send(data, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD);
+                            }
+                            long int data[3] = {};
+                            MPI_Send(data, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD); // Send end of transmission message                        }
+                            int sinks[LEVELS+1];
+                            srscd->getSink(srscd->getStartIndex(), sinks);
+
+                            /* Transfer sinks of the boundary element that we are going to give */
+                            MPI_Send(sinks, LEVELS+1, MPI_INT, leftNeighbor, tag, MPI_COMM_WORLD);
+
+                            /* Set up this new domain */
+                            srscd->setDomain(srscd->getStartIndex()+1, srscd->getEndIndex());
+                            srscd->examineDomainRate();
+                        }
+                        else if (otherCanGiveMeSpatialElement &&
+                            otherAvgDomainRate > avgDomainRate)
+                        {
+                            /* If we can receive a mesh element from the left neighbor */
+                            /* Receive a mesh element by receiving information of the spatial element one past the other processor's boundary (this new ghost region) */
+                            long int recv[3];
+                            MPI_Recv(recv, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD, &status);
+                            vector<BoundaryChange> receivedTransferChanges;
+
+                            while (recv[0] != 0) // while it's a valid message
+                            {
+                                receivedTransferChanges.push_back(BoundaryChange(recv[0], recv[1], recv[2]));
+                                MPI_Recv(recv, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD, &status);
+                            }
+
+                            /* Receive sinks of the new boundary element the other processor gave us */
+                            int newBoundarySinks[LEVELS+1];
+                            MPI_Recv(newBoundarySinks, LEVELS+1, MPI_INT, leftNeighbor, tag, MPI_COMM_WORLD, &status);
+
+                            /* Set up this new domain */
+                            srscd->addSpatialElement(srscd->getStartIndex()-2, receivedTransferChanges, srscd->getStartIndex()-1, newBoundarySinks);
+                            srscd->setDomain(srscd->getStartIndex()-1, srscd->getEndIndex());
+                            srscd->examineDomainRate();
+                        }
+                    }
+                    else if (threadID % 2 == 1 && rightNeighbor < numThreads)
+                    {
+                        long double otherAvgDomainRate = 0;
+                        MPI_Recv(&otherAvgDomainRate, 1, MPI_LONG_DOUBLE, rightNeighbor, tag, MPI_COMM_WORLD, &status);
+                        MPI_Send(&avgDomainRate, 1, MPI_LONG_DOUBLE, rightNeighbor, tag, MPI_COMM_WORLD); // Don't give spatial element if we only have one remaining
+
+                        bool canGiveSpatialElement = srscd->getStartIndex() < srscd->getEndIndex();
+                        bool otherCanGiveMeSpatialElement;
+                        MPI_Recv(&otherCanGiveMeSpatialElement, 1, MPI_CXX_BOOL, rightNeighbor, tag, MPI_COMM_WORLD, &status);
+                        MPI_Send(&canGiveSpatialElement, 1, MPI_CXX_BOOL, rightNeighbor, tag, MPI_COMM_WORLD);
+
+                        if (otherCanGiveMeSpatialElement &&
+                            avgDomainRate < otherAvgDomainRate)
+                        {
+                            /* If we can receive a mesh element from the right neighbor */
+                            /* Receive a mesh element by receiving information of the spatial element one past the other processor's boundary (this new ghost region) */
+                            long int recv[3];
+                            MPI_Recv(recv, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD, &status);
+                            vector<BoundaryChange> receivedTransferChanges;
+
+                            while (recv[0] != 0) // while it's a valid message
+                            {
+                                receivedTransferChanges.push_back(BoundaryChange(recv[0], recv[1], recv[2]));
+                                MPI_Recv(recv, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD, &status);
+                            }
+
+                            /* Receive sinks of the new boundary element the other processor gave us */
+                            int newBoundarySinks[LEVELS+1];
+                            MPI_Recv(newBoundarySinks, LEVELS+1, MPI_INT, rightNeighbor, tag, MPI_COMM_WORLD, &status);
+
+                            /* Set up this new domain */
+                            srscd->addSpatialElement(srscd->getEndIndex()+2, receivedTransferChanges, srscd->getEndIndex()+1, newBoundarySinks);
+                            srscd->setDomain(srscd->getStartIndex(), srscd->getEndIndex()+1);
+                            srscd->examineDomainRate();
+                        }
+                        else if (canGiveSpatialElement && 
+                            avgDomainRate > otherAvgDomainRate)
+                        {
+                            /* If we can give a spatial element to the right neighbor */
+                            /* Give up a mesh element by transferring information of the spatial element just before the boundary, which is the other processor's new ghost region */
+                            vector<BoundaryChange> transferChanges = srscd->getSpatialElement(srscd->getEndIndex()-1);
+                            for (BoundaryChange& bc: transferChanges)
+                            {
+                                long int data[3] = {bc.objKey, bc.pointIndex, bc.change};
+                                MPI_Send(data, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD);
+                            }
+                            long int data[3] = {};
+                            MPI_Send(data, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD); // Send end of transmission message                        }
+                            int sinks[LEVELS+1];
+                            srscd->getSink(srscd->getEndIndex(), sinks);
+
+                            /* Transfer sinks of the boundary element that we are going to give */
+                            MPI_Send(sinks, LEVELS+1, MPI_INT, rightNeighbor, tag, MPI_COMM_WORLD);
+
+                            /* Set up this new domain */
+                            srscd->setDomain(srscd->getStartIndex(), srscd->getEndIndex()-1);
+                            srscd->examineDomainRate();
+                        }
+                    }
+                }
+                else
+                {
+                    // Even processors transfer spatial element with right processor if necessary
+                    if (threadID % 2 == 0 && rightNeighbor < numThreads)
+                    {
+                        long double otherAvgDomainRate = 0;
+                        MPI_Send(&avgDomainRate, 1, MPI_LONG_DOUBLE, rightNeighbor, tag, MPI_COMM_WORLD); // Don't give spatial element if we only have one remaining
+                        MPI_Recv(&otherAvgDomainRate, 1, MPI_LONG_DOUBLE, rightNeighbor, tag, MPI_COMM_WORLD, &status);
+
+                        bool canGiveSpatialElement = srscd->getStartIndex() < srscd->getEndIndex();
+                        bool otherCanGiveMeSpatialElement;
+                        MPI_Send(&canGiveSpatialElement, 1, MPI_CXX_BOOL, rightNeighbor, tag, MPI_COMM_WORLD);
+                        MPI_Recv(&otherCanGiveMeSpatialElement, 1, MPI_CXX_BOOL, rightNeighbor, tag, MPI_COMM_WORLD, &status);
+
+                        if (canGiveSpatialElement &&
+                            avgDomainRate > otherAvgDomainRate)
+                        {
+                            /* If we can give a spatial element to the right neighbor */
+                            /* Give up a mesh element by transferring information of the spatial element just before the boundary, which is the other processor's new ghost region */
+                            vector<BoundaryChange> transferChanges = srscd->getSpatialElement(srscd->getEndIndex()-1);
+                            for (BoundaryChange& bc: transferChanges)
+                            {
+                                long int data[3] = {bc.objKey, bc.pointIndex, bc.change};
+                                MPI_Send(data, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD);
+                            }
+                            long int data[3] = {};
+                            MPI_Send(data, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD); // Send end of transmission message                        }
+                            int sinks[LEVELS+1];
+                            srscd->getSink(srscd->getEndIndex(), sinks);
+
+                            /* Transfer sinks of the boundary element that we are going to give */
+                            MPI_Send(sinks, LEVELS+1, MPI_INT, rightNeighbor, tag, MPI_COMM_WORLD);
+
+                            /* Set up this new domain */
+                            srscd->setDomain(srscd->getStartIndex(), srscd->getEndIndex()-1);
+                            srscd->examineDomainRate();
+                        }
+                        else if (otherCanGiveMeSpatialElement &&
+                            otherAvgDomainRate > avgDomainRate)
+                        {
+                            /* If we can receive a mesh element from the right neighbor */
+                            /* Receive a mesh element by receiving information of the spatial element one past the other processor's boundary (this new ghost region) */
+                            long int recv[3];
+                            MPI_Recv(recv, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD, &status);
+                            vector<BoundaryChange> receivedTransferChanges;
+
+                            while (recv[0] != 0) // while it's a valid message
+                            {
+                                receivedTransferChanges.push_back(BoundaryChange(recv[0], recv[1], recv[2]));
+                                MPI_Recv(recv, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD, &status);
+                            }
+
+                            /* Receive sinks of the new boundary element the other processor gave us */
+                            int newBoundarySinks[LEVELS+1];
+                            MPI_Recv(newBoundarySinks, LEVELS+1, MPI_INT, rightNeighbor, tag, MPI_COMM_WORLD, &status);
+
+                            /* Set up this new domain */
+                            srscd->addSpatialElement(srscd->getEndIndex()+2, receivedTransferChanges, srscd->getEndIndex()+1, newBoundarySinks);
+                            srscd->setDomain(srscd->getStartIndex(), srscd->getEndIndex()+1);
+                            srscd->examineDomainRate();
+                        }
+                    }
+                    else if (threadID % 2 == 1 && leftNeighbor >= 0)
+                    {
+                        long double otherAvgDomainRate = 0;
+                        MPI_Recv(&otherAvgDomainRate, 1, MPI_LONG_DOUBLE, leftNeighbor, tag, MPI_COMM_WORLD, &status);
+                        MPI_Send(&avgDomainRate, 1, MPI_LONG_DOUBLE, leftNeighbor, tag, MPI_COMM_WORLD); // Don't give spatial element if we only have one remaining
+
+                        bool canGiveSpatialElement = srscd->getStartIndex() < srscd->getEndIndex();
+                        bool otherCanGiveMeSpatialElement;
+                        MPI_Recv(&otherCanGiveMeSpatialElement, 1, MPI_CXX_BOOL, leftNeighbor, tag, MPI_COMM_WORLD, &status);
+                        MPI_Send(&canGiveSpatialElement, 1, MPI_CXX_BOOL, leftNeighbor, tag, MPI_COMM_WORLD);
+
+                        if (otherCanGiveMeSpatialElement &&
+                            avgDomainRate < otherAvgDomainRate)
+                        {
+                            /* If we can receive a mesh element from the left neighbor */
+                            /* Receive a mesh element by receiving information of the spatial element one past the other processor's boundary (this new ghost region) */
+                            long int recv[3];
+                            MPI_Recv(recv, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD, &status);
+                            vector<BoundaryChange> receivedTransferChanges;
+
+                            while (recv[0] != 0) // while it's a valid message
+                            {
+                                receivedTransferChanges.push_back(BoundaryChange(recv[0], recv[1], recv[2]));
+                                MPI_Recv(recv, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD, &status);
+                            }
+
+                            /* Receive sinks of the new boundary element the other processor gave us */
+                            int newBoundarySinks[LEVELS+1];
+                            MPI_Recv(newBoundarySinks, LEVELS+1, MPI_INT, leftNeighbor, tag, MPI_COMM_WORLD, &status);
+
+                            /* Set up this new domain */
+                            srscd->addSpatialElement(srscd->getStartIndex()-2, receivedTransferChanges, srscd->getStartIndex()-1, newBoundarySinks);
+                            srscd->setDomain(srscd->getStartIndex()-1, srscd->getEndIndex());
+                            srscd->examineDomainRate();
+                        }
+                        else if (canGiveSpatialElement && 
+                            avgDomainRate > otherAvgDomainRate)
+                        {
+                            /* If we can give a spatial element to the left neighbor */
+                            /* Give up a mesh element by transferring information of the spatial element just before the boundary, which is the other processor's new ghost region */
+                            vector<BoundaryChange> transferChanges = srscd->getSpatialElement(srscd->getStartIndex()+1);
+                            for (BoundaryChange& bc: transferChanges)
+                            {
+                                long int data[3] = {bc.objKey, bc.pointIndex, bc.change};
+                                MPI_Send(data, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD);
+                            }
+                            long int data[3] = {};
+                            MPI_Send(data, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD); // Send end of transmission message                        }
+                            int sinks[LEVELS+1];
+                            srscd->getSink(srscd->getEndIndex(), sinks);
+
+                            /* Transfer sinks of the boundary element that we are going to give */
+                            MPI_Send(sinks, LEVELS+1, MPI_INT, leftNeighbor, tag, MPI_COMM_WORLD);
+
+                            /* Set up this new domain */
+                            srscd->setDomain(srscd->getStartIndex()+1, srscd->getEndIndex());
+                            srscd->examineDomainRate();
+                        }
+                    }
+                }
+                transferTurn++;
             }
         }
     }

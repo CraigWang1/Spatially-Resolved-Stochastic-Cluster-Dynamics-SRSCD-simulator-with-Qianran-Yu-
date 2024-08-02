@@ -155,4 +155,9 @@ public:
     vector<BoundaryChange>* getRightBoundaryChangeQ();
     void clearBoundaryChangeQs();
     void implementBoundaryChanges(vector<BoundaryChange>&);
+    int getStartIndex();
+    int getEndIndex();
+    vector<BoundaryChange> getSpatialElement(int);
+    void getSink(int, int*);
+    void addSpatialElement(int, vector<BoundaryChange>, int, int*);
 };
