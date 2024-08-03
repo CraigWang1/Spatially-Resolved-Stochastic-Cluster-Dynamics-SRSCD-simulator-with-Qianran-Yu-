@@ -96,6 +96,25 @@ int main(int argc, char** argv)
         // Even processors send to right, odd processors receive from left
         vector<BoundaryChange>* leftBoundaryChanges = srscd->getLeftBoundaryChangeQ();
         vector<BoundaryChange>* rightBoundaryChanges = srscd->getRightBoundaryChangeQ();
+        int numToSendLeft = leftBoundaryChanges->size();
+        int numToSendRight = rightBoundaryChanges->size();
+        int numToRecvLeft = 0, numToRecvRight = 0;
+
+        if (threadID % 2 == 0)
+        {
+            if (leftNeighbor >= 0)
+                MPI_Sendrecv(&numToSendLeft, 1, MPI_INT, leftNeighbor, tag, &numToRecvLeft, 1, MPI_INT, leftNeighbor, tag, MPI_COMM_WORLD, &status);
+            if (rightNeighbor < numThreads)
+                MPI_Sendrecv(&numToSendRight, 1, MPI_INT, rightNeighbor, tag, &numToRecvRight, 1, MPI_INT, rightNeighbor, tag, MPI_COMM_WORLD, &status);
+        }
+        if (threadID % 2 == 1)
+        {
+            if (rightNeighbor < numThreads)
+                MPI_Sendrecv(&numToSendRight, 1, MPI_INT, rightNeighbor, tag, &numToRecvRight, 1, MPI_INT, rightNeighbor, tag, MPI_COMM_WORLD, &status);
+            if (leftNeighbor >= 0)
+                MPI_Sendrecv(&numToSendLeft, 1, MPI_INT, leftNeighbor, tag, &numToRecvLeft, 1, MPI_INT, leftNeighbor, tag, MPI_COMM_WORLD, &status);
+        }
+
         if (threadID % 2 == 0 && rightNeighbor < numThreads)
         {
             for (size_t i = 0; i < rightBoundaryChanges->size(); i++)
@@ -104,18 +123,14 @@ int main(int argc, char** argv)
                 long int data[3] = {bc.objKey, bc.pointIndex, bc.change};
                 MPI_Send(data, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD);
             }
-            long int data[3] = {};
-            MPI_Send(data, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD); // Send end of transmission message
         }
         else if (threadID % 2 == 1 && leftNeighbor >= 0)
         {
-            long int recv[3];
-            MPI_Recv(recv, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD, &status);
-
-            while (recv[0] != 0) // while it's a valid message
+            for (int i = 0; i < numToRecvLeft; i++)
             {
-                receivedBoundaryChanges.push_back(BoundaryChange(recv[0], recv[1], recv[2]));
+                long int recv[3];
                 MPI_Recv(recv, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD, &status);
+                receivedBoundaryChanges.push_back(BoundaryChange(recv[0], recv[1], recv[2]));
             }
         }
 
@@ -128,18 +143,14 @@ int main(int argc, char** argv)
                 long int data[3] = {bc.objKey, bc.pointIndex, bc.change};
                 MPI_Send(data, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD);
             }
-            long int data[3] = {};
-            MPI_Send(data, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD); // Send end of transmission message
         }
         else if (threadID % 2 == 1 && rightNeighbor < numThreads)
         {
-            long int recv[3];
-            MPI_Recv(recv, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD, &status);
-
-            while (recv[0] != 0) // while it's a valid message
+            for (int i = 0; i < numToRecvRight; i++)
             {
-                receivedBoundaryChanges.push_back(BoundaryChange(recv[0], recv[1], recv[2]));
+                long int recv[3];
                 MPI_Recv(recv, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD, &status);
+                receivedBoundaryChanges.push_back(BoundaryChange(recv[0], recv[1], recv[2]));
             }
         }
 
@@ -152,18 +163,14 @@ int main(int argc, char** argv)
                 long int data[3] = {bc.objKey, bc.pointIndex, bc.change};
                 MPI_Send(data, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD);
             }
-            long int data[3] = {};
-            MPI_Send(data, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD); // Send end of transmission message
         }
         else if (threadID % 2 == 0 && leftNeighbor >= 0)
         {
-            long int recv[3];
-            MPI_Recv(recv, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD, &status);
-
-            while (recv[0] != 0) // while it's a valid message
+            for (int i = 0; i < numToRecvLeft; i++)
             {
-                receivedBoundaryChanges.push_back(BoundaryChange(recv[0], recv[1], recv[2]));
+                long int recv[3];
                 MPI_Recv(recv, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD, &status);
+                receivedBoundaryChanges.push_back(BoundaryChange(recv[0], recv[1], recv[2]));
             }
         }
 
@@ -176,18 +183,14 @@ int main(int argc, char** argv)
                 long int data[3] = {bc.objKey, bc.pointIndex, bc.change};
                 MPI_Send(data, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD);
             }
-            long int data[3] = {};
-            MPI_Send(data, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD); // Send end of transmission message
         }
         else if (threadID % 2 == 0 && rightNeighbor < numThreads)
         {
-            long int recv[3];
-            MPI_Recv(recv, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD, &status);
-
-            while (recv[0] != 0) // while it's a valid message
+            for (int i = 0; i < numToRecvRight; i++)
             {
-                receivedBoundaryChanges.push_back(BoundaryChange(recv[0], recv[1], recv[2]));
+                long int recv[3];
                 MPI_Recv(recv, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD, &status);
+                receivedBoundaryChanges.push_back(BoundaryChange(recv[0], recv[1], recv[2]));
             }
         }
 
