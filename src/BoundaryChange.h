@@ -16,6 +16,7 @@ struct BoundaryChange
     int pointIndex;
     int change;
     
+    BoundaryChange();                // Default constructor (no parameters needed)
     BoundaryChange(int64, int, int); // Constructor for object
 };
 

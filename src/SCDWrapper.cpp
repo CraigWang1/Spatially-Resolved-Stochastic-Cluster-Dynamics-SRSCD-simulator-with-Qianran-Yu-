@@ -1174,7 +1174,7 @@ void SCDWrapper::processCombEvent(
         number = productAttr[2];
         addToObjectMap(productKey, n, number);
 
-        productKey = (productAttr[0]+hostObject->getAttri(0)) * SIAKey;
+        productKey = productAttr[0] * SIAKey;
         number = 1;
         addToObjectMap(productKey, n, number);
     }else if(hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && theOtherObject->getAttri(0)>0 && theOtherObject->getAttri(2)==0 && abs(hostObject->getAttri(0)) == theOtherObject->getAttri(0)){
@@ -1946,8 +1946,6 @@ void SCDWrapper::addSpatialElement(int newGhostIndex, vector<BoundaryChange> new
     /* Put in new objects into our new ghost index */
     for (BoundaryChange& bc: newGhostObjects)
     {
-        if (bc.pointIndex != newGhostIndex)
-            cout << "BRUH" << endl;
         addToObjectMap(bc.objKey, bc.pointIndex, bc.change);
     }
 
