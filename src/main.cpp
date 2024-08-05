@@ -13,7 +13,11 @@ int main(int argc, char** argv)
     int threadID, numThreads;
     int rootThreadID = 0;
     int tag = 1;
+    int lengthTag = 2;
+    int dataTag = 3;
     MPI_Status status;
+    MPI_Request requests[4];
+    int intPerMessage = 3;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &numThreads);
@@ -79,7 +83,7 @@ int main(int argc, char** argv)
 
         // Each MPI process sends its rate to reduction, every thread collects result
         MPI_Allreduce(&localDomainRate, &maxDomainRate, 1, MPI_LONG_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-        
+
         srscd->fillNoneReaction(maxDomainRate);
         hostObject = srscd->selectDomainReaction(theOtherKey, reaction, pointIndex);/* choose an event */
         srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
@@ -100,97 +104,70 @@ int main(int argc, char** argv)
         int numToSendRight = rightBoundaryChanges->size();
         int numToRecvLeft = 0, numToRecvRight = 0;
 
-        if (threadID % 2 == 0)
+        if (leftNeighbor >= 0)
         {
-            if (leftNeighbor >= 0)
-                MPI_Sendrecv(&numToSendLeft, 1, MPI_INT, leftNeighbor, tag, &numToRecvLeft, 1, MPI_INT, leftNeighbor, tag, MPI_COMM_WORLD, &status);
-            if (rightNeighbor < numThreads)
-                MPI_Sendrecv(&numToSendRight, 1, MPI_INT, rightNeighbor, tag, &numToRecvRight, 1, MPI_INT, rightNeighbor, tag, MPI_COMM_WORLD, &status);
-        }
-        if (threadID % 2 == 1)
-        {
-            if (rightNeighbor < numThreads)
-                MPI_Sendrecv(&numToSendRight, 1, MPI_INT, rightNeighbor, tag, &numToRecvRight, 1, MPI_INT, rightNeighbor, tag, MPI_COMM_WORLD, &status);
-            if (leftNeighbor >= 0)
-                MPI_Sendrecv(&numToSendLeft, 1, MPI_INT, leftNeighbor, tag, &numToRecvLeft, 1, MPI_INT, leftNeighbor, tag, MPI_COMM_WORLD, &status);
-        }
-
-        if (threadID % 2 == 0 && rightNeighbor < numThreads)
-        {
-            for (size_t i = 0; i < rightBoundaryChanges->size(); i++)
+            MPI_Isend(&numToSendLeft, 1, MPI_INT, leftNeighbor, lengthTag, MPI_COMM_WORLD, &requests[0]);
+            if (numToSendLeft > 0)
             {
-                BoundaryChange& bc = rightBoundaryChanges->at(i);
-                long int data[3] = {bc.objKey, bc.pointIndex, bc.change};
-                MPI_Send(data, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD);
+                long int data[numToSendLeft*intPerMessage];
+                for (size_t i = 0; i < leftBoundaryChanges->size(); i++)
+                {
+                    BoundaryChange& bc = leftBoundaryChanges->at(i);
+                    data[intPerMessage*i] = bc.objKey;
+                    data[intPerMessage*i+1] = bc.pointIndex;
+                    data[intPerMessage*i+2] = bc.change; 
+                }
+                MPI_Isend(data, numToSendLeft*intPerMessage, MPI_LONG, leftNeighbor, dataTag, MPI_COMM_WORLD, &requests[1]);
             }
         }
-        else if (threadID % 2 == 1 && leftNeighbor >= 0)
+        if (rightNeighbor < numThreads)
         {
-            for (int i = 0; i < numToRecvLeft; i++)
+            MPI_Isend(&numToSendRight, 1, MPI_INT, rightNeighbor, lengthTag, MPI_COMM_WORLD, &requests[2]);
+            if (numToSendRight > 0)
             {
-                long int recv[3];
-                MPI_Recv(recv, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD, &status);
-                receivedBoundaryChanges.push_back(BoundaryChange(recv[0], recv[1], recv[2]));
+                long int data[numToSendRight*intPerMessage];
+                for (size_t i = 0; i < rightBoundaryChanges->size(); i++)
+                {
+                    BoundaryChange& bc = rightBoundaryChanges->at(i);
+                    data[intPerMessage*i] = bc.objKey;
+                    data[intPerMessage*i+1] = bc.pointIndex;
+                    data[intPerMessage*i+2] = bc.change; 
+                }
+                MPI_Isend(data, numToSendRight*intPerMessage, MPI_LONG, rightNeighbor, dataTag, MPI_COMM_WORLD, &requests[3]);
             }
         }
-
-        // Even processors send to left, odd processors receive from right 
-        if (threadID % 2 == 0 && leftNeighbor >= 0)
+        if (leftNeighbor >= 0)
         {
-            for (size_t i = 0; i < leftBoundaryChanges->size(); i++)
+            MPI_Recv(&numToRecvLeft, 1, MPI_INT, leftNeighbor, lengthTag, MPI_COMM_WORLD, &status);
+            if (numToRecvLeft > 0)
             {
-                BoundaryChange& bc = leftBoundaryChanges->at(i);
-                long int data[3] = {bc.objKey, bc.pointIndex, bc.change};
-                MPI_Send(data, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD);
+                long int data[intPerMessage*numToRecvLeft];
+                MPI_Recv(data, intPerMessage*numToRecvLeft, MPI_LONG, leftNeighbor, dataTag, MPI_COMM_WORLD, &status);
+                for (int i = 0; i < numToRecvLeft; i++)
+                {
+                    BoundaryChange bc;
+                    bc.objKey = data[intPerMessage*i];
+                    bc.pointIndex = data[intPerMessage*i+1];
+                    bc.change = data[intPerMessage*i+2];
+                    receivedBoundaryChanges.push_back(bc);
+                }
             }
         }
-        else if (threadID % 2 == 1 && rightNeighbor < numThreads)
+        if (rightNeighbor < numThreads)
         {
-            for (int i = 0; i < numToRecvRight; i++)
+            MPI_Recv(&numToRecvRight, 1, MPI_INT, rightNeighbor, lengthTag, MPI_COMM_WORLD, &status);
+            if (numToRecvRight > 0)
             {
-                long int recv[3];
-                MPI_Recv(recv, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD, &status);
-                receivedBoundaryChanges.push_back(BoundaryChange(recv[0], recv[1], recv[2]));
-            }
-        }
-
-        // Odd processors send to right, even processors receive from left 
-        if (threadID % 2 == 1 && rightNeighbor < numThreads)
-        {
-            for (size_t i = 0; i < rightBoundaryChanges->size(); i++)
-            {
-                BoundaryChange& bc = rightBoundaryChanges->at(i);
-                long int data[3] = {bc.objKey, bc.pointIndex, bc.change};
-                MPI_Send(data, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD);
-            }
-        }
-        else if (threadID % 2 == 0 && leftNeighbor >= 0)
-        {
-            for (int i = 0; i < numToRecvLeft; i++)
-            {
-                long int recv[3];
-                MPI_Recv(recv, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD, &status);
-                receivedBoundaryChanges.push_back(BoundaryChange(recv[0], recv[1], recv[2]));
-            }
-        }
-
-        // Odd processors send to left, even processors receive from right 
-        if (threadID % 2 == 1 && leftNeighbor >= 0)
-        {
-            for (size_t i = 0; i < leftBoundaryChanges->size(); i++)
-            {
-                BoundaryChange& bc = leftBoundaryChanges->at(i);
-                long int data[3] = {bc.objKey, bc.pointIndex, bc.change};
-                MPI_Send(data, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD);
-            }
-        }
-        else if (threadID % 2 == 0 && rightNeighbor < numThreads)
-        {
-            for (int i = 0; i < numToRecvRight; i++)
-            {
-                long int recv[3];
-                MPI_Recv(recv, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD, &status);
-                receivedBoundaryChanges.push_back(BoundaryChange(recv[0], recv[1], recv[2]));
+                long int data[intPerMessage*numToRecvRight];
+                MPI_Recv(data, intPerMessage*numToRecvRight, MPI_LONG, rightNeighbor, dataTag, MPI_COMM_WORLD, &status);
+                for (int i = 0; i < numToRecvRight; i++)
+                {
+                    BoundaryChange bc;
+                    bc.objKey = data[intPerMessage*i];
+                    bc.pointIndex = data[intPerMessage*i+1];
+                    bc.change = data[intPerMessage*i+2];
+                    receivedBoundaryChanges.push_back(bc);
+                }
             }
         }
 
