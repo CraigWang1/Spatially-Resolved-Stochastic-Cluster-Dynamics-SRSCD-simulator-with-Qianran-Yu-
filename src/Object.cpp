@@ -536,158 +536,33 @@ void Object::computeBindTerm()
             bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
         }
         else if (attributes[0]>0){ // H-SIA clusters.
-            energy_d[0] = 0.67 + emi;
-            if (attributes[0]==1 && attributes[2]==1){ // SIA-H
-                energy_b = 0.67;
-                energy_d[2] = energy_b + emh;
-                bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                
-            } else if (attributes[0]==1 && attributes[2]==2){ // SIA-H2
-                energy_b = 0.40;
-                energy_d[2] = energy_b + emh;
-                bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                
-            } else if (attributes[0]==1 && attributes[2]==3){ // SIA-H3
-                energy_b = 0.22;
-                energy_d[2] = energy_b + emh;
-                bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                
-            } else if (attributes[0]==1 && attributes[2]==4){ // SIA-H4
-                energy_b = 0.05;
-                energy_d[2] = energy_b + emh;
-                bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                
-                
-            } else if (attributes[0]==1 && attributes[2]==5){ // SIA-H5
-                energy_b = -0.1;
-                energy_d[2] = energy_b + emh;
-                bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                
-            } else if (attributes[0]==2 && attributes[2]==1){ // SIA2-H
-                energy_d[0] = 2.12;
-                energy_b = 0.57;
-                energy_d[2] = energy_b + emh;
-                bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                
-                
-            } else if (attributes[0]==2 && attributes[2]==2){ // SIA2-H2
-                energy_d[0] = 2.12;
-                energy_b = 0.45;
-                energy_d[2] = energy_b + emh;
-                bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                
-            } else if (attributes[0]==2 && attributes[2]==3){ // SIA2-H3
-                energy_d[0] = 2.12;
-                energy_b = 0.22;
-                energy_d[2] = energy_b + emh;
-                bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                
-            } else if (attributes[0]==2 && attributes[2]==4){ // SIA2-H4
-                energy_d[0] = 2.12;
-                energy_b = 0.1;
-                energy_d[2] = energy_b + emh;
-                bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                
-            } else{
-                int H = attributes[2];
-                energy_d[0] = 2.12;
-                energy_d[2] = -0.12 * H + 0.59 + emh; /* extrapolate */
-                bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-            }
+            double ratio = fabs( ((double) attributes[2])/((double) attributes[0]) );
 
-        }else if (attributes[0]== 0) { // nH clusters, this is binding energy of nH cluster dissociating 1 H from Qin(2015)
+            /*this part is for binding energy of mSIA-nH that try to dissociate a SIA from Daniel Mason(2023)*/
+            energy_b = 7.34 - 1.50*1.0/(1+exp(ratio/0.812));
+            energy_d[0] = energy_b + emi;
+
+            /*this part is for binding energy of mSIA-nH that try to dissociate a H from Daniel Mason (2015)*/
+            energy_b = -0.147 * pow(ratio, 0.652) + 0.547;
+            energy_d[2] = energy_b + emh;
+
+            bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
+            bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
+        }
+        else if (attributes[0]== 0) { // nH clusters, this is binding energy of nH cluster dissociating 1 H from Qin(2015)
             if (attributes[2]==1) { // H
                 energy_b = 0;
             }
             else {
                 energy_b = 0.38 - 0.45*exp(-attributes[2]/12.04); // Hou 2019
             }
-            // } else if (attributes[2]==2) { // 2H
-            //     energy_b = 0.02;
-            // } else if (attributes[2]==3) { // 3H
-            //     energy_b = 0.08;
-            // } else if (attributes[2]==4) { // 4H
-            //     energy_b = 0.20;
-            // } else if (attributes[2]==5) { // 5H
-            //     energy_b = 0.27;
-            // }
+
             energy_d[2] = energy_b + emh;
             if (attributes[2] >= 100000)
                 energy_d[2] = 0.0;
 
             bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
             bind[0] = 0; //because there's no V/SIA in cluster
-
-            /*
-            if (attributes[2]==1) { // H   data from Xiaochun Li(2015)
-                bind[2] = 0;
-                
-            } else if (attributes[2]==2) { // 2H
-                bindSH = attfreq * exp(-(0.01 + emh)/KB/TEMPERATURE);
-            		// on average, binding energy at surface is 0.01 eV
-                energy_b = -0.12;
-                energy_d[2] = energy_b + emh;
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                
-            } else if (attributes[2]==3) { // 3H
-                energy_b = -0.1;
-                energy_d[2] = energy_b + emh;
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                
-            } else if (attributes[2]==4) { // 4H
-                energy_b = 0.20;
-                energy_d[2] = energy_b + emh;
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                
-            } else if (attributes[2]==5) { // 5H
-                energy_b = -0.20;
-                energy_d[2] = energy_b + emh;
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                
-            } else if(attributes[2]==6){
-                energy_b = -0.30;
-                energy_d[2] = energy_b + emh;
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                
-            }else if(attributes[2]==7){
-                energy_b = -0.45;
-                energy_d[2] = energy_b + emh;
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                
-            }else if(attributes[2]==8){
-                energy_b = -0.15;
-                energy_d[2] = energy_b + emh;
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                
-            }else if(attributes[2]==9){
-                energy_b = 0.2;
-                energy_d[2] = energy_b + emh;
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                
-            }else if(attributes[2]==10){
-                energy_b = -1.0; // at this point SAV happen 
-                energy_d[2] = energy_b + emh;
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                
-            }else{
-                int a = attributes[2];
-                energy_b = 0.119 + 0.0407/(sin(7.94*a)) + 0.004*a*a*sin(7.93*a) - 0.104*a*sin(7.99*a)*sin(7.94*a);
-                energy_d[2] = energy_b + emh;
-                bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
-                //extrapolation
-                
-            }
-            */
         }
     }
 }
