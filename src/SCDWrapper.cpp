@@ -1136,25 +1136,6 @@ void SCDWrapper::processCombEvent(
                                   const int64 theOtherKey,
                                   fstream& fs)
 {
-    if (hostObject->getAttri(0) == 0 && hostObject->getAttri(2) > 0 && theOtherKey < 1000000 && theOtherKey > 0)
-    {   /* If we have a nH + nH combination */
-        double criticalConcentration = DENSITY * (1.0 / (exp(0.38/KB/TEMPERATURE) + 1.0) );  // Data from Hou 2018
-        double HConcentration = 0;
-        unordered_map<int64, Object*>::iterator iter;
-        double volume = VOLUME;
-        if (n == 0)
-            volume = SURFACE_VOLUME;
-        for (iter = HObjects.begin(); iter != HObjects.end(); ++iter)
-        {
-            Object* tempObject = iter->second;
-            HConcentration += tempObject->getNumber(n) * tempObject->getAttri(2) / volume;
-        }
-        if (HConcentration < criticalConcentration)
-        {
-            return; // Don't cluster when the H concentration is less than the critical concentration (Hou 2018)
-        }
-    }
-
     ++reactions[4][n];
     /* 1. find the other reactant */
     Object* theOtherObject = allObjects[theOtherKey];
@@ -1167,7 +1148,7 @@ void SCDWrapper::processCombEvent(
         productAttr[i] = hostObject->getAttri(i) + theOtherObject->getAttri(i);
     } /* now I have the attribute of the product object */
     productKey = attrToKey(productAttr);
-    if(hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && productAttr[0] > 0 && productAttr[2] == 0 && (productAttr[0]+hostObject->getAttri(0))>0){
+    if(hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && productAttr[0] > 0 && productAttr[2] > 0){
         /* Vn-Hm + xxx -> SIAp-Hq (n, m are not zero) */
         /* change above reaction to Vn-Hm + xxx -> SIAp + q*H */
         productKey = HKey;

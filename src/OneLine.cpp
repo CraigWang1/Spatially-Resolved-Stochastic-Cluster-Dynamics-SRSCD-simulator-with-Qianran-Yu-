@@ -345,10 +345,7 @@ long double OneLine::computeDissReaction(
     }
     
     if (hostObject->getAttri(index) != 0 && elementNum > 1) {
-        int attr[LEVELS] = { 0 };
-        attr[index] = hostObject->signof(hostObject->getAttri(index));
-        Object tempObject(attr, count);
-        return 4.0 * PI * hostObject->getR1e() / avol * tempObject.getDiff() * hostObject->getBind(index) * hostObject->getNumber(count);
+        return jumped / (jumped + hostObject->getR1e()) * 4.0 * PI * pow(hostObject->getR1e(), 2) / pow(ALATT, 2) * NU0 * hostObject->getBind(index) * hostObject->getNumber(count);
     }
     return 0.0;
 }
