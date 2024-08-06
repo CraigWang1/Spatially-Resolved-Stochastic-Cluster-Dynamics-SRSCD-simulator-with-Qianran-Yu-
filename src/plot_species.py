@@ -19,7 +19,7 @@ KB = 8.617e-05                             # [ev/K] Boltzmann's constant.
 TEMPERATURE = 300
 H_SATURATION_CONCENTRATION = DENSITY * math.exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
 
-combine_species_files(POINTS)
+combine_species_files()
 
 def getConcentration(x, t):
 	""" 

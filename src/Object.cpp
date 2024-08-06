@@ -213,16 +213,14 @@ int Object::setDimensionality()
 void Object::computeR1R1e()
 {
     int ndef = attributes[0];
-    if (ndef <= 0) {
-        r1 = zero(ndef)*pow(3.0*fabs((double)ndef)*avol / 4.0 / PI, 0.333333333333333333) + jumped;
-        if (ndef != 0)
-            r1e = pow(3.0*(fabs((double)ndef) - 1)*avol / 4.0 / PI, 0.333333333333333333) + jumped;
-        else
-            r1e = jumped;
+    if (ndef < 0) {
+        r1 = r1e = pow(3.0*fabs((double)ndef)*avol/4.0/PI, 1.0/3.0);
     }
     else if (ndef > 0) {
-        r1 = zero(ndef)*sqrt((double)ndef*avol / jumped / PI) + jumped;
-        r1e = zero(ndef)*sqrt(((double)ndef - 1)*avol / jumped / PI) + jumped;
+        r1 = r1e = sqrt((double)ndef*avol/jumped/PI);
+    }
+    else if (ndef == 0) {
+        r1 = r1e = jumped;
     }
 }
 
