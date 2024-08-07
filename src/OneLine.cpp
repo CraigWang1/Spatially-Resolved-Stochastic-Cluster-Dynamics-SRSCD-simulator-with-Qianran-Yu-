@@ -575,7 +575,6 @@ void OneLine::computeSAVReaction(
     {
         int numH = hostObject->getAttri(2);
         int numVacancies = abs(hostObject->getAttri(0));
-        // double thresholdH = 4.75 + 4*numVacancies;
         double thresholdH = 4*numVacancies;
         if (numH > thresholdH)
         {
