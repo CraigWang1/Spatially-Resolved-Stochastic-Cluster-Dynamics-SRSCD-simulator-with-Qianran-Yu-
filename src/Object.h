@@ -1,5 +1,7 @@
 // Object.h -- declaration of Object class that help establish an object
-#pragma once
+#ifndef OBJECT_H
+#define OBJECT_H
+
 #include<iostream>
 #include<cmath>
 #include"constants.h"
@@ -60,3 +62,6 @@ public:
     void display() const;
 };
 
+int64 attrToKey(const int* const);  // take array of attributes and return the object key
+
+#endif

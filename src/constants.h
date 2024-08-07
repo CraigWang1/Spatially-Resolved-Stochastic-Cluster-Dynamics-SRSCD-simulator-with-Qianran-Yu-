@@ -5,9 +5,11 @@
 //  Created by fx on 2/16/18.
 //  Copyright © 2018 fx. All rights reserved.
 //
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
+
 #include <cmath>
 
-#pragma once
 /**
  * Definition of constants in the code.
  * All definition are in CAP letters.
@@ -109,3 +111,5 @@ const double NM_TO_CM = 1.0e-7;
 #define RESTART            // Do restart. */
 /* #define RATE_DUMP          // Dump rate spectrum every PSTEPS. */
 /* #define DEBUG              // Check cascade damage. */
+
+#endif

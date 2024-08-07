@@ -86,6 +86,15 @@ int main(int argc, char** argv)
 
         srscd->fillNoneReaction(maxDomainRate);
         hostObject = srscd->selectDomainReaction(theOtherKey, reaction, pointIndex);/* choose an event */
+        
+        string reactions[] = {"diffF", "diffB", "sink", "diss", "comb", "sav", "recombER", "recombLH", "none", "particle", "HE", "H", "dissV", "dissH", "error"};        
+        /*
+        cout << reactions[reaction] << " " << pointIndex << " " << theOtherKey;
+        if (hostObject != nullptr)
+            cout << " " << hostObject->getKey();
+        cout << endl;
+        */
+
         srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
         srscd->clearNoneReaction();
 

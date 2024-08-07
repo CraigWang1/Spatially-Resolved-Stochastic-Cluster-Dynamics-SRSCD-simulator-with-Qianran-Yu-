@@ -5,6 +5,7 @@
 #include<sstream>
 #include<string>
 #include "OneLine.h"
+#include "Bundle.h"
 using namespace std;
 
 /* public function implementations */
@@ -13,9 +14,10 @@ OneLine::OneLine(
                  const Object* const hostObject,
                  const int count,
                  unordered_map<int64, Object*>& mobileObjects,
-                 unordered_map<int64, Object*>& allObjects) :totalRate(0.0)
+                 unordered_map<int64, Object*>& allObjects,
+                 unordered_map<Object*, Bundle*>& linePool) :totalRate(0.0)
 {
-    setOneLine(hostObject, count, mobileObjects, allObjects);
+    setOneLine(hostObject, count, mobileObjects, allObjects, linePool);
 }
 
 OneLine::OneLine() : diffRToF(0.0), diffRToB(0.0), sinkR(0.0), SAVR(0.0), recombRER(0.0), recombRLH(0.0), totalRate(0.0)
@@ -100,9 +102,11 @@ Reaction OneLine::selectReaction(
 void OneLine::addReaction(
                           const Object* const hostObject,
                           const Object* const newObject,
+                          unordered_map<int64, Object*>& allObjects,
+                          unordered_map<Object*, Bundle*>& linePool,
                           const int count)
 {
-    double rate = computeCombReaction(hostObject, newObject, count);
+    double rate = computeCombReaction(hostObject, newObject, allObjects, linePool, count);
     std::pair<int64, double> oneReaction(newObject->getKey(), rate);
     secondR.insert(oneReaction);
 }
@@ -115,9 +119,11 @@ void OneLine::removeReaction(const int64 deleteKey)
 void OneLine::updateReaction(
                              Object const * const hostObject,
                              Object const * const mobileObject,
+                             unordered_map<int64, Object*>& allObjects,
+                             unordered_map<Object*, Bundle*>& linePool,
                              const int n)
 {
-    double rate = computeCombReaction(hostObject, mobileObject, n);
+    double rate = computeCombReaction(hostObject, mobileObject, allObjects, linePool, n);
     secondR[mobileObject->getKey()] = rate;
 }
 
@@ -125,10 +131,11 @@ void OneLine::updateLine(
                          const Object* const hostObject,
                          const int count,
                          unordered_map<int64, Object*>& mobileObjects,
-                         unordered_map<int64, Object*>& allObjects)
+                         unordered_map<int64, Object*>& allObjects,
+                         unordered_map<Object*, Bundle*>& linePool)
 {
     secondR.clear();
-    setOneLine(hostObject, count, mobileObjects, allObjects);
+    setOneLine(hostObject, count, mobileObjects, allObjects, linePool);
 }
 
 void OneLine::updateDiff(
@@ -183,16 +190,17 @@ void OneLine::setOneLine(
                          const Object* const hostObject,
                          const int count,
                          unordered_map<int64, Object*>& mobileObjects,
-                         unordered_map<int64, Object*>& allObjects)
+                         unordered_map<int64, Object*>& allObjects,
+                         unordered_map<Object*, Bundle*>& linePool)
 {
     computeDiffReaction(hostObject, count, allObjects);
     computeSinkReaction(hostObject, count);
     for (int index = 0; index < LEVELS; index++) {
-        dissociationR[index] = computeDissReaction(hostObject, index, count);
+        dissociationR[index] = computeDissReaction(hostObject, allObjects, linePool, index, count);
     }
     unordered_map<int64, Object*>::iterator iter;
     for (iter = mobileObjects.begin(); iter != mobileObjects.end(); ++iter) {
-        double rate = computeCombReaction(hostObject, iter->second, count);
+        double rate = computeCombReaction(hostObject, iter->second, allObjects, linePool, count);
         std::pair<int64, double> oneReaction(iter->first, rate);
         secondR.insert(oneReaction);
     }
@@ -326,7 +334,7 @@ void OneLine::computeSinkReaction(const Object* const hostObject, const int coun
     sinkR = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSink();
 }
 
-long double OneLine::computeDissReaction(
+long double OneLine::computeBaseDissReaction(
                                   const Object* const hostObject,
                                   const int index,
                                   const int count) const
@@ -350,7 +358,93 @@ long double OneLine::computeDissReaction(
     return 0.0;
 }
 
-long double OneLine::computeCombReaction(
+long double OneLine::computeDissReaction(
+                                  const Object* const hostObject,
+                                  unordered_map<int64, Object*>& allObjects,
+                                  unordered_map<Object*, Bundle*>& linePool,
+                                  const int index,
+                                  const int count) const
+{
+    /* Compute the net diss reaction rate for this object and comb reaction rate for its predecessor conjugate for approximation speedup, this updates the predecessor's comb rate as well 
+       For now it is only enabled for VH clusters, because chopping off a diss pathway for those doesn't seem to matter much */   
+    long double baseDissRate = computeBaseDissReaction(hostObject, index, count);
+    long double netDissRate = baseDissRate;
+    int attrIndexH = 2;
+    int64 HKey = 1;
+    if (index == attrIndexH && 
+        ((hostObject->getAttri(0) <= -1 && hostObject->getAttri(2) >= 7) ||
+         (hostObject->getAttri(0) >= 15 && hostObject->getAttri(2) >= 31)) )
+    {
+        int predAttr[LEVELS]; // predecessor attributes
+        for (int level = 0; level < LEVELS; level++)
+        {
+            predAttr[level] = hostObject->getAttri(level);
+        }
+        predAttr[attrIndexH]--;  // for an H dissociation
+        int64 predKey = attrToKey(predAttr);
+
+        if (allObjects.find(predKey) != allObjects.end() && allObjects[predKey]->getNumber(count) > 0 &&
+            allObjects.find(HKey) != allObjects.end() && allObjects[HKey]->getNumber(count) > 0)
+        {
+            Object* predObj = allObjects[predKey];
+            Object* HObj = allObjects[HKey];
+            OneLine* predLine = linePool[predObj]->lines[count];
+            long double baseCombRate = computeBaseCombReaction(predObj, HObj, count);
+            if (baseCombRate > baseDissRate)
+            {
+                if (predLine != nullptr)
+                    predLine->setCombReaction(HKey, baseCombRate - baseDissRate);
+                netDissRate = 0.0;
+            }
+            else if (baseDissRate > baseCombRate)
+            {
+                if (predLine != nullptr)
+                    predLine->setCombReaction(HKey, 0.0);
+                netDissRate = baseDissRate - baseCombRate;
+            }
+        }
+        else
+        {
+            Object* predObj;
+            Object* HObj;
+            if (allObjects.find(predKey) == allObjects.end() || allObjects[predKey]->getNumber(count) <= 0)
+            {
+                predObj = new Object(predKey, count);
+            }
+            else
+            {
+                predObj = allObjects[predKey];
+            }
+            if (allObjects.find(HKey) == allObjects.end() || allObjects[HKey]->getNumber(count) <= 0)
+            {
+                HObj = new Object(HKey, count);
+            }
+            else
+            {
+                HObj = allObjects[HKey];
+            }
+
+            long double baseCombRate = computeBaseCombReaction(predObj, HObj, count);
+            if (baseCombRate > baseDissRate)
+            {
+                netDissRate = 0.0;
+            }
+
+            if (allObjects.find(predKey) == allObjects.end() || allObjects[predKey]->getNumber(count) <= 0)
+            {
+                delete predObj;
+            }   
+            if (allObjects.find(HKey) == allObjects.end() || allObjects[HKey]->getNumber(count) <= 0)
+            {
+                delete HObj;
+            }
+        }
+    }
+
+    return netDissRate;
+}
+
+long double OneLine::computeBaseCombReaction(
                                     const Object* const hostObject,
                                     const Object* const mobileObject,
                                     const int count) const
@@ -406,6 +500,63 @@ long double OneLine::computeCombReaction(
     r12 = hostObject->getR1() + mobileObject->getR1();
     dimensionTerm = computeDimensionTerm(r12, hostObject, mobileObject, count);
     return 4.0*PI*concentration*r12*dimensionTerm;
+}
+
+long double OneLine::computeCombReaction(
+                                    const Object* const hostObject,
+                                    const Object* const mobileObject,
+                                    unordered_map<int64, Object*>& allObjects,
+                                    unordered_map<Object*, Bundle*>& linePool,
+                                    const int count) const
+{
+    /* Compute the net comb/diss reaction rate for approximation speedup, this updates the product's diss rate as well 
+       For now it is only enabled for VH clusters, because chopping off a diss pathway for those doesn't seem to matter much */
+    long double baseCombRate = computeBaseCombReaction(hostObject, mobileObject, count);
+    long double netCombRate = baseCombRate;
+    int attrIndexH = 2;
+    if (((hostObject->getAttri(0) <= -1 && hostObject->getAttri(2) >= 6) ||
+        (hostObject->getAttri(0) >= 15 && hostObject->getAttri(2) >= 30)) && 
+        mobileObject->getAttri(0) == 0 && mobileObject->getAttri(2) == 1)
+    {
+        int prodAttr[LEVELS];
+        for (int level = 0; level < LEVELS; level++)
+        {
+            prodAttr[level] = hostObject->getAttri(level) + mobileObject->getAttri(level);
+        }
+        int64 prodKey = attrToKey(prodAttr);
+
+        if (allObjects.find(prodKey) != allObjects.end() && allObjects[prodKey]->getNumber(count) > 0)
+        {
+            Object* prodObj = allObjects[prodKey];
+            OneLine* prodLine = linePool[prodObj]->lines[count];
+            long double baseDissRate = computeBaseDissReaction(prodObj, attrIndexH, count);
+            if (baseCombRate > baseDissRate)
+            {
+                if (prodLine != nullptr)
+                    prodLine->setDissReaction(attrIndexH, 0.0);
+                netCombRate = baseCombRate - baseDissRate;
+            }
+            else if (baseDissRate > baseCombRate)
+            {
+                if (prodLine != nullptr)
+                    prodLine->setDissReaction(attrIndexH, baseDissRate - baseCombRate);
+                netCombRate = 0.0;
+            }
+        }
+        else
+        {
+            /* Product doesn't exit */
+            Object* tempProdObj = new Object(prodKey, count);
+            long double baseDissRate = computeBaseDissReaction(tempProdObj, attrIndexH, count);
+            if (baseDissRate > baseCombRate)
+            {
+                netCombRate = 0.0;
+            }
+            delete tempProdObj;
+        }
+    }
+
+    return netCombRate;
 }
 
 void OneLine::computeSAVReaction(

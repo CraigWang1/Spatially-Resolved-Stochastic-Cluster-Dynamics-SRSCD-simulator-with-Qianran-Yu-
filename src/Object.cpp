@@ -177,10 +177,7 @@ void Object::display() const
 /* private method impementations */
 void Object::setKey()
 {
-    for (int i = 0; i < LEVELS; ++i) {
-        oKey += labs(attributes[i])*((int64)pow(10.0, (double)EXP10*(LEVELS - 1 - i)));
-    }
-    oKey *= signof(attributes[0]);
+    oKey = attrToKey(attributes);
 }
 
 void Object::setAttributes(const int64 key)
@@ -542,7 +539,7 @@ void Object::computeBindTerm()
             energy_b = 7.34 - 1.50*1.0/(1+exp(ratio/0.812));
             energy_d[0] = energy_b + emi;
 
-            /*this part is for binding energy of mSIA-nH that try to dissociate a H from Daniel Mason (2015)*/
+            /*this part is for binding energy of mSIA-nH that try to dissociate a H from Daniel Mason(2023)*/
             energy_b = -0.147 * pow(ratio, 0.652) + 0.547;
             energy_d[2] = energy_b + emh;
 
@@ -615,4 +612,15 @@ void Object::setProperties(const int count, const int n)
     computeBindTerm();
     computeR1R1e();
     computeSinks();
+}
+
+int64 attrToKey(const int * const attr)
+{
+    int64 key = 0;
+    int sign = (attr[0] < 0) ? -1 : 1;
+    for (int i = 0; i < LEVELS; ++i) {
+        key += labs(attr[i])*((int64)pow(10.0, (double)EXP10*(LEVELS - 1 - i)));
+    }
+    key *= sign;
+    return key;
 }

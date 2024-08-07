@@ -670,17 +670,6 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
     }
 }
 
-int64 SCDWrapper::attrToKey(const int * const attr)
-{
-    int64 key = 0;
-    int sign = (attr[0] < 0) ? -1 : 1;
-    for (int i = 0; i < LEVELS; ++i) {
-        key += labs(attr[i])*((int64)pow(10.0, (double)EXP10*(LEVELS - 1 - i)));
-    }
-    key *= sign;
-    return key;
-}
-
 int64 SCDWrapper::atomProperty(SCDWrapper::InsertStyle mode, const int n)
 {
     if (mode == SUBSTITUTIONAL) {
@@ -707,7 +696,7 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
         if (newObject->getAttri(0) == 0 && newObject->getAttri(2) > 0) {
             HObjects.insert(newNode);
         } /* Keep track of nH objects */
-        Bundle* newBundle = new Bundle(newObject, mobileObjects, allObjects);
+        Bundle* newBundle = new Bundle(newObject, mobileObjects, allObjects, linePool);
         pair<Object*, Bundle*> bundle(newObject, newBundle);
         linePool.insert(bundle); /* add to line pool */
     }/* if this object is valid, add it to map */
@@ -765,7 +754,7 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
     int number = hostObject->getNumber(count);
     if (tempLine != nullptr) {
         if (number > 0) {
-            tempLine->updateLine(hostObject, count, mobileObjects, allObjects);
+            tempLine->updateLine(hostObject, count, mobileObjects, allObjects, linePool);
         }
         else {
             delete tempLine;
@@ -774,7 +763,7 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
     }
     else {
         if (number > 0) {
-            tempLine = new OneLine(hostObject, count, mobileObjects, allObjects);
+            tempLine = new OneLine(hostObject, count, mobileObjects, allObjects, linePool);
             linePool[hostObject]->lines[count] = tempLine;
         }
     }
@@ -815,7 +804,7 @@ void SCDWrapper::addReactionToOther(Object const * const mobileObject)
         for (int i = 0; i < POINTS; ++i) {
             OneLine* tempLine = tempBundle->lines[i];
             if (tempLine != nullptr) {
-                tempLine->addReaction(hostObject, mobileObject, i);
+                tempLine->addReaction(hostObject, mobileObject, allObjects, linePool, i);
             }
         }
     }
@@ -834,7 +823,7 @@ void SCDWrapper::updateRateToOther(Object const * const mobileObject, const int 
                 tempLine->setCombReaction(mobileObject->getKey(), 0.0);
             }
             else {
-                tempLine->updateReaction(hostObject, mobileObject, count);
+                tempLine->updateReaction(hostObject, mobileObject, allObjects, linePool, count);
             }
         }
     }
@@ -876,140 +865,140 @@ void SCDWrapper::removeRateToOther(const int64 deleteKey)
 
 void SCDWrapper::updateCombDissRatePair(int combinedObjectAttr[], const int count)
 {
-    /*
-     * Find and update the net combination rate of a species that combines and its conjugate product species that dissociates
-     * For now, only do this calculation for H + SIA/V cluster, because that is the 
-     * most common reaction.
-     *
-     * combinedObject - the Object that results after a combination event
-     */
+    // /*
+    //  * Find and update the net combination rate of a species that combines and its conjugate product species that dissociates
+    //  * For now, only do this calculation for H + SIA/V cluster, because that is the 
+    //  * most common reaction.
+    //  *
+    //  * combinedObject - the Object that results after a combination event
+    //  */
 
-    int attrIndex = 2;   /* For now just focus on H monomer */
-    if (combinedObjectAttr[attrIndex] <= 0)
-    {
-        // cout << "updateCombDissRatePair is only meant to be used with the product of cluster + H reaction, this function is being used wrong" << endl;
-        return;
-    }
+    // int attrIndex = 2;   /* For now just focus on H monomer */
+    // if (combinedObjectAttr[attrIndex] <= 0)
+    // {
+    //     // cout << "updateCombDissRatePair is only meant to be used with the product of cluster + H reaction, this function is being used wrong" << endl;
+    //     return;
+    // }
 
-    int64 HKey = 1;
-    int prevObjectAttr[LEVELS] = {0}; /* The Object that combines with H to form the combinedObject */
-    for (int i = 0; i < LEVELS; i++)
-        prevObjectAttr[i] = combinedObjectAttr[i];
-    prevObjectAttr[attrIndex] -= 1;  /* The object from before it combined with H */
+    // int64 HKey = 1;
+    // int prevObjectAttr[LEVELS] = {0}; /* The Object that combines with H to form the combinedObject */
+    // for (int i = 0; i < LEVELS; i++)
+    //     prevObjectAttr[i] = combinedObjectAttr[i];
+    // prevObjectAttr[attrIndex] -= 1;  /* The object from before it combined with H */
 
-    int64 prevObjectKey = attrToKey(prevObjectAttr);
-    int64 combinedObjectKey = attrToKey(combinedObjectAttr);
+    // int64 prevObjectKey = attrToKey(prevObjectAttr);
+    // int64 combinedObjectKey = attrToKey(combinedObjectAttr);
 
-    bool foundHObj = allObjects.find(HKey) != allObjects.end() && allObjects[HKey]->getNumber(count) > 0;
-    bool foundPrevObj = allObjects.find(prevObjectKey) != allObjects.end() && allObjects[prevObjectKey]->getNumber(count) > 0;
-    bool foundCombSpecies = foundHObj && foundPrevObj;
-    bool foundCombResult = allObjects.find(combinedObjectKey) != allObjects.end() && allObjects[combinedObjectKey]->getNumber(count) > 0;
-    Object *hostObject, *mobileObject, *combinedObject;
-    OneLine *hostLine, *combinedLine;
+    // bool foundHObj = allObjects.find(HKey) != allObjects.end() && allObjects[HKey]->getNumber(count) > 0;
+    // bool foundPrevObj = allObjects.find(prevObjectKey) != allObjects.end() && allObjects[prevObjectKey]->getNumber(count) > 0;
+    // bool foundCombSpecies = foundHObj && foundPrevObj;
+    // bool foundCombResult = allObjects.find(combinedObjectKey) != allObjects.end() && allObjects[combinedObjectKey]->getNumber(count) > 0;
+    // Object *hostObject, *mobileObject, *combinedObject;
+    // OneLine *hostLine, *combinedLine;
 
-    if (!foundHObj && !foundPrevObj && !foundCombResult)
-        return;  /* All species don't exist, nothing to compare */
+    // if (!foundHObj && !foundPrevObj && !foundCombResult)
+    //     return;  /* All species don't exist, nothing to compare */
 
-    if (foundHObj)
-        mobileObject = allObjects[HKey];
-    else
-        mobileObject = new Object(HKey, count);
+    // if (foundHObj)
+    //     mobileObject = allObjects[HKey];
+    // else
+    //     mobileObject = new Object(HKey, count);
 
-    if (foundPrevObj)
-    {
-        hostObject = allObjects[prevObjectKey];
-        hostLine = linePool[hostObject]->lines[count];
-    }
-    else
-    {
-        hostObject = new Object(prevObjectKey, count);
-        hostLine = new OneLine();
-    }
+    // if (foundPrevObj)
+    // {
+    //     hostObject = allObjects[prevObjectKey];
+    //     hostLine = linePool[hostObject]->lines[count];
+    // }
+    // else
+    // {
+    //     hostObject = new Object(prevObjectKey, count);
+    //     hostLine = new OneLine();
+    // }
 
-    if (foundCombResult)
-    {
-        combinedObject = allObjects[combinedObjectKey];
-        combinedLine = linePool[combinedObject]->lines[count];
-    }
-    else
-    {
-        combinedObject = new Object(combinedObjectKey, count);
-        combinedLine = new OneLine();
-    }
+    // if (foundCombResult)
+    // {
+    //     combinedObject = allObjects[combinedObjectKey];
+    //     combinedLine = linePool[combinedObject]->lines[count];
+    // }
+    // else
+    // {
+    //     combinedObject = new Object(combinedObjectKey, count);
+    //     combinedLine = new OneLine();
+    // }
 
-    if (foundCombSpecies && foundCombResult)
-    {
-        long double baseCombRate = 0.0;
-        long double baseDissRate = 0.0;
-        if (hostLine != nullptr)
-            baseCombRate = hostLine->computeCombReaction(hostObject, mobileObject, count);
-        if (combinedLine != nullptr)
-            baseDissRate = combinedLine->computeDissReaction(combinedObject, attrIndex, count);
-        if (baseCombRate > baseDissRate)
-        {
-            if (hostLine != nullptr && foundCombSpecies)
-                hostLine->setCombReaction(mobileObject->getKey(), baseCombRate - baseDissRate);
-            if (combinedLine != nullptr && foundCombResult)
-                combinedLine->setDissReaction(attrIndex, 0.0);
-        }
-        else  /* diss >= comb */
-        {
-            if (hostLine != nullptr && foundCombSpecies)
-                hostLine->setCombReaction(mobileObject->getKey(), 0.0);
-            if (combinedLine != nullptr && foundCombResult)
-                combinedLine->setDissReaction(attrIndex, baseDissRate - baseCombRate);
-        }
-    }
+    // if (foundCombSpecies && foundCombResult)
+    // {
+    //     long double baseCombRate = 0.0;
+    //     long double baseDissRate = 0.0;
+    //     if (hostLine != nullptr)
+    //         baseCombRate = hostLine->computeCombReaction(hostObject, mobileObject, count);
+    //     if (combinedLine != nullptr)
+    //         baseDissRate = combinedLine->computeDissReaction(combinedObject, attrIndex, count);
+    //     if (baseCombRate > baseDissRate)
+    //     {
+    //         if (hostLine != nullptr && foundCombSpecies)
+    //             hostLine->setCombReaction(mobileObject->getKey(), baseCombRate - baseDissRate);
+    //         if (combinedLine != nullptr && foundCombResult)
+    //             combinedLine->setDissReaction(attrIndex, 0.0);
+    //     }
+    //     else  /* diss >= comb */
+    //     {
+    //         if (hostLine != nullptr && foundCombSpecies)
+    //             hostLine->setCombReaction(mobileObject->getKey(), 0.0);
+    //         if (combinedLine != nullptr && foundCombResult)
+    //             combinedLine->setDissReaction(attrIndex, baseDissRate - baseCombRate);
+    //     }
+    // }
 
-    if (!foundHObj)
-        delete mobileObject;
-    if (!foundPrevObj)
-    {
-        delete hostObject;
-        delete hostLine;
-    }
-    if (!foundCombResult)
-    {
-        delete combinedObject;
-        delete combinedLine;
-    }
+    // if (!foundHObj)
+    //     delete mobileObject;
+    // if (!foundPrevObj)
+    // {
+    //     delete hostObject;
+    //     delete hostLine;
+    // }
+    // if (!foundCombResult)
+    // {
+    //     delete combinedObject;
+    //     delete combinedLine;
+    // }
 }
 
 void SCDWrapper::updateNetCombDissRate(const Object* const hostObject, const int count)
 {
-    /* 
-     * Find the net combination rate (comb - diss, or vice versa if diss >= comb).
-     * For now, only do this calculation for H + SIA/V cluster, because that is the 
-     * most common reaction.
-     */
+    // /* 
+    //  * Find the net combination rate (comb - diss, or vice versa if diss >= comb).
+    //  * For now, only do this calculation for H + SIA/V cluster, because that is the 
+    //  * most common reaction.
+    //  */
 
-    /* Update this comb rate and the product's diss rate */
-    int64 HKey = 1;
-    int attrIndex = 2; /* for now, only focus on H + cluster comb and diss reactions */
-    int originalAttr[LEVELS] = {0};
-    int productAttr[LEVELS] = {0};
+    // /* Update this comb rate and the product's diss rate */
+    // int64 HKey = 1;
+    // int attrIndex = 2; /* for now, only focus on H + cluster comb and diss reactions */
+    // int originalAttr[LEVELS] = {0};
+    // int productAttr[LEVELS] = {0};
 
-    if (hostObject->getKey() != HKey)
-    {
-        for (int i = 0; i < LEVELS; i++)
-        {
-            originalAttr[i] = hostObject->getAttri(i);
-            productAttr[i] = hostObject->getAttri(i);
-        }
-        productAttr[attrIndex]++;   /* Product of this cluster + H comb reaction */
-        updateCombDissRatePair(productAttr, count);  /* Update this comb rate, and next object's diss rate */
-        updateCombDissRatePair(originalAttr, count); /* Update this diss rate, and prev object's comb rate */ 
-    }
-    else /* hostObject is 1H object */
-    {
-        for (unordered_map<int64, Object*>::iterator iter = allObjects.begin(); iter != allObjects.end(); ++iter)
-        {
-            Object* otherObject = iter->second;
-            for (int i = 0; i < LEVELS; i++)
-                productAttr[i] = hostObject->getAttri(i) + otherObject->getAttri(i);
-            updateCombDissRatePair(productAttr, count); /* Update this comb rate, and next object's diss rate. No need to update this object's diss rate because a change in the 1H species count doesn't affect this object's diss rate directly. */
-        }
-    }
+    // if (hostObject->getKey() != HKey)
+    // {
+    //     for (int i = 0; i < LEVELS; i++)
+    //     {
+    //         originalAttr[i] = hostObject->getAttri(i);
+    //         productAttr[i] = hostObject->getAttri(i);
+    //     }
+    //     productAttr[attrIndex]++;   /* Product of this cluster + H comb reaction */
+    //     updateCombDissRatePair(productAttr, count);  /* Update this comb rate, and next object's diss rate */
+    //     updateCombDissRatePair(originalAttr, count); /* Update this diss rate, and prev object's comb rate */ 
+    // }
+    // else /* hostObject is 1H object */
+    // {
+    //     for (unordered_map<int64, Object*>::iterator iter = allObjects.begin(); iter != allObjects.end(); ++iter)
+    //     {
+    //         Object* otherObject = iter->second;
+    //         for (int i = 0; i < LEVELS; i++)
+    //             productAttr[i] = hostObject->getAttri(i) + otherObject->getAttri(i);
+    //         updateCombDissRatePair(productAttr, count); /* Update this comb rate, and next object's diss rate. No need to update this object's diss rate because a change in the 1H species count doesn't affect this object's diss rate directly. */
+    //     }
+    // }
 }
 
 void SCDWrapper::updateSinks(const int point, const int* number){

@@ -1,5 +1,7 @@
 // SCDWrapper -- SCDWrapper that manipulate the whole bulk
-#pragma once
+#ifndef SCDWRAPPER_H
+#define SCDWRAPPER_H
+
 #include"Damage.h"
 #include"Bundle.h"
 #include"cpdf.h"
@@ -55,8 +57,6 @@ private:
     void setSinks();
     /* function to compute dissociation reaction rate */
     void computeSinkDissRate(const int, const int);
-    /* a way to get key from attribute */
-    int64 attrToKey(const int* const); /* same with Object::setKey() */
     /* decide insertion mode function */
     int64 atomProperty(InsertStyle, const int);
     /* moniter map functions */
@@ -161,3 +161,5 @@ public:
     void getSink(int, int*);
     void addSpatialElement(int, vector<BoundaryChange>, int, int*);
 };
+
+#endif

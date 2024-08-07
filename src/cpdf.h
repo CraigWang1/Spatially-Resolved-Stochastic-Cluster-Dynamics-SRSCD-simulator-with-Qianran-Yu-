@@ -1,5 +1,7 @@
 // cpdf.h -- cpdf class to read cpdf files
-#pragma once
+#ifndef CPDF_H
+#define CPDF_H
+
 #include<iostream>
 #include<vector>
 #include<fstream>
@@ -20,3 +22,4 @@ public:
     double getMaxPossibility(const int);
 };
 
+#endif

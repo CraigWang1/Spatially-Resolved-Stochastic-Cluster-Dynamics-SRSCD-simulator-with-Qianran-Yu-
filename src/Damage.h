@@ -1,5 +1,7 @@
 //Damage.h -- Damage class to hold damage
-#pragma once
+#ifndef DAMAGE_H
+#define DAMAGE_H
+
 #include<iostream>
 #include<fstream>
 #include<sstream>
@@ -32,3 +34,4 @@ public:
     double getTotalIonRate();
 };
 
+#endif
