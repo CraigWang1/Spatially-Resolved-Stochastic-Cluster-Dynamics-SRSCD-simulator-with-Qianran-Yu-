@@ -373,7 +373,7 @@ long double OneLine::computeDissReaction(
     int64 HKey = 1;
     if (index == attrIndexH && 
         ((hostObject->getAttri(0) <= -1 && hostObject->getAttri(2) >= 7) ||
-         (hostObject->getAttri(0) >= 15 && hostObject->getAttri(2) >= 31)) )
+         (hostObject->getAttri(0) >= 20 && hostObject->getAttri(2) >= 41)) )
     {
         int predAttr[LEVELS]; // predecessor attributes
         for (int level = 0; level < LEVELS; level++)
@@ -515,7 +515,7 @@ long double OneLine::computeCombReaction(
     long double netCombRate = baseCombRate;
     int attrIndexH = 2;
     if (((hostObject->getAttri(0) <= -1 && hostObject->getAttri(2) >= 6) ||
-        (hostObject->getAttri(0) >= 15 && hostObject->getAttri(2) >= 30)) && 
+        (hostObject->getAttri(0) >= 20 && hostObject->getAttri(2) >= 40)) && 
         mobileObject->getAttri(0) == 0 && mobileObject->getAttri(2) == 1)
     {
         int prodAttr[LEVELS];
