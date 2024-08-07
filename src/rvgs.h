@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RVGS_H
+#define RVGS_H
 
 int Bernoulli(double p);
 int Binomial(int n, double p);
@@ -14,3 +15,5 @@ double Normal(double m, double s);
 double Lognormal(double a, double b);
 double Chisquare(int n);
 double Student(int n);
+
+#endif

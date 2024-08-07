@@ -1,5 +1,7 @@
 // CascadeDamage.h -- class CascadeDamage
-#pragma once
+#ifndef CASCADE_DAMAGE_H
+#define CASCADE_DAMAGE_H
+
 #include<vector>
 #include<cstdlib>
 #include<cmath>
@@ -21,3 +23,4 @@ public:
     int size();
 };
 
+#endif
