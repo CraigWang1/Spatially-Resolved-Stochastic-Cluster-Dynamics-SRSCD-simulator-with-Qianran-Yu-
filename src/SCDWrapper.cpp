@@ -1190,23 +1190,26 @@ void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
      * Eject an interstitial (which increases vacancy by 1)
      */
     const int64 HKey = 1;
-    double HConcentration = 0;
-    unordered_map<int64, Object*>::iterator iter;
-    double volume = VOLUME;
-    if (n == 0)
-        volume = SURFACE_VOLUME;  // first mesh element is slightly bigger because of added surface layer
-    for (iter = HObjects.begin(); iter != HObjects.end(); ++iter)
-    {
-        Object* HObject = iter->second;
-        HConcentration += HObject->getNumber(n) * HObject->getAttri(2) / volume;
-    }
+    if (hostObject->getKey() == HKey)
+    {   /* SAV for 1H (b/c H/V ratio > 4) is only enabled when H is oversaturated, SAV for VH clusters with H/V ratio > 4 is always enabled */
+        double HConcentration = 0;
+        unordered_map<int64, Object*>::iterator iter;
+        double volume = VOLUME;
+        if (n == 0)
+            volume = SURFACE_VOLUME;  // first mesh element is slightly bigger because of added surface layer
+        for (iter = HObjects.begin(); iter != HObjects.end(); ++iter)
+        {
+            Object* HObject = iter->second;
+            HConcentration += HObject->getNumber(n) * HObject->getAttri(2) / volume;
+        }
 
-    double saturation_concentration = getHSaturationConcentration();
+        double saturation_concentration = getHSaturationConcentration();
 
-    // If it's not saturated, SAV doesn't need to create more vacancies
-    if (HConcentration < saturation_concentration)
-    {
-        return;
+        // If it's not saturated, SAV doesn't need to create more vacancies
+        if (HConcentration < saturation_concentration)
+        {
+            return;
+        }
     }
 
     // Eject interstitial

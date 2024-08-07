@@ -146,18 +146,27 @@ with open("species.txt") as f:
 concentrations = [c*time/26315 for c in concentrations]
 plt.plot(experiment_positions, concentrations, label="Experiment", color='r', linewidth=0, marker="^")
 
-upto = POINTS
+retained_experiment_fluence = 0  # arbitrary units
+retained_sim_fluence = 0
+for i in range(len(experiment_positions)-1):
+	retained_experiment_fluence += concentrations[i] * (experiment_positions[i+1]-experiment_positions[i])
+for i in range(len(positions)-1):
+	retained_sim_fluence += trapped_hydrogen_c[i] * (positions[i+1]-positions[i])
+
+print()
+print("Sim retained vs. experiment retained: "+str(retained_sim_fluence/retained_experiment_fluence))
+
 if plot_h:
 	# plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
-	plt.plot(positions[:upto], trapped_hydrogen_c[:upto], label="Simulation", alpha=0.3)
-	plt.plot(positions[:upto], avg_hydrogen_c[:upto], label="Simulation Filtered", color='blue', marker='^', linestyle='-', markersize=0)
+	plt.plot(positions, trapped_hydrogen_c, label="Simulation", alpha=0.3)
+	plt.plot(positions, avg_hydrogen_c, label="Simulation Filtered", color='blue', marker='^', linestyle='-', markersize=0)
 	# plt.plot(positions[:upto], all_hydrogen_c[:upto], label="Hydrogen Concentration")
 # if plot_v:
 	# indices_to_delete = [i for i in range(len(vacancy_c)) if vacancy_c[i] == 0]		
 	# positions_vacancy = np.delete(positions, indices_to_delete)
 	# nonzero_vacancy_c = np.delete(vacancy_c, indices_to_delete)
 	# plt.plot(positions[:upto], vacancy_c[:upto], color='r', label="Vacancy Concentration")
-print(np.sum(trapped_hydrogen_c))
+print("Summed retained concentration: "+str(np.sum(trapped_hydrogen_c)))
 plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
 plt.legend()
 plt.title("Trapped Hydrogen Concentration Vs. Depth\n $T = 300K, Fluence = 5 \cdot 10^{22}$ $[m^{-2}]$")
