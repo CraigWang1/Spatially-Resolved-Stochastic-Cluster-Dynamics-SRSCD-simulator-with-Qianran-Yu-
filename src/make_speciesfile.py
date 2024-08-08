@@ -31,9 +31,9 @@ def combine_species_files():
 					counts[j] = int(line[j])
 				if objKey in objCounts:
 					objCounts[objKey] += counts
-				else:
+				elif np.sum(counts) > 0:
 					objCounts[objKey] = counts
-
+	print()
 	f = open("species.txt", "w")
 	f.write(f"step = {step}\n")
 	f.write(f"time = {time}\n")
