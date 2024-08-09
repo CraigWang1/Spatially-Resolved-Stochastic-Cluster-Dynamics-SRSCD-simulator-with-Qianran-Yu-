@@ -28,6 +28,10 @@ private:
     unordered_map<int, double> HSaturationLimit; // look up table for HSaturationLimit
     vector<BoundaryChange> leftBoundaryChangeQ, rightBoundaryChangeQ;
 
+    std::random_device rd; // Random device to seed the engine
+    std::default_random_engine engine; // Random number engine
+    std::uniform_real_distribution<long double> distribution; // Distribution
+    
     Damage damage;
     Cpdf cpdf;
     int sinks[LEVELS+1][POINTS];
