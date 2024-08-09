@@ -18,7 +18,7 @@ static int generationNumber = 0;
 static int dissV = 0; //this only counts number of events
 static int dissH = 0; //this only counts number of events
 /* public funciton */
-SCDWrapper::SCDWrapper():allObjects(), damage(allObjects), cpdf(), startIndex(0), endIndex(0), totalDpa(0)
+SCDWrapper::SCDWrapper():allObjects(), engine(rd()), distribution(0.0L, 1.0L), damage(allObjects), cpdf(), startIndex(0), endIndex(0), totalDpa(0)
 {
     formationE[1] = V_FORM_E; 
 
@@ -233,21 +233,10 @@ Object* SCDWrapper::selectReaction(
     fs.open("selectReaction.txt", ios::app);
     int pointIndex;
 
-    // Generate a random number
-    // Create a random device to seed the random number engine
-    std::random_device rd;
-
-    // Initialize the random number engine with the seed
-    std::default_random_engine engine(rd());
-
-    // Create a uniform real distribution that produces values in the range [0.0, 1.0)
-    std::uniform_real_distribution<long double> distribution(0.0L, 1.0L);
-
     // Generate a random long double
     long double randomNum = distribution(engine);
 
     long double randRate = randomNum * bulkRate;
-    // long double randRate = ((double)rand() / (RAND_MAX+1.0))*bulkRate; // add 1 to make the random rate [0, 1)
     long double tempRandRate = randRate;
     Object* tempObject = nullptr;
     Bundle* tempBundle;
@@ -305,22 +294,11 @@ Object* SCDWrapper::selectDomainReaction(
     ofstream fs;
     fs.open("selectReaction.txt", ios::app);
     int pointIndex;
-
-    // Generate a random number
-    // Create a random device to seed the random number engine
-    std::random_device rd;
-
-    // Initialize the random number engine with the seed
-    std::default_random_engine engine(rd());
-
-    // Create a uniform real distribution that produces values in the range [0.0, 1.0)
-    std::uniform_real_distribution<long double> distribution(0.0L, 1.0L);
-
+    
     // Generate a random long double
     long double randomNum = distribution(engine);
-
+    
     long double randRate = randomNum * domainRate;
-    // long double randRate = ((double)rand() / (RAND_MAX+1.0))*bulkRate; // add 1 to make the random rate [0, 1)
     long double tempRandRate = randRate;
     Object* tempObject = nullptr;
     Bundle* tempBundle;
@@ -735,7 +713,7 @@ void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
     if (leftBoundary)
         leftBoundaryChangeQ.push_back(
             BoundaryChange(key, n, number));
-    else if (rightBoundary)  
+    if (rightBoundary)  
         rightBoundaryChangeQ.push_back(
             BoundaryChange(key, n, number)); 
 }
