@@ -677,6 +677,8 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
         Bundle* newBundle = new Bundle(newObject, mobileObjects, allObjects, linePool);
         pair<Object*, Bundle*> bundle(newObject, newBundle);
         linePool.insert(bundle); /* add to line pool */
+        if (newObject->getKey() == 1 && newObject->getNumber(0) > 0)
+            damage.updateDamageTwo(0, allObjects);
     }/* if this object is valid, add it to map */
 }
 
@@ -765,7 +767,7 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
         }
     }
 
-    if (hostObject->getKey() == 1) // if is 1H object
+    if (hostObject->getKey() == 1 && count == 0) // if is 1H object
     {
         damage.updateDamageTwo(count, allObjects);
     }

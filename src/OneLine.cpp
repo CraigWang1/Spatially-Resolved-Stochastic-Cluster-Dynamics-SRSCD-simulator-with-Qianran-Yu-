@@ -259,6 +259,8 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         
             prefactor = freq * jumpingDist * (1 - surfaceSaturationFraction) * DIVIDING_AREA;
             diffRToF = prefactor * concentration;
+            if (surfaceConc >= maxSurfaceConc)
+                diffRToF = 0.0;
             diffRToB = 0.0;
 
             // Normal Diffusion to the second bulk element
