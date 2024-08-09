@@ -153,7 +153,7 @@ public:
 
     /* Additional parallel processing functions */
     void setDomain(int, int);
-    void fillNoneReaction(const double&);
+    void fillNoneReaction(long double);
     void clearNoneReaction();
     vector<BoundaryChange>* getLeftBoundaryChangeQ();
     vector<BoundaryChange>* getRightBoundaryChangeQ();

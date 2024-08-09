@@ -202,7 +202,6 @@ void SCDWrapper::computeDomainRate()
     {
         domainRate += matrixRate[i];
     }
-    domainRate += noneRate;
 }
 
 void SCDWrapper::examineDomainRate()
@@ -298,7 +297,7 @@ Object* SCDWrapper::selectDomainReaction(
     // Generate a random long double
     long double randomNum = distribution(engine);
     
-    long double randRate = randomNum * domainRate;
+    long double randRate = randomNum * (domainRate+noneRate);
     long double tempRandRate = randRate;
     Object* tempObject = nullptr;
     Bundle* tempBundle;
@@ -430,7 +429,7 @@ void SCDWrapper::processEvent(
 
     // Keep track of affected reaction rates
     updateMatrixRate(n, reaction);
-    computeBulkRate();
+    computeDomainRate();
 
     fs.close();
 }
@@ -1785,7 +1784,7 @@ void SCDWrapper::setDomain(int start, int end)
     endIndex = end;
 }
 
-void SCDWrapper::fillNoneReaction(const double& maxDomainRate)
+void SCDWrapper::fillNoneReaction(long double maxDomainRate)
 {
     /*
      * Fill the remainder of the domain rate with NONE reaction
@@ -1793,13 +1792,11 @@ void SCDWrapper::fillNoneReaction(const double& maxDomainRate)
      * (Dunn 2016)
      */
     noneRate = maxDomainRate - domainRate;
-    computeDomainRate();
 }
 
 void SCDWrapper::clearNoneReaction()
 {
     noneRate = 0.0;
-    computeDomainRate();
 }
 
 vector<BoundaryChange>* SCDWrapper::getLeftBoundaryChangeQ()
