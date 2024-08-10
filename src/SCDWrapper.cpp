@@ -37,6 +37,9 @@ SCDWrapper::SCDWrapper():allObjects(), engine(rd()), distribution(0.0L, 1.0L), d
     setSinks();
 
     lastElemSaturated = false;
+
+    selectReactionFile.open("selectReaction.txt", ios::app);
+    processEventFile.open("Reactionts.txt", ios::app);
     /* set format of gs --- species */
     /*
     gs.set_title("Species");
@@ -228,8 +231,6 @@ Object* SCDWrapper::selectReaction(
                                    Reaction& reaction,
                                    int& count)
 {
-    ofstream fs;
-    fs.open("selectReaction.txt", ios::app);
     int pointIndex;
 
     // Generate a random long double
@@ -272,8 +273,7 @@ Object* SCDWrapper::selectReaction(
             
             count = pointIndex;
             if (LOG_REACTIONS)
-                fs << "Element = " << pointIndex + 1 <<", "<< "Reaction = " << reaction << endl << endl;
-            fs.close();
+                selectReactionFile << "Element = " << pointIndex + 1 <<", "<< "Reaction = " << reaction << endl << endl;
             return tempObject;
         }
     }
@@ -290,8 +290,6 @@ Object* SCDWrapper::selectDomainReaction(
                                    Reaction& reaction,
                                    int& count)
 {
-    ofstream fs;
-    fs.open("selectReaction.txt", ios::app);
     int pointIndex;
     
     // Generate a random long double
@@ -336,8 +334,7 @@ Object* SCDWrapper::selectDomainReaction(
             
             count = pointIndex;
             if (LOG_REACTIONS)
-                fs << "Element = " << pointIndex + 1 <<", "<< "Reaction = " << reaction << endl << endl;
-            fs.close();
+                selectReactionFile << "Element = " << pointIndex + 1 <<", "<< "Reaction = " << reaction << endl << endl;
             return tempObject;
         }
     }
@@ -363,55 +360,54 @@ void SCDWrapper::processEvent(
         return;
 
     ++event;
-    fs.open("Reactions.txt", ios::app);
     switch (reaction) {
         case DIFFUSETOF:
             processDiffEvent(hostObject, n, 'f');
             if (LOG_REACTIONS)
-                fs << hostObject->getKey() <<"  diffuses from element "<< n << " to element " << n-1 << endl;
+                processEventFile << hostObject->getKey() <<"  diffuses from element "<< n << " to element " << n-1 << endl;
             break;
         case DIFFUSETOB:
             processDiffEvent(hostObject, n, 'b');
             if (LOG_REACTIONS)
-                fs << hostObject->getKey() <<"  diffuses from element "<< n << " to element " << n+1 << endl;
+                processEventFile << hostObject->getKey() <<"  diffuses from element "<< n << " to element " << n+1 << endl;
             break;
         case SINK:
             processSinkEvent(hostObject, n);
             if (LOG_REACTIONS)
-                fs << hostObject->getKey() <<"  in element "<< n << " goes to sink."<< endl;
+                processEventFile << hostObject->getKey() <<"  in element "<< n << " goes to sink."<< endl;
             writeSinkFile(hostObject, n, time); /* this step also updated sinkDissRate */
             break;
         case DISSOCIATION:
-            processDissoEvent(hostObject, n, theOtherKey, fs);
+            processDissoEvent(hostObject, n, theOtherKey, processEventFile);
             if (LOG_REACTIONS)
-                fs << hostObject->getKey() <<"  experiences a dissociation." << endl;
+                processEventFile << hostObject->getKey() <<"  experiences a dissociation." << endl;
             break;
         case COMBINATION:
-            processCombEvent(hostObject, n, theOtherKey, fs);
+            processCombEvent(hostObject, n, theOtherKey, processEventFile);
             break;
         case SAV:
             processSAVEvent(hostObject, n);
             if (LOG_REACTIONS)
-                fs << hostObject->getKey() << "  in element " << n << " experiences SAV (ejects interstitial)" << endl;
+                processEventFile << hostObject->getKey() << "  in element " << n << " experiences SAV (ejects interstitial)" << endl;
             break;
         case RECOMBER:
             processRecombEvent(hostObject, n, true);
             if (LOG_REACTIONS)
-                fs << hostObject->getKey() << "  in element " << n << " experiences an ER recombination to form H2 and leave the front of the material" << endl;
+                processEventFile << hostObject->getKey() << "  in element " << n << " experiences an ER recombination to form H2 and leave the front of the material" << endl;
             break;
         case RECOMBLH:
             processRecombEvent(hostObject, n, false);
             if (LOG_REACTIONS)
-                fs << hostObject->getKey() << "  in element " << n << " experiences a LH recombination to form H2 and leave the back of the material" << endl;
+                processEventFile << hostObject->getKey() << "  in element " << n << " experiences a LH recombination to form H2 and leave the back of the material" << endl;
             break;
         case PARTICLE:
-            getParticleInsertion(n, dt, fs);
+            getParticleInsertion(n, dt, processEventFile);
             break;
         case HE:
             getHeInsertion(n);
             break;
         case H:
-            getHInsertion(n, dt, fs);
+            getHInsertion(n, dt, processEventFile);
             break;
         case DISSV:
             processSinkDissEvent(0, n);
@@ -430,8 +426,6 @@ void SCDWrapper::processEvent(
     // Keep track of affected reaction rates
     updateMatrixRate(n, reaction);
     computeDomainRate();
-
-    fs.close();
 }
 
 SCDWrapper::~SCDWrapper()
@@ -449,6 +443,9 @@ SCDWrapper::~SCDWrapper()
     for (iter1 = HObjects.begin(); iter1 != HObjects.end(); ++iter1) {
         delete iter1->second;
     }
+
+    selectReactionFile.close();
+    processEventFile.close();
 }
 
 unordered_map<int64, Object*>* SCDWrapper::getAllObjects()
@@ -468,15 +465,9 @@ unordered_map<Object*, Bundle*>* SCDWrapper::getLinePool()
 
 void SCDWrapper::examineRate()
 {
-    fstream fs;
-    //fs.open("Rate.txt",ios::app);
     for (int i = 0; i < POINTS; ++i) {
         computeMatrixRate(i);
-        //fs << matrixRate[i] <<"        ";
     }
-    // computeBulkRate();
-    //fs << "BulkRate" << bulkRate << endl<<endl<<endl;
-    //fs.close();
 }
 
 void SCDWrapper::writeSinkFile(const Object * const hostObject, const long int n, const double time)
@@ -575,18 +566,18 @@ void SCDWrapper::writeClusterFile(const double time, const long int n)
 void SCDWrapper::writeSinkFile(const double time, const long int n, const int threadID)
 {
     int i, j;
-    ofstream fs;
-    fs.open("sink" + std::to_string(threadID) + ".txt", ios::out);
-    fs << "startIndex = " << startIndex << endl;
-    fs << "endIndex = " << endIndex << endl;
+    ofstream outFile;
+    outFile.open("sink" + std::to_string(threadID) + ".txt", ios::out);
+    outFile << "startIndex = " << startIndex << endl;
+    outFile << "endIndex = " << endIndex << endl;
     //fs << "Aggregate time = " << time << "  step = " << n << endl;
     for (i = 0; i < POINTS; ++i) {
         for (j = 0; j < LEVELS + 1; ++j) {
-            fs << sinks[j][i]<< "    ";
+            outFile << sinks[j][i]<< "    ";
         }
-        fs << endl;
+        outFile << endl;
     }
-    fs.close();
+    outFile.close();
 }
 
 void SCDWrapper::displayDamage(){

@@ -84,6 +84,30 @@ int main(int argc, char** argv)
         // Each MPI process sends its rate to reduction, every thread collects result
         MPI_Allreduce(&localDomainRate, &maxDomainRate, 1, MPI_LONG_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
+        if (threadID == rootThreadID)
+        {
+            do {
+                random = (double)rand() / RAND_MAX;
+            } while (random == 0);
+            dt = (-1) / maxDomainRate*log(random);
+            accTime += dt;
+            advTime += dt;
+
+            if (IRRADIATION_ON)
+            {
+                done = (dpa >= TOTAL_DPA);
+            }
+            else
+            {
+                done = (advTime >= TOTAL_TIME);
+            }
+            if (done)
+            {
+                cout << "Finished. Bye" << endl;
+                MPI_Abort(MPI_COMM_WORLD, 0);
+            }
+        }
+
         srscd->fillNoneReaction(maxDomainRate);
         hostObject = srscd->selectDomainReaction(theOtherKey, reaction, pointIndex);/* choose an event */
 
@@ -191,30 +215,6 @@ int main(int argc, char** argv)
         {
             double localDpa = srscd->getTotalDpa();
             MPI_Reduce(&localDpa, &dpa, 1, MPI_DOUBLE, MPI_SUM, rootThreadID, MPI_COMM_WORLD);
-        }
-
-        if (threadID == rootThreadID)
-        {
-            do {
-                random = (double)rand() / RAND_MAX;
-            } while (random == 0);
-            dt = (-1) / maxDomainRate*log(random);
-            accTime += dt;
-            advTime += dt;
-
-            if (IRRADIATION_ON)
-            {
-                done = (dpa >= TOTAL_DPA);
-            }
-            else
-            {
-                done = (advTime >= TOTAL_TIME);
-            }
-            if (done)
-            {
-                cout << "Finished. Bye" << endl;
-                MPI_Abort(MPI_COMM_WORLD, 0);
-            }
         }
 
         ++iStep;

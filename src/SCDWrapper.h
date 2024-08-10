@@ -49,7 +49,7 @@ private:
     bool lastElemSaturated;
     enum InsertStyle {INTERSTITIAL, SUBSTITUTIONAL};
     ofstream fs1, fs2, fs3, fs4, fs5, fs6;
-    fstream fs;
+    fstream selectReactionFile, processEventFile;
     fstream fv;
     // GnuplotS gs, gr; /* plot species.out and reaction */
     // GnuplotS gd1, gd2; /* damage graph 1 and damage graph 2*/
