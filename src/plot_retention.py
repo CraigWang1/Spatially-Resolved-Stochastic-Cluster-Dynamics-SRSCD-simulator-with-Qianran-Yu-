@@ -138,7 +138,7 @@ with open("species.txt") as f:
 	fs = 1 / (positions[1] - positions[0])  # Sampling frequency
 
 	# Create a 5-pole low-pass filter with an 80 Hz cutoff
-	b, a = scipy.signal.butter(5, 1.25/3, fs=fs)
+	b, a = scipy.signal.butter(5, 1.25/6, fs=fs)
 
 	# Apply the filter using Gustafsson's method
 	avg_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c, method="gust")

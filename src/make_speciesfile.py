@@ -6,7 +6,7 @@ import numpy as np
 from math import *
 
 def combine_species_files():
-	NUM_PROCS = 4
+	NUM_PROCS = 32
 	partitions = []
 	objCounts = {}
 
