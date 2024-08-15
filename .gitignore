@@ -4,4 +4,4 @@
 **/scdexe
 **/__pycache__/*
 **/.vscode/*
-.DS_Score
+**/.DS_Store
