@@ -40,7 +40,7 @@
 #define GAMMA 1.0           // Fraction of surface emission.
 #define TDE 90              // [eV] Threshold displacement energy for W.
 #define HEAT_OF_SOLUTION 1.04   // [eV] Heat of solution of H in W.
-#define SAV_ENERGY 0.95          // [eV] energy that controls SAV rate
+#define SAV_ENERGY 0.94          // [eV] energy that controls SAV rate
 #define H_DEPOSITION_ENERGY 200.0 // [eV] energy of an H atom in the incident flux
 #define H_MIGRATION_ENERGY 0.25   // [eV] energy needed for an H to diffuse through lattice
 #define H_DIRECT_IMPLANTATION_FRACTION 0.979 // [unitless] the fraction of nonreflected H flux that bypasses the surface layer and gets directly implanted in bulk, depends on H energy, obtained from SRIM
