@@ -78,7 +78,7 @@ int main(int argc, char** argv)
     
     while(!done)
     {
-        long double localDomainRate = srscd->getDomainRate();
+        long double localDomainRate = srscd->getMaxDomainRate();
         long double maxDomainRate;
 
         // Each MPI process sends its rate to reduction, every thread collects result
@@ -108,23 +108,14 @@ int main(int argc, char** argv)
             }
         }
 
-        srscd->fillNoneReaction(maxDomainRate);
-        hostObject = srscd->selectDomainReaction(theOtherKey, reaction, pointIndex);/* choose an event */
-
-        /*
-        string reactions[] = {"diffF", "diffB", "sink", "diss", "comb", "sav", "recombER", "recombLH", "none", "particle", "HE", "H", "dissV", "dissH", "error"};        
-        cout << reactions[reaction] << " " << pointIndex << " " << theOtherKey;
-        if (hostObject != nullptr)
-            cout << " " << hostObject->getKey();
-        cout << endl;
-        */
-
-        srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
-
-        if(reaction == Reaction::H || reaction == Reaction::PARTICLE)
+        for (int domain = 0; domain < DOMAINS_PER_PROCESSOR; domain++)
         {
-            accTime = 0.0;
+            srscd->fillNoneReaction(domain, maxDomainRate);
+            hostObject = srscd->selectDomainReaction(domain, theOtherKey, reaction, pointIndex);/* choose an event */
+            srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
         }
+
+        srscd->implementObjectChanges();
 
         // Update average domain rate (running average)
         avgDomainRate += 0.0001*(localDomainRate - avgDomainRate);

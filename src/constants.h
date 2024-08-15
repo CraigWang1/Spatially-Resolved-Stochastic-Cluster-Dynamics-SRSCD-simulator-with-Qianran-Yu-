@@ -62,11 +62,12 @@
 //#define DPA_RATE 0       //When only H exposure is available. no self-damage at all
 //#define DPA_RATE 3.55e-6   // [dpa/s] Damage rate.
 #define CHANNELS 3         // Irradiation channels used (1:W, 2:He, 3:H,...). the number of different particle insertion(irradiation) process.
-#define PSTEPS 500000 // Print data every so many.
+#define PSTEPS 400000 // Print data every so many.
 #define TSTEPS 50000 // Run these many steps.
 #define LEVELS 3
 #define EXP10 3 // number of 0s assigned to each group in object's key in hash table
 #define POINTS 301       // number of elements: one surface(Point 0), other bulk elements(NO.1,2,3,4,...,100)
+#define DOMAINS_PER_PROCESSOR 8
 // Auxiliary definitions:
 enum Reaction { DIFFUSETOF, DIFFUSETOB, SINK, DISSOCIATION, COMBINATION, SAV, RECOMBER, RECOMBLH, NONE, PARTICLE, HE, H, DISSV, DISSH, ERROR};
 

@@ -136,7 +136,7 @@ void SCDWrapper::computeMatrixRate(const int n)
     matrixRate[n] += sinkDissRate[1][n];
 }
 
-void SCDWrapper::updateMatrixRate(const int n, const Reaction reaction)
+void SCDWrapper::updateMatrixRate(const int n, Reaction reaction)
 {
     /* Qianran 0925 */
     int affectedStart = n - 1;
@@ -198,12 +198,12 @@ void SCDWrapper::computeBulkRate()
     }
 }
 
-void SCDWrapper::computeDomainRate()
+void SCDWrapper::computeDomainRate(int domain)
 {
-    domainRate = 0.0;
-    for (int i = startIndex; i <= endIndex; i++)
+    domainRate[domain] = 0.0;
+    for (int i = getDomainStartIdx(domain); i <= getDomainEndIdx(domain); i++)
     {
-        domainRate += matrixRate[i];
+        domainRate[domain] += matrixRate[i];
     }
 }
 
@@ -213,7 +213,10 @@ void SCDWrapper::examineDomainRate()
     {
         computeMatrixRate(i);
     }
-    computeDomainRate();
+    for (int domain = 0; domain < DOMAINS_PER_PROCESSOR; domain++)
+    {
+        computeDomainRate(domain);
+    }
 }
 
 long double SCDWrapper::getBulkRate()
@@ -221,9 +224,9 @@ long double SCDWrapper::getBulkRate()
     return bulkRate;
 }
 
-long double SCDWrapper::getDomainRate()
+long double SCDWrapper::getMaxDomainRate()
 {
-    return domainRate;
+    return *max_element(domainRate, domainRate + DOMAINS_PER_PROCESSOR);
 }
 
 Object* SCDWrapper::selectReaction(
@@ -286,22 +289,23 @@ Object* SCDWrapper::selectReaction(
 }
 
 Object* SCDWrapper::selectDomainReaction(
+                                   int domain,
                                    int64& theOtherKey,
                                    Reaction& reaction,
                                    int& count)
 {
     int pointIndex;
-    
+
     // Generate a random long double
     long double randomNum = distribution(engine);
     
-    long double randRate = randomNum * (domainRate+noneRate);
+    long double randRate = randomNum * (domainRate[domain]+noneRate);
     long double tempRandRate = randRate;
     Object* tempObject = nullptr;
     Bundle* tempBundle;
     OneLine* tempLine;
     //fs << "BulkRate = " << bulkRate << "RandRate = " << randRate << endl;
-    for (pointIndex = startIndex; pointIndex <= endIndex; ++pointIndex) {
+    for (pointIndex = getDomainStartIdx(domain); pointIndex <= getDomainEndIdx(domain); ++pointIndex) {
         if (matrixRate[pointIndex] < tempRandRate) {
             tempRandRate -= matrixRate[pointIndex];
             continue;
@@ -422,10 +426,6 @@ void SCDWrapper::processEvent(
         default:
             break;
     }
-
-    // Keep track of affected reaction rates
-    updateMatrixRate(n, reaction);
-    computeDomainRate();
 }
 
 SCDWrapper::~SCDWrapper()
@@ -675,24 +675,10 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
 void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
 {
     /* If the object exists, add to it. Otherwise create the object. */
-    Object* anObject;
-    if (allObjects.find(key) != allObjects.end()) 
-    {
-        /* object found! then number of instances in this element increases by number*/
-        anObject = allObjects[key];
-        anObject->addNumber(n, number);
-        updateObjectInMap(anObject, n);
-    }
-    else if (number > 0)
-    {
-        /* object wasn't found! build new object and insert it into map */
-        anObject = new Object(key, n, number);
-        addNewObjectToMap(anObject);
-    }
-    else
-    {
+    if (allObjects.find(key) == allObjects.end() && number <= 0)
         return;
-    }
+
+    objectChangeQ.push_back(BoundaryChange(key, n, number));
 
     bool leftBoundary = (
         (n == startIndex || n == startIndex - 1) && n != 0
@@ -1775,14 +1761,14 @@ void SCDWrapper::setDomain(int start, int end)
     endIndex = end;
 }
 
-void SCDWrapper::fillNoneReaction(long double maxDomainRate)
+void SCDWrapper::fillNoneReaction(int domain, long double maxDomainRate)
 {
     /*
      * Fill the remainder of the domain rate with NONE reaction
      * so that each processor can move at the same time step in parallel
      * (Dunn 2016)
      */
-    noneRate = maxDomainRate - domainRate;
+    noneRate = maxDomainRate - domainRate[domain];
 }
 
 void SCDWrapper::clearNoneReaction()
@@ -1834,7 +1820,10 @@ void SCDWrapper::implementBoundaryChanges(vector<BoundaryChange>& boundaryChange
         updateMatrixRate(startIndex, Reaction::NONE);
     if (updateBack)
         updateMatrixRate(endIndex, Reaction::NONE);
-    computeDomainRate();
+    for (int domain = 0; domain < DOMAINS_PER_PROCESSOR; domain++)
+    {
+        computeDomainRate(domain);        
+    }
 }
 
 int SCDWrapper::getStartIndex()
@@ -1901,4 +1890,46 @@ void SCDWrapper::addSpatialElement(int newGhostIndex, vector<BoundaryChange> new
     }
 
     clearBoundaryChangeQs();  // from the add/reduceToObjectMap calls
+}
+
+int SCDWrapper::getDomainStartIdx(int domain)
+{
+    int numPoints = endIndex - startIndex + 1;
+    double indexIncrement = double(numPoints) / DOMAINS_PER_PROCESSOR;
+    return startIndex + int(domain*indexIncrement);
+}
+
+int SCDWrapper::getDomainEndIdx(int domain)
+{
+    int numPoints = endIndex - startIndex + 1;
+    double indexIncrement = double(numPoints) / DOMAINS_PER_PROCESSOR;
+    return startIndex + int((domain + 1) * indexIncrement - 1);
+}
+
+void SCDWrapper::implementObjectChanges()
+{
+    for (BoundaryChange& bc: objectChangeQ)
+    {
+        Object* anObject;
+        if (allObjects.find(bc.objKey) != allObjects.end()) 
+        {
+            /* object found! then number of instances in this element increases by number*/
+            anObject = allObjects[bc.objKey];
+            anObject->addNumber(bc.pointIndex, bc.change);
+            updateObjectInMap(anObject, bc.pointIndex);
+        }
+        else if (bc.change > 0)
+        {
+            /* object wasn't found! build new object and insert it into map */
+            anObject = new Object(bc.objKey, bc.pointIndex, bc.change);
+            addNewObjectToMap(anObject);
+        }
+
+        updateMatrixRate(bc.pointIndex);
+    }
+
+    for (int domain = 0; domain < DOMAINS_PER_PROCESSOR; domain++)
+        computeDomainRate(domain);
+
+    objectChangeQ.clear();
 }

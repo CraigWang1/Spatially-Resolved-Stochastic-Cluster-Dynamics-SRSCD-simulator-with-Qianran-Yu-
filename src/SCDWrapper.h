@@ -14,6 +14,7 @@
 #include <iomanip>
 #include <cassert>
 #include <random>
+#include <algorithm>
 
 class SCDWrapper {
 private:
@@ -26,7 +27,7 @@ private:
     unordered_map<int64, int> bottom;
     unordered_map<int, double> formationE; 
     unordered_map<int, double> HSaturationLimit; // look up table for HSaturationLimit
-    vector<BoundaryChange> leftBoundaryChangeQ, rightBoundaryChangeQ;
+    vector<BoundaryChange> leftBoundaryChangeQ, rightBoundaryChangeQ, objectChangeQ;
 
     std::random_device rd; // Random device to seed the engine
     std::default_random_engine engine; // Random number engine
@@ -43,7 +44,7 @@ private:
     /* hold reactions, 1st dimension is reaction type, second dimension is element, value is total number of this reaction */
     long double matrixRate[POINTS];    // total rate in every element(point)
     long double bulkRate;  // total rate in the whole bulk;
-    long double domainRate; // total rate in the volume elements that this processor is responsible for
+    long double domainRate[DOMAINS_PER_PROCESSOR]; // total rate in the volume elements that this processor is responsible for
     long double noneRate;  // the total rate of null event occuring in the domain that this processor is responsible for
     double totalDpa;
     bool lastElemSaturated;
@@ -118,13 +119,13 @@ public:
     SCDWrapper();  // constructor: for start ;
     //SCDWrapper();  // constructor: for restart;
     void computeMatrixRate(const int n);  // computes total rate in element n
-    void updateMatrixRate(const int n, const Reaction reaction); // computes total rate in elements that are affected by reaction
+    void updateMatrixRate(const int n, Reaction reaction=Reaction::NONE); // computes total rate in elements that are affected by reaction
     void computeBulkRate();
-    void computeDomainRate();
+    void computeDomainRate(int);
     long double getBulkRate();
-    long double getDomainRate();
+    long double getMaxDomainRate();
     Object* selectReaction(int64&, Reaction&, int&);  // select reaction
-    Object* selectDomainReaction(int64&, Reaction&, int&);
+    Object* selectDomainReaction(int, int64&, Reaction&, int&);
     void processEvent(const Reaction, Object*, const int, const int64, const double, const double);    // deal with reactions
     ~SCDWrapper();          /* destructor to delete everything newed */
     // get series functions that allow direct manipulation on private data member
@@ -153,7 +154,7 @@ public:
 
     /* Additional parallel processing functions */
     void setDomain(int, int);
-    void fillNoneReaction(long double);
+    void fillNoneReaction(int, long double);
     void clearNoneReaction();
     vector<BoundaryChange>* getLeftBoundaryChangeQ();
     vector<BoundaryChange>* getRightBoundaryChangeQ();
@@ -164,6 +165,9 @@ public:
     vector<BoundaryChange> getSpatialElement(int);
     void getSink(int, int*);
     void addSpatialElement(int, vector<BoundaryChange>, int, int*);
+    int getDomainStartIdx(int);
+    int getDomainEndIdx(int);
+    void implementObjectChanges();
 };
 
 #endif
