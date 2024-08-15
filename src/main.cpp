@@ -35,7 +35,6 @@ int main(int argc, char** argv)
     long int iStep = 0;
     double random;
     double advTime = 0.0;
-    double dt = 0.0;
     double system_dt = 0.0;
     double accTime = 0.0;
     double dpa = 0.0;

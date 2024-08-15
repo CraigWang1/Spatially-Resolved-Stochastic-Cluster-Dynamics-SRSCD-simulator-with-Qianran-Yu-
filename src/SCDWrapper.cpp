@@ -204,6 +204,22 @@ void SCDWrapper::examineDomainRate()
     {
         computeDomainRate(domain);
     }
+
+    vector<int64> keys;
+    unordered_map<int64, Object*>::iterator iter;
+    for (iter = allObjects.begin(); iter != allObjects.end(); ++iter)
+    {
+        int total = 0;
+        for (int i = startIndex-1; i <= endIndex+1; i++) // also keep track of objects in ghost region (one past boundary)
+        {
+            if (i >= 0 && i < POINTS)
+                total += iter->second->getNumber(i);
+        }
+        if (total == 0)
+            keys.push_back(iter->first);
+    }
+    for (int64 key: keys)
+        removeObjectFromMap(key);
 }
 
 long double SCDWrapper::getBulkRate()
