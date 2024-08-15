@@ -512,12 +512,9 @@ int main(int argc, char** argv)
             }
         }
         advTime += globalTimeStep;
+        done = advTime >= TOTAL_TIME;
     }
-    srscd->drawSpeciesAndReactions(advTime);
-    srscd->drawDamage(advTime);
-    srscd->writeVacancy();
-    srscd->writeSinkFile(advTime, iStep, threadID);
-    cout<<"dpa = "<<dpa<<endl;
+    MPI_Finalize();
     cout << "Finished, Bye" << endl;
     return 0;
 }
