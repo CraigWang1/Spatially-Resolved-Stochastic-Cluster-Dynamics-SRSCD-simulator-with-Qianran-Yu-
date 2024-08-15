@@ -5,8 +5,8 @@
 #$ -o joblog.$JOB_ID
 #$ -j y
 # Edit the line below as needed:
-#$ -l h_rt=24:00:00,h_data=5G,arch=intel-gold*
-#$ -pe dc* 32   # notice you may also try w/ "-pe shared 4"
+#$ -l h_rt=300:00:00,h_data=5G,arch=intel-gold*,highp
+#$ -pe dc* 12
 # Add multiple cores/nodes as needed:
 # Email address to notify
 #$ -M $USER@mail
