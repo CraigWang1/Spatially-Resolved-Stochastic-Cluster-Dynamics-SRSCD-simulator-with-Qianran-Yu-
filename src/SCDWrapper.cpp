@@ -104,6 +104,7 @@ void SCDWrapper::computeMatrixRate(const int n)
     /* Qianran 0925 */
     //cout << "Element " << n + 1 << endl;
     matrixRate[n] = 0.0;
+    matrixNumReactions[n] = 0;
     unordered_map<int64, Object*>::iterator iter;
     for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
         int64 tempKey = iter->first;
@@ -128,12 +129,25 @@ void SCDWrapper::computeMatrixRate(const int n)
         OneLine* tempLine = tempBundle->lines[n];
         if (tempLine != nullptr) {
             matrixRate[n] += tempLine->computeTotalRate();
+            matrixNumReactions[n] += tempLine->computeNumReactions();
             //tempLine->display(tempObject);/* Qianran 0925 */
         }
     }
-    matrixRate[n] += damage.getTotalDamage(n);
-    matrixRate[n] += sinkDissRate[0][n];
-    matrixRate[n] += sinkDissRate[1][n];
+    if (damage.getTotalDamage(n) > 0)
+    {
+        matrixRate[n] += damage.getTotalDamage(n);
+        matrixNumReactions[n]++;
+    }
+    if (sinkDissRate[0][n] > 0)
+    {
+        matrixRate[n] += sinkDissRate[0][n];
+        matrixNumReactions[n]++;
+    }
+    if (sinkDissRate[1][n] > 0)
+    {
+        matrixRate[n] += sinkDissRate[1][n];
+        matrixNumReactions[n]++;
+    }
 }
 
 void SCDWrapper::updateMatrixRate(const int n, Reaction reaction)
@@ -151,42 +165,7 @@ void SCDWrapper::updateMatrixRate(const int n, Reaction reaction)
         affectedEnd = POINTS - 1;
 
     for (int i = affectedStart; i <= affectedEnd; i++) {
-        matrixRate[i] = 0;
-        matrixRate[i] += damage.getTotalDamage(i);
-        matrixRate[i] += sinkDissRate[0][i];
-        matrixRate[i] += sinkDissRate[1][i];
-    }
-
-    unordered_map<int64, Object*>::iterator iter;
-    for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
-        int64 tempKey = iter->first;
-        Object* tempObject = iter->second;
-        int totalNumber = tempObject->getTotalNumber();
-        while(totalNumber == 0) {
-            iter++;
-            removeObjectFromMap(tempKey);
-            if (iter != allObjects.end()) {
-                tempObject = iter->second;
-                tempKey = iter->first;
-                totalNumber = tempObject->getTotalNumber();
-            }
-            else {
-                break;
-            }
-        }
-        if (iter == allObjects.end()) {
-            break;
-        }
-
-        for (int i = affectedStart; i <= affectedEnd; i++) {
-            Bundle* tempBundle = linePool[tempObject];
-            OneLine* tempLine = tempBundle->lines[i];
-            if (tempLine != nullptr) {
-                matrixRate[i] += tempLine->computeTotalRate();
-                //tempLine->display(tempObject);/* Qianran 0925 */
-            }
-        }
-
+        computeMatrixRate(i);
     }
 }
 
@@ -205,6 +184,14 @@ void SCDWrapper::computeDomainRate(int domain)
     {
         domainRate[domain] += matrixRate[i];
     }
+}
+
+int SCDWrapper::computeDomainNumReactions(int domain)
+{
+    int numReactions = 0;
+    for (int i = getDomainStartIdx(domain); i <= getDomainEndIdx(domain); i++)
+        numReactions += matrixNumReactions[i];
+    return numReactions;
 }
 
 void SCDWrapper::examineDomainRate()
@@ -299,7 +286,7 @@ Object* SCDWrapper::selectDomainReaction(
     // Generate a random long double
     long double randomNum = distribution(engine);
     
-    long double randRate = randomNum * (domainRate[domain]+noneRate);
+    long double randRate = randomNum * domainRate[domain];
     long double tempRandRate = randRate;
     Object* tempObject = nullptr;
     Bundle* tempBundle;
@@ -426,6 +413,10 @@ void SCDWrapper::processEvent(
         default:
             break;
     }
+
+    updateMatrixRate(n, reaction);
+    for (int i = 0; i < DOMAINS_PER_PROCESSOR; i++)   // compute both domain rates in case an event happened at edge of sector
+        computeDomainRate(i);
 }
 
 SCDWrapper::~SCDWrapper()
@@ -675,10 +666,24 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
 void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
 {
     /* If the object exists, add to it. Otherwise create the object. */
-    if (allObjects.find(key) == allObjects.end() && number <= 0)
+    Object* anObject;
+    if (allObjects.find(key) != allObjects.end()) 
+    {
+        /* object found! then number of instances in this element increases by number*/
+        anObject = allObjects[key];
+        anObject->addNumber(n, number);
+        updateObjectInMap(anObject, n);
+    }
+    else if (number > 0)
+    {
+        /* object wasn't found! build new object and insert it into map */
+        anObject = new Object(key, n, number);
+        addNewObjectToMap(anObject);
+    }
+    else
+    {
         return;
-
-    objectChangeQ.push_back(BoundaryChange(key, n, number));
+    }
 
     bool leftBoundary = (
         (n == startIndex || n == startIndex - 1) && n != 0
@@ -1932,4 +1937,24 @@ void SCDWrapper::implementObjectChanges()
         computeDomainRate(domain);
 
     objectChangeQ.clear();
+}
+
+long double SCDWrapper::getMaxAvgDomainRate()
+{
+    long double maxAvg = 0;
+    for (int i = 0; i < DOMAINS_PER_PROCESSOR; i++)
+    {
+        int domainNumReactions = computeDomainNumReactions(i);
+        long double avgRate = 0;
+        if (domainNumReactions > 0)
+            avgRate = domainRate[i] / domainNumReactions;
+        maxAvg = max(maxAvg, avgRate);
+    }
+
+    return maxAvg;
+}
+
+long double SCDWrapper::getDomainRate(int domain)
+{
+    return domainRate[domain];
 }

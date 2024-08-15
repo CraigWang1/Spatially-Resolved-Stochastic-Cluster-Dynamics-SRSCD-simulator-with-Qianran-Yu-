@@ -78,47 +78,44 @@ int main(int argc, char** argv)
     
     while(!done)
     {
-        long double localDomainRate = srscd->getMaxDomainRate();
-        long double maxDomainRate;
+        long double localAvgDomainRate = srscd->getMaxAvgDomainRate();
+        long double maxAvgDomainRate;
 
         // Each MPI process sends its rate to reduction, every thread collects result
-        MPI_Allreduce(&localDomainRate, &maxDomainRate, 1, MPI_LONG_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+        MPI_Allreduce(&localAvgDomainRate, &maxAvgDomainRate, 1, MPI_LONG_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
-        if (threadID == rootThreadID)
-        {
-            do {
-                random = (double)rand() / RAND_MAX;
-            } while (random == 0);
-            dt = (-1) / maxDomainRate*log(random);
-            accTime += dt;
-            advTime += dt;
+        double globalTimeStep = 0;
+        if (maxAvgDomainRate > 0)
+            globalTimeStep = REACTIONS_PER_CYCLE / maxAvgDomainRate;
+        else
+            globalTimeStep = TOTAL_TIME - advTime;            
 
-            if (IRRADIATION_ON)
-            {
-                done = (dpa >= TOTAL_DPA);
-            }
-            else
-            {
-                done = (advTime >= TOTAL_TIME);
-            }
-            if (done)
-            {
-                cout << "Finished. Bye" << endl;
-                MPI_Abort(MPI_COMM_WORLD, 0);
-            }
-        }
+        globalTimeStep = min(globalTimeStep, TOTAL_TIME - advTime);
 
         for (int domain = 0; domain < DOMAINS_PER_PROCESSOR; domain++)
         {
-            srscd->fillNoneReaction(domain, maxDomainRate);
-            hostObject = srscd->selectDomainReaction(domain, theOtherKey, reaction, pointIndex);/* choose an event */
-            srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
+            double localTime = 0;
+            while (localTime < globalTimeStep)
+            {
+                long double domainRate = srscd->getDomainRate(domain);
+                do {
+                    random = (double)rand() / RAND_MAX;
+                } while (random == 0);
+                double dt = (-1) / domainRate * log(random);
+                if (localTime + dt > globalTimeStep)
+                    break;
+
+                hostObject = srscd->selectDomainReaction(domain, theOtherKey, reaction, pointIndex);/* choose an event */
+                srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
+                localTime += dt;
+            }
         }
 
-        srscd->implementObjectChanges();
-
         // Update average domain rate (running average)
-        avgDomainRate += 0.0001*(localDomainRate - avgDomainRate);
+        long double newDomainRate = 0;
+        for (int i = 0; i < DOMAINS_PER_PROCESSOR; i++)
+            newDomainRate += srscd->getDomainRate(i);
+        avgDomainRate += 0.0001*(newDomainRate - avgDomainRate);
 
         // Even processors send to right, odd processors receive from left
         vector<BoundaryChange>* leftBoundaryChanges = srscd->getLeftBoundaryChangeQ();
@@ -265,7 +262,6 @@ int main(int argc, char** argv)
                 prev_progress = progress;
                 st.close();
             }
-
             // Transfer spatial elements between processors to increase parallel efficiency
             if (iStep%(10*PSTEPS) == 0)
             {
@@ -516,6 +512,7 @@ int main(int argc, char** argv)
                 transferTurn++;
             }
         }
+        advTime += globalTimeStep;
     }
     srscd->drawSpeciesAndReactions(advTime);
     srscd->drawDamage(advTime);

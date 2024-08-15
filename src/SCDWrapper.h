@@ -43,6 +43,7 @@ private:
     
     /* hold reactions, 1st dimension is reaction type, second dimension is element, value is total number of this reaction */
     long double matrixRate[POINTS];    // total rate in every element(point)
+    int matrixNumReactions[POINTS];
     long double bulkRate;  // total rate in the whole bulk;
     long double domainRate[DOMAINS_PER_PROCESSOR]; // total rate in the volume elements that this processor is responsible for
     long double noneRate;  // the total rate of null event occuring in the domain that this processor is responsible for
@@ -122,6 +123,7 @@ public:
     void updateMatrixRate(const int n, Reaction reaction=Reaction::NONE); // computes total rate in elements that are affected by reaction
     void computeBulkRate();
     void computeDomainRate(int);
+    int computeDomainNumReactions(int);
     long double getBulkRate();
     long double getMaxDomainRate();
     Object* selectReaction(int64&, Reaction&, int&);  // select reaction
@@ -168,6 +170,8 @@ public:
     int getDomainStartIdx(int);
     int getDomainEndIdx(int);
     void implementObjectChanges();
+    long double getMaxAvgDomainRate();
+    long double getDomainRate(int);
 };
 
 #endif

@@ -40,6 +40,7 @@ public:
     void updateLine(const Object* const, const int, unordered_map<int64, Object*>&, unordered_map<int64, Object*>&, unordered_map<Object*, Bundle*>&); /* when number of this object has changed, rates in this line should be updated */
     void updateDiff(const Object* const, const int, unordered_map<int64, Object*>&);
     const long double computeTotalRate();
+    int computeNumReactions();
     long double computeBaseDissReaction(const Object* const, const int, const int) const; // compute dissociation reaction rate
     long double computeBaseCombReaction(const Object* const, const Object* const, const int) const;  // compute 2nd order reaction rate
     long double computeDissReaction(const Object* const, unordered_map<int64, Object*>&, unordered_map<Object*, Bundle*>&, const int, const int) const; // compute net dissociation reaction rate (approximation to have net comb/diss rate to speed up sim)
