@@ -3,4 +3,5 @@
 **/*.out
 **/scdexe
 **/__pycache__/*
+**/.vscode/*
 .DS_Score

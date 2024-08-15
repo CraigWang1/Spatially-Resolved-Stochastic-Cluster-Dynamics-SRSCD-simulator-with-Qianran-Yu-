@@ -67,7 +67,8 @@
 #define LEVELS 3
 #define EXP10 3 // number of 0s assigned to each group in object's key in hash table
 #define POINTS 301       // number of elements: one surface(Point 0), other bulk elements(NO.1,2,3,4,...,100)
-#define DOMAINS_PER_PROCESSOR 8
+#define DOMAINS_PER_PROCESSOR 8   // each processor has 8 kmc domains
+#define MIN_POINTS_PER_DOMAIN 100 // minimum number of spatial elements on average that each domain can have
 #define REACTIONS_PER_CYCLE 1.25
 // Auxiliary definitions:
 enum Reaction { DIFFUSETOF, DIFFUSETOB, SINK, DISSOCIATION, COMBINATION, SAV, RECOMBER, RECOMBLH, NONE, PARTICLE, HE, H, DISSV, DISSH, ERROR};

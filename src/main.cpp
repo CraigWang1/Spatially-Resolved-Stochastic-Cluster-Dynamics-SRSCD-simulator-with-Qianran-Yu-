@@ -23,6 +23,16 @@ int main(int argc, char** argv)
     MPI_Comm_size(MPI_COMM_WORLD, &numThreads);
     MPI_Comm_rank(MPI_COMM_WORLD, &threadID);
 
+    double pointsPerDomain = double(POINTS) / numThreads / DOMAINS_PER_PROCESSOR;
+    if (threadID == rootThreadID && pointsPerDomain < MIN_POINTS_PER_DOMAIN)
+    {
+        cerr << "You have allocated too many processors." << endl;
+        cerr << "There are " << pointsPerDomain << " spatial elements per KMC domain." << endl;
+        cerr << "The min is " << MIN_POINTS_PER_DOMAIN << " spatial elements per KMC domain." << endl;
+        cerr << "Please allocate less processors (recommended) or increase the number of spatial elements." << endl;
+        MPI_Abort(MPI_COMM_WORLD, -1);
+    }
+
     int rightNeighbor = threadID + 1;
     int leftNeighbor = threadID - 1;
 
@@ -273,7 +283,7 @@ int main(int argc, char** argv)
                         MPI_Send(&avgDomainRate, 1, MPI_LONG_DOUBLE, leftNeighbor, tag, MPI_COMM_WORLD); // Don't give spatial element if we only have one remaining
                         MPI_Recv(&otherAvgDomainRate, 1, MPI_LONG_DOUBLE, leftNeighbor, tag, MPI_COMM_WORLD, &status);
 
-                        bool canGiveSpatialElement = srscd->getStartIndex() < srscd->getEndIndex();
+                        bool canGiveSpatialElement = srscd->canGiveSpatialElement();
                         bool otherCanGiveMeSpatialElement;
                         MPI_Send(&canGiveSpatialElement, 1, MPI_CXX_BOOL, leftNeighbor, tag, MPI_COMM_WORLD);
                         MPI_Recv(&otherCanGiveMeSpatialElement, 1, MPI_CXX_BOOL, leftNeighbor, tag, MPI_COMM_WORLD, &status);
@@ -332,7 +342,7 @@ int main(int argc, char** argv)
                         MPI_Recv(&otherAvgDomainRate, 1, MPI_LONG_DOUBLE, rightNeighbor, tag, MPI_COMM_WORLD, &status);
                         MPI_Send(&avgDomainRate, 1, MPI_LONG_DOUBLE, rightNeighbor, tag, MPI_COMM_WORLD); // Don't give spatial element if we only have one remaining
 
-                        bool canGiveSpatialElement = srscd->getStartIndex() < srscd->getEndIndex();
+                        bool canGiveSpatialElement = srscd->canGiveSpatialElement();
                         bool otherCanGiveMeSpatialElement;
                         MPI_Recv(&otherCanGiveMeSpatialElement, 1, MPI_CXX_BOOL, rightNeighbor, tag, MPI_COMM_WORLD, &status);
                         MPI_Send(&canGiveSpatialElement, 1, MPI_CXX_BOOL, rightNeighbor, tag, MPI_COMM_WORLD);
@@ -395,7 +405,7 @@ int main(int argc, char** argv)
                         MPI_Send(&avgDomainRate, 1, MPI_LONG_DOUBLE, rightNeighbor, tag, MPI_COMM_WORLD); // Don't give spatial element if we only have one remaining
                         MPI_Recv(&otherAvgDomainRate, 1, MPI_LONG_DOUBLE, rightNeighbor, tag, MPI_COMM_WORLD, &status);
 
-                        bool canGiveSpatialElement = srscd->getStartIndex() < srscd->getEndIndex();
+                        bool canGiveSpatialElement = srscd->canGiveSpatialElement();
                         bool otherCanGiveMeSpatialElement;
                         MPI_Send(&canGiveSpatialElement, 1, MPI_CXX_BOOL, rightNeighbor, tag, MPI_COMM_WORLD);
                         MPI_Recv(&otherCanGiveMeSpatialElement, 1, MPI_CXX_BOOL, rightNeighbor, tag, MPI_COMM_WORLD, &status);
@@ -454,7 +464,7 @@ int main(int argc, char** argv)
                         MPI_Recv(&otherAvgDomainRate, 1, MPI_LONG_DOUBLE, leftNeighbor, tag, MPI_COMM_WORLD, &status);
                         MPI_Send(&avgDomainRate, 1, MPI_LONG_DOUBLE, leftNeighbor, tag, MPI_COMM_WORLD); // Don't give spatial element if we only have one remaining
 
-                        bool canGiveSpatialElement = srscd->getStartIndex() < srscd->getEndIndex();
+                        bool canGiveSpatialElement = srscd->canGiveSpatialElement();
                         bool otherCanGiveMeSpatialElement;
                         MPI_Recv(&otherCanGiveMeSpatialElement, 1, MPI_CXX_BOOL, leftNeighbor, tag, MPI_COMM_WORLD, &status);
                         MPI_Send(&canGiveSpatialElement, 1, MPI_CXX_BOOL, leftNeighbor, tag, MPI_COMM_WORLD);

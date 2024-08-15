@@ -1974,3 +1974,11 @@ long double SCDWrapper::getDomainRate(int domain)
 {
     return domainRate[domain];
 }
+
+bool SCDWrapper::canGiveSpatialElement()
+{
+    /* This processor can afford to give up a spatial element if it has more than 2.5 spatial elements per domain */
+    int numSpatialElements = endIndex - startIndex + 1;
+    double spatialElementsPerDomain = double(numSpatialElements) / DOMAINS_PER_PROCESSOR;
+    return spatialElementsPerDomain > MIN_POINTS_PER_DOMAIN;  
+}

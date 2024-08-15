@@ -172,6 +172,7 @@ public:
     void implementObjectChanges();
     long double getMaxAvgDomainRate();
     long double getDomainRate(int);
+    bool canGiveSpatialElement();
 };
 
 #endif
