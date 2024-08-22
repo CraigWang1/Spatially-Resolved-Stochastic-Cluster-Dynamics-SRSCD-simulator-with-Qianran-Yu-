@@ -12,7 +12,7 @@ from make_speciesfile import combine_species_files
 
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 301                             # num spatial elements in the simulation (1 surface + 100 bulk)
+POINTS = 251                             # num spatial elements in the simulation (1 surface + 100 bulk)
 VOLUME = 1e-17                           # volume of a spatial element [cm^3]
 SURFACE_THICKNESS = 0.544                # [nm]
 SURFACE_VOLUME = VOLUME / 20 * SURFACE_THICKNESS + VOLUME # [cm^3]
@@ -115,33 +115,45 @@ with open("species.txt") as f:
 			vacancy_c += np.array(line_hold[2:]).astype(float) * v_per_cluster
 			plot_v = True
 
-	trapped_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
-	free_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
-	vacancy_c[0] *= VOLUME / SURFACE_VOLUME
+with open("sink0.txt") as f:
+	f.readline()
+	f.readline()
+	numH = []
+	for line_hold in f:
+		line_hold = line_hold.split()
+		numH.append(int(line_hold[3]))
+	trapped_hydrogen_c += np.array(numH).astype(float)
 
-	trapped_hydrogen_c /= VOLUME
-	free_hydrogen_c /= VOLUME
-	vacancy_c /= VOLUME
+trapped_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
+free_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
+vacancy_c[0] *= VOLUME / SURFACE_VOLUME
 
-	all_hydrogen_c = free_hydrogen_c + trapped_hydrogen_c
+trapped_hydrogen_c /= VOLUME
+free_hydrogen_c /= VOLUME
+vacancy_c /= VOLUME
 
-	for i in range(len(trapped_hydrogen_c)):
-		trapped_hydrogen_c[i] = trapped_hydrogen_c[i] / (DENSITY + trapped_hydrogen_c[i]) * 100
+all_hydrogen_c = free_hydrogen_c + trapped_hydrogen_c
 
-	# Apply Butterworth filter with filtfilt for zero phase shift
-	def lowpass(data: np.ndarray, cutoff: float, sample_rate: float, poles: int = 5):
-		sos = scipy.signal.butter(poles, cutoff, 'lowpass', fs=sample_rate, output='sos')
-		filtered_data = scipy.signal.sosfiltfilt(sos, data)
-		return filtered_data	
+for i in range(len(trapped_hydrogen_c)):
+	trapped_hydrogen_c[i] = trapped_hydrogen_c[i] / (DENSITY + trapped_hydrogen_c[i]) * 100
 
-	cutoff = 5  # Cutoff frequency
-	fs = 1 / (positions[1] - positions[0])  # Sampling frequency
+# Apply Butterworth filter with filtfilt for zero phase shift
+def lowpass(data: np.ndarray, cutoff: float, sample_rate: float, poles: int = 5):
+	sos = scipy.signal.butter(poles, cutoff, 'lowpass', fs=sample_rate, output='sos')
+	filtered_data = scipy.signal.sosfiltfilt(sos, data)
+	return filtered_data	
 
-	# Create a 5-pole low-pass filter with an 80 Hz cutoff
-	b, a = scipy.signal.butter(5, 1.25/6, fs=fs)
+cutoff = 5  # Cutoff frequency
+fs = 1 / (positions[1] - positions[0])  # Sampling frequency
 
-	# Apply the filter using Gustafsson's method
-	avg_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c, method="gust")
+# Create a 5-pole low-pass filter with an 80 Hz cutoff
+b, a = scipy.signal.butter(5, 1.25/2, fs=fs)
+
+# Apply the filter using Gustafsson's method
+avg_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c, method="gust")
+
+
+
 
 concentrations = [c for c in concentrations]
 plt.plot(experiment_positions, concentrations, label="Experiment", color='r')
@@ -168,10 +180,10 @@ if plot_h:
 	# plt.plot(positions[:upto], vacancy_c[:upto], color='r', label="Vacancy Concentration")
 print("Summed retained concentration: "+str(np.sum(trapped_hydrogen_c)))
 plt.yscale('log')
-plt.ylim(10**-3, 10**0)
-plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
+plt.ylim(2*10**-3, 10**0)
+# plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
 plt.legend()
-plt.title("Trapped Hydrogen Concentration Vs. Depth\n $T = 300K, Fluence = 5 \cdot 10^{22}$ $[m^{-2}]$")
+plt.title("Trapped Hydrogen Concentration Vs. Depth\n $T = 383K, Fluence = 1 \cdot 10^{24}$ $[m^{-2}]$")
 plt.xlabel("Depth $[\mu m]$")
 plt.ylabel("Trapped Hydrogen Concentration $[at. \%]$")
 plt.show()

@@ -524,6 +524,7 @@ int main(int argc, char** argv)
         advTime += globalTimeStep;
         done = advTime >= TOTAL_TIME;
     }
+    srscd->writeFile(advTime, iStep, threadID);
     MPI_Finalize();
     cout << "Finished, Bye" << endl;
     return 0;
