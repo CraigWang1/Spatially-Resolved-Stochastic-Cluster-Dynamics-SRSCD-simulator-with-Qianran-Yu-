@@ -65,15 +65,14 @@ def vacancies_per_cluster(obj_key):
 # plt.figure(figsize=(640/dpi, 480/dpi), dpi=dpi)
 
 fluences = [
-	"5e22",
+	"1e24",
 	# "5e23",
 	# "1e24"
 ]
 
 # Plot Experiment
 for i in range(len(fluences)):
-	with open(f"/home/craig/research/experiment_retention_300K/fluence_{fluences[i]}.txt") as f:
-		f.readline() # column titles
+	with open(f"/home/craig/research/experiment_retention_383K/fluence_{fluences[i]}.txt") as f:
 		experiment_positions = []
 		concentrations = []
 		for line_hold in f:
@@ -115,6 +114,7 @@ with open("species.txt") as f:
 		if v_per_cluster > 0:
 			vacancy_c += np.array(line_hold[2:]).astype(float) * v_per_cluster
 			plot_v = True
+
 	trapped_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
 	free_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
 	vacancy_c[0] *= VOLUME / SURFACE_VOLUME
@@ -143,8 +143,8 @@ with open("species.txt") as f:
 	# Apply the filter using Gustafsson's method
 	avg_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c, method="gust")
 
-concentrations = [c*time/26315 for c in concentrations]
-plt.plot(experiment_positions, concentrations, label="Experiment", color='r', linewidth=0, marker="^")
+concentrations = [c for c in concentrations]
+plt.plot(experiment_positions, concentrations, label="Experiment", color='r')
 
 retained_experiment_fluence = 0  # arbitrary units
 retained_sim_fluence = 0
@@ -167,6 +167,8 @@ if plot_h:
 	# nonzero_vacancy_c = np.delete(vacancy_c, indices_to_delete)
 	# plt.plot(positions[:upto], vacancy_c[:upto], color='r', label="Vacancy Concentration")
 print("Summed retained concentration: "+str(np.sum(trapped_hydrogen_c)))
+plt.yscale('log')
+plt.ylim(10**-3, 10**0)
 plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
 plt.legend()
 plt.title("Trapped Hydrogen Concentration Vs. Depth\n $T = 300K, Fluence = 5 \cdot 10^{22}$ $[m^{-2}]$")

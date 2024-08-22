@@ -273,16 +273,18 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     if((count == 1 && hostObject->getKey() == 1) ||
         (count == 0 && hostObject->getKey() == 1))
     {
+
         double surfaceConc = 0.0; 
         int64 HKey = 1;
         if (allObjects.find(HKey) != allObjects.end())
             surfaceConc = allObjects[HKey]->getNumber(0) / DIVIDING_AREA;  // [cm^-2] concentration
 
+        double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);
+        double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
+
         // special case for 1H diffusion from Bulk to Surface 
         if (count == 1)
         {
-            double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);
-            double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
             double jumpingDist = maxSurfaceConc / 6 / DENSITY;
             double freq = NU0 * exp(-H_MIGRATION_ENERGY / KB / TEMPERATURE);
         
@@ -305,7 +307,8 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         // special case for 1H diffusion from Surface to Bulk
         else if (count == 0)
         {
-            double freq = NU0 * exp(-1.39 / KB / TEMPERATURE); // Eabs = Ech + Eperm = 0.7 + 0.69 eV
+            double absorbE = 1.10 + 0.939*(1.0/(1.0+exp( (surfaceSaturationFraction-0.232)/0.0683 )));  // from Hodille 2020
+            double freq = NU0 * exp(-absorbE / KB / TEMPERATURE);
             prefactor = freq * surfaceConc * DIVIDING_AREA;
             diffRToB = prefactor;
             diffRToF = 0.0;
@@ -400,6 +403,7 @@ long double OneLine::computeDissReaction(
        For now it is only enabled for VH clusters, because chopping off a diss pathway for those doesn't seem to matter much */   
     long double baseDissRate = computeBaseDissReaction(hostObject, index, count);
     long double netDissRate = baseDissRate;
+    return baseDissRate;
     int attrIndexH = 2;
     int64 HKey = 1;
     if (index == attrIndexH && 
@@ -544,6 +548,7 @@ long double OneLine::computeCombReaction(
        For now it is only enabled for VH clusters, because chopping off a diss pathway for those doesn't seem to matter much */
     long double baseCombRate = computeBaseCombReaction(hostObject, mobileObject, count);
     long double netCombRate = baseCombRate;
+    return baseCombRate;
     int attrIndexH = 2;
     if (((hostObject->getAttri(0) <= -1 && hostObject->getAttri(2) >= 6) ||
         (hostObject->getAttri(0) >= 20 && hostObject->getAttri(2) >= 40)) && 
@@ -634,6 +639,9 @@ void OneLine::computeRecombReaction(
     if (allObjects.find(HKey) != allObjects.end())
         surfaceConc = numH / DIVIDING_AREA;  // [cm^-2] concentration
 
+    double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);
+    double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
+
     // Calculate ER recomb rate
     if (numH >= 1)
     {
@@ -646,9 +654,9 @@ void OneLine::computeRecombReaction(
     // Calculate LH recomb rate
     if (numH >= 2)
     {
+        double desorbE = 0.525 + 0.591*(1.0/(1.0+exp( (surfaceSaturationFraction-0.247)/0.0692 )));  // from Hodille 2020
         double desorptionR = NU0 * pow(ALATT, 2); // [cm^2 s^-1]
-        double Ech = 0.7; // [eV] activate energy of incident H atom at chemiorption site from Zhenhou Wang 2020
-        recombRLH = desorptionR * exp(-2 * Ech / KB / TEMPERATURE) * surfaceConc * surfaceConc * DIVIDING_AREA;
+        recombRLH = desorptionR * exp(-2.0 * desorbE / KB / TEMPERATURE) * surfaceConc * surfaceConc * DIVIDING_AREA;
     }
     else
         recombRLH = 0.0;
