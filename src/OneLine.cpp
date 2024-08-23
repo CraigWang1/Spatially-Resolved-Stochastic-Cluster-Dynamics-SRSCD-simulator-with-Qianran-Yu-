@@ -643,7 +643,7 @@ void OneLine::computeRecombReaction(
     double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
 
     // Calculate ER recomb rate
-    if (numH >= 1)
+    if (numH >= 1 && HYDROGEN_ON)
     {
         double crossSectionERRecomb = 1.7e-17; // [cm^2] cross-section of ER recombination from Zhenhou Wang 2020
         recombRER = FLUX_H * crossSectionERRecomb * surfaceConc * DIVIDING_AREA; 
