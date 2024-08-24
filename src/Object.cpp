@@ -28,11 +28,7 @@ Object::Object(const int64 key, const int *number):oKey(key), totalNumber(0)
 {
     setAttributes(key);
     dimensionality = setDimensionality();
-    computeDiffCoeff();
-    computeRecombCoeff();
-    computeBindTerm();
-    computeR1R1e();
-    computeSinks();
+    computeProperties();
     setNumber();
     for (int i = 0; i < POINTS; i++) {
         addNumber(i, number[i]);
@@ -607,6 +603,11 @@ void Object::setProperties(const int count, const int n)
     setNumber();
     addNumber(count, n);
     dimensionality = setDimensionality();
+    computeProperties();
+}
+
+void Object::computeProperties()
+{
     computeDiffCoeff();
     computeRecombCoeff();
     computeBindTerm();

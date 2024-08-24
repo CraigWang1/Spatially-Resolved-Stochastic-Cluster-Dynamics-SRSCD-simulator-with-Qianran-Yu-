@@ -40,6 +40,7 @@ private:
     // dissociation rate of V/H from dislocations
     int reactions[8][POINTS];
     int startIndex, endIndex; // the indices of which points this processor is responsible for
+    long int numHDesorbed;
     
     /* hold reactions, 1st dimension is reaction type, second dimension is element, value is total number of this reaction */
     long double matrixRate[POINTS];    // total rate in every element(point)
@@ -51,7 +52,7 @@ private:
     bool lastElemSaturated;
     enum InsertStyle {INTERSTITIAL, SUBSTITUTIONAL};
     ofstream fs1, fs2, fs3, fs4, fs5, fs6;
-    fstream selectReactionFile, processEventFile;
+    fstream selectReactionFile, processEventFile, desorbedFile;
     fstream fv;
     // GnuplotS gs, gr; /* plot species.out and reaction */
     // GnuplotS gd1, gd2; /* damage graph 1 and damage graph 2*/
@@ -173,6 +174,8 @@ public:
     long double getMaxAvgDomainRate();
     long double getDomainRate(int);
     bool canGiveSpatialElement();
+    void recalculateAllRates();
+    void writeDesorbedFile(double );
 };
 
 #endif

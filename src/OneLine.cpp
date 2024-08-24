@@ -346,7 +346,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         /* 2. compute diffusion rate to the back element
         * Object are allowed to diffuse out through the back (assume infinite W sample)
         */
-        if (concentration > backConcentration) {
+        if (concentration > backConcentration && count != POINTS - 1) {
             /* if diffusable */
             prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthb;
             diffRToB = prefactor*(concentration - backConcentration);

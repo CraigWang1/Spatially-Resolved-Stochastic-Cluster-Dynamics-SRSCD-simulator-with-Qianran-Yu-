@@ -8,8 +8,12 @@
 #include <cassert>
 #include"SCDWrapper.h"
 
+double TEMPERATURE;
+
 int main(int argc, char** argv) 
 {
+    TEMPERATURE = 350.0;
+
     int threadID, numThreads;
     int rootThreadID = 0;
     int tag = 1;
@@ -83,10 +87,12 @@ int main(int argc, char** argv)
     srscd->examineDomainRate();
 
     double prev_time = MPI_Wtime();
-    cout << H_SATURATION_CONCENTRATION * VOLUME << endl;
     
     while(!done)
     {
+        TEMPERATURE = 350.0 + advTime * 0.5;
+        srscd->recalculateAllRates();  // due to temperature change
+
         long double localAvgDomainRate = srscd->getMaxAvgDomainRate();
         long double maxAvgDomainRate;
 
@@ -521,6 +527,9 @@ int main(int argc, char** argv)
                 transferTurn++;
             }
         }
+
+        srscd->writeDesorbedFile(advTime);
+
         advTime += globalTimeStep;
         done = advTime >= TOTAL_TIME;
     }

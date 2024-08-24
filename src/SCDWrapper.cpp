@@ -37,9 +37,11 @@ SCDWrapper::SCDWrapper():allObjects(), engine(rd()), distribution(0.0L, 1.0L), d
     setSinks();
 
     lastElemSaturated = false;
+    numHDesorbed = 0;
 
     selectReactionFile.open("selectReaction.txt", ios::app);
     processEventFile.open("Reactionts.txt", ios::app);
+    desorbedFile.open("Desorbed.txt", ios::app);
     /* set format of gs --- species */
     /*
     gs.set_title("Species");
@@ -1226,9 +1228,15 @@ void SCDWrapper::processRecombEvent(Object* hostObject, const int n, bool ER)
 
     // The implementation is easy: just remove one 1H object for ER Recomb and two 1H objects for LH Recomb
     if (ER)
+    {
         reduceFromObjectMap(hostObject->getKey(), n, 1);
+        numHDesorbed += 1;
+    }
     else
+    {
         reduceFromObjectMap(hostObject->getKey(), n, 2);
+        numHDesorbed += 2;
+    }
 }
 
 void SCDWrapper::processSinkDissEvent(const int type, const int point)
@@ -1981,4 +1989,35 @@ bool SCDWrapper::canGiveSpatialElement()
     int numSpatialElements = endIndex - startIndex + 1;
     double spatialElementsPerDomain = double(numSpatialElements) / DOMAINS_PER_PROCESSOR;
     return spatialElementsPerDomain > MIN_POINTS_PER_DOMAIN;  
+}
+
+void SCDWrapper::recalculateAllRates()
+{
+    unordered_map<int64, Object*>::iterator iter;
+    for (iter = allObjects.begin(); iter != allObjects.end(); ++iter)
+    {
+        Object* object = iter->second;
+        object->computeProperties();
+    }
+
+    for (int point = 0; point < POINTS; point++)
+    {
+        for (iter = allObjects.begin(); iter != allObjects.end(); ++iter)
+        {
+            Object* object = iter->second;
+            updateObjectInMap(object, point);
+        }
+
+        // Omit damage recalculation for now, assume it doesn't change with temperature
+
+        computeSinkDissRate(0, point);
+        computeSinkDissRate(1, point);
+    }
+
+    examineDomainRate();
+}
+
+void SCDWrapper::writeDesorbedFile(double time)
+{
+    desorbedFile << time << " " << numHDesorbed << endl;
 }

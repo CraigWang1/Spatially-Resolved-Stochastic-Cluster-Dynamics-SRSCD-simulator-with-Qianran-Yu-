@@ -41,6 +41,7 @@ public:
     Object(const int64, const int, const int n=1);  /* constructor one, establishing object by key */
     Object(const int*, const int, const int n=1);/* constructor two, establishing object by arrtibutes */
     Object(const int64, const int*); /* designed for restart, add object by knowing numbers in every element*/
+    void computeProperties();
     void addNumber(const int, const int n=1); /* default, add 1, but can add whatever n */
     void reduceNumber(const int);
     int signof(const int64) const;

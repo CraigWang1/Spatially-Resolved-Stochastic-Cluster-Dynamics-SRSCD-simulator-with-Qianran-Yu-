@@ -123,7 +123,7 @@ with open("sink0.txt") as f:
 		line_hold = line_hold.split()
 		numH.append(int(line_hold[3]))
 	trapped_hydrogen_c += np.array(numH).astype(float)
-
+print(np.sum(trapped_hydrogen_c))
 trapped_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
 free_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
 vacancy_c[0] *= VOLUME / SURFACE_VOLUME
@@ -179,8 +179,8 @@ if plot_h:
 	# nonzero_vacancy_c = np.delete(vacancy_c, indices_to_delete)
 	# plt.plot(positions[:upto], vacancy_c[:upto], color='r', label="Vacancy Concentration")
 print("Summed retained concentration: "+str(np.sum(trapped_hydrogen_c)))
-plt.yscale('log')
-plt.ylim(2*10**-3, 10**0)
+# plt.yscale('log')
+# plt.ylim(2*10**-3, 10**0)
 # plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
 plt.legend()
 plt.title("Trapped Hydrogen Concentration Vs. Depth\n $T = 383K, Fluence = 1 \cdot 10^{24}$ $[m^{-2}]$")
