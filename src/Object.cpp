@@ -28,11 +28,7 @@ Object::Object(const int64 key, const int *number):oKey(key), totalNumber(0)
 {
     setAttributes(key);
     dimensionality = setDimensionality();
-    computeDiffCoeff();
-    computeRecombCoeff();
-    computeBindTerm();
-    computeR1R1e();
-    computeSinks();
+    computeProperties();
     setNumber();
     for (int i = 0; i < POINTS; i++) {
         addNumber(i, number[i]);
@@ -585,8 +581,8 @@ void Object::computeSinks()
     Sgbi = 6*sqrt(Zdi*Sd + Zodsi*Sods)/GRAIN_SIZE;
     
     /* when internal sinks are weak */
-    Sgbi = 24 / GRAIN_SIZE / GRAIN_SIZE;
-    Sgbv = 24 / GRAIN_SIZE / GRAIN_SIZE;
+    // Sgbi = 24 / GRAIN_SIZE / GRAIN_SIZE;
+    // Sgbv = 24 / GRAIN_SIZE / GRAIN_SIZE;
     
     /* 4. Thin foil/interface: */
     // double Sf = (2*sqrt(Zdi*5d + Zodsi*Sods)/FOIL_THICKNESS)*coth(sqrt(Zdi*5d + Zodsi*Sods)*FOIL_THINKNESS/4); */
@@ -607,6 +603,11 @@ void Object::setProperties(const int count, const int n)
     setNumber();
     addNumber(count, n);
     dimensionality = setDimensionality();
+    computeProperties();
+}
+
+void Object::computeProperties()
+{
     computeDiffCoeff();
     computeRecombCoeff();
     computeBindTerm();

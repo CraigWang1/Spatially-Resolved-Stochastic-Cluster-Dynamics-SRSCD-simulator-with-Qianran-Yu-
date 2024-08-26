@@ -39,7 +39,8 @@ private:
     // dissociation rate of V/H from dislocations
     int reactions[8][POINTS];
     int startIndex, endIndex; // the indices of which points this processor is responsible for
-    
+    long int numHDesorbed;
+
     /* hold reactions, 1st dimension is reaction type, second dimension is element, value is total number of this reaction */
     long double matrixRate[POINTS];    // total rate in every element(point)
     long double bulkRate;  // total rate in the whole bulk;
@@ -49,7 +50,7 @@ private:
     bool lastElemSaturated;
     enum InsertStyle {INTERSTITIAL, SUBSTITUTIONAL};
     ofstream fs1, fs2, fs3, fs4, fs5, fs6;
-    fstream selectReactionFile, processEventFile;
+    fstream selectReactionFile, processEventFile, desorbedFile;
     fstream fv;
     // GnuplotS gs, gr; /* plot species.out and reaction */
     // GnuplotS gd1, gd2; /* damage graph 1 and damage graph 2*/
@@ -91,7 +92,7 @@ private:
     void processDissoEvent(Object*, const int, const int64, fstream& ); /* process dissociation event */
     void processCombEvent(Object*, const int, const int64, fstream& );  /* process combination reaction */
     void processSAVEvent(Object*, const int);      /* process super-abundant-vacancy reaction */
-    void processRecombEvent(Object*, const int, bool);   /* process surface recombination event: 1H+1H forms H2 and leaves material surface */
+    void processRecombEvent(Object*, const int, bool, double);   /* process surface recombination event: 1H+1H forms H2 and leaves material surface */
     void processSinkDissEvent(const int, const int); /* process dissociation from sink event */
     /* get insertion functions */
     void getElectronInsertion(const int);
@@ -164,6 +165,8 @@ public:
     vector<BoundaryChange> getSpatialElement(int);
     void getSink(int, int*);
     void addSpatialElement(int, vector<BoundaryChange>, int, int*);
+    void recalculateAllRates();
+    void writeDesorbedFile(double);
 };
 
 #endif

@@ -37,9 +37,11 @@ SCDWrapper::SCDWrapper():allObjects(), engine(rd()), distribution(0.0L, 1.0L), d
     setSinks();
 
     lastElemSaturated = false;
+    numHDesorbed = 0;
 
     selectReactionFile.open("selectReaction.txt", ios::app);
     processEventFile.open("Reactionts.txt", ios::app);
+    desorbedFile.open("Desorbed.txt", ios::app);
     /* set format of gs --- species */
     /*
     gs.set_title("Species");
@@ -391,12 +393,12 @@ void SCDWrapper::processEvent(
                 processEventFile << hostObject->getKey() << "  in element " << n << " experiences SAV (ejects interstitial)" << endl;
             break;
         case RECOMBER:
-            processRecombEvent(hostObject, n, true);
+            processRecombEvent(hostObject, n, true, time);
             if (LOG_REACTIONS)
                 processEventFile << hostObject->getKey() << "  in element " << n << " experiences an ER recombination to form H2 and leave the front of the material" << endl;
             break;
         case RECOMBLH:
-            processRecombEvent(hostObject, n, false);
+            processRecombEvent(hostObject, n, false, time);
             if (LOG_REACTIONS)
                 processEventFile << hostObject->getKey() << "  in element " << n << " experiences a LH recombination to form H2 and leave the back of the material" << endl;
             break;
@@ -1208,7 +1210,7 @@ void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
     reduceFromObjectMap(hostObject->getKey(), n);
 }
 
-void SCDWrapper::processRecombEvent(Object* hostObject, const int n, bool ER)
+void SCDWrapper::processRecombEvent(Object* hostObject, const int n, bool ER, double advTime)
 {
     if (n != 0)
         cerr << "Recomb Error" << endl;
@@ -1221,7 +1223,11 @@ void SCDWrapper::processRecombEvent(Object* hostObject, const int n, bool ER)
     if (ER)
         reduceFromObjectMap(hostObject->getKey(), n, 1);
     else
+    {
         reduceFromObjectMap(hostObject->getKey(), n, 2);
+        numHDesorbed += 2;
+        writeDesorbedFile(advTime);
+    }
 }
 
 void SCDWrapper::processSinkDissEvent(const int type, const int point)
@@ -1901,4 +1907,36 @@ void SCDWrapper::addSpatialElement(int newGhostIndex, vector<BoundaryChange> new
     }
 
     clearBoundaryChangeQs();  // from the add/reduceToObjectMap calls
+}
+
+void SCDWrapper::recalculateAllRates()
+{
+    unordered_map<int64, Object*>::iterator iter;
+    for (iter = allObjects.begin(); iter != allObjects.end(); ++iter)
+    {
+        Object* object = iter->second;
+        object->computeProperties();
+    }
+
+    for (int point = 0; point < POINTS; point++)
+    {
+        for (iter = allObjects.begin(); iter != allObjects.end(); ++iter)
+        {
+            Object* object = iter->second;
+            if (object->getNumber(point) > 0)
+                updateObjectInMap(object, point);
+        }
+
+        // Omit damage recalculation for now, assume it doesn't change with temperature
+
+        computeSinkDissRate(0, point);
+        computeSinkDissRate(1, point);
+    }
+
+    examineDomainRate();
+}
+
+void SCDWrapper::writeDesorbedFile(double time)
+{
+    desorbedFile << time << " " << numHDesorbed << endl;
 }
