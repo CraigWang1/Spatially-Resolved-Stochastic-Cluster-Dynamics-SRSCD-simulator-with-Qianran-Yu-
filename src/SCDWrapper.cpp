@@ -621,20 +621,26 @@ void SCDWrapper::setSinks()
 
 void SCDWrapper::computeSinkDissRate(const int type, const int point)
 {
-    double b = 2.8e-8; //burger's vector 2.8e-8 cm
-    // double nu = 1e+13; // attempt frequency s^-1 averaged with dt
+    double b = jumped; //burger's vector 2.8e-8 cm
     double ebH = 0.6, emH = 0.25; //binding and migration energy of hydrogen
     double ebV = 1.0, emV = 1.29; //binding and migration energy of vacancy
     double prefactor = 1.58e-3;
     double prefactorv = 177e-4;
     // vacancy dissociation
     if(type == 0){
-        sinkDissRate[type][point] = (2*PI*DISLOCATION*VOLUME/ALATT/ALATT/b)*sinks[0][point]*prefactorv*exp(-(ebV+emV)/KB/TEMPERATURE);
-        //sinkDissRate[type][point] = 0.0;
+        sinkDissRate[type][point] = 2.0*PI*b*DISLOCATION*VOLUME/ALATT/ALATT*NU0*exp(-ebV/KB/TEMPERATURE)*(sinks[0][point]-DENSITY*VOLUME*exp(-3.23/KB/TEMPERATURE));
+        if (sinkDissRate[type][point] < 0)
+            sinkDissRate[type][point] = 0;
+        // sinkDissRate[type][point] = (2*PI*DISLOCATION*VOLUME/ALATT/ALATT/b)*sinks[0][point]*prefactorv*exp(-(ebV+emV)/KB/TEMPERATURE);
+        // sinkDissRate[type][point] = 0.0;
     }
     // hydrogen dissocaiton
     if(type == 1){
-        sinkDissRate[type][point] = (2*PI*DISLOCATION*VOLUME/ALATT/ALATT/b)*sinks[3][point]*prefactor*exp(-(ebH+emH)/KB/TEMPERATURE);
+        sinkDissRate[type][point] = 2.0*PI*b*DISLOCATION*VOLUME/ALATT/ALATT*NU0*exp(-ebH/KB/TEMPERATURE)*(sinks[3][point]-DENSITY*VOLUME*exp(-1.04/KB/TEMPERATURE));
+        if (sinkDissRate[type][point] < 0)
+            sinkDissRate[type][point] = 0;        
+        // sinkDissRate[type][point] = (2.0*PI*DISLOCATION*VOLUME/ALATT/ALATT/b)*sinks[3][point]*prefactor*exp(-(ebH+emH)/KB/TEMPERATURE);
+        // cout << sinkDissRate[type][point] << endl;
     }
 }
 
@@ -1232,7 +1238,7 @@ void SCDWrapper::processSinkDissEvent(const int type, const int point)
         sinks[0][point]--;
         productKey = -1000000; //1V
     }else if(type ==1){
-        //dissV event
+        //dissH event
         sinks[3][point]--;
         productKey = 1;
     }

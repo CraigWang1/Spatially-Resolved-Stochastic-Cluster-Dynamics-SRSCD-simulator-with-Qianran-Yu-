@@ -12,7 +12,7 @@ from make_speciesfile import combine_species_files
 
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 301                             # num spatial elements in the simulation (1 surface + 100 bulk)
+POINTS = 251                             # num spatial elements in the simulation (1 surface + 100 bulk)
 VOLUME = 1e-17                           # volume of a spatial element [cm^3]
 SURFACE_THICKNESS = 0.544                # [nm]
 SURFACE_VOLUME = VOLUME / 20 * SURFACE_THICKNESS + VOLUME # [cm^3]
@@ -65,15 +65,15 @@ def vacancies_per_cluster(obj_key):
 # plt.figure(figsize=(640/dpi, 480/dpi), dpi=dpi)
 
 fluences = [
-	"5e22",
+	"1e24",
 	# "5e23",
 	# "1e24"
 ]
 
 # Plot Experiment
 for i in range(len(fluences)):
-	with open(f"/home/craig/research/experiment_retention_300K/fluence_{fluences[i]}.txt") as f:
-		f.readline() # column titles
+	with open(f"/home/craig/research/experiment_retention_383K/fluence_{fluences[i]}.txt") as f:
+		# f.readline() # column titles
 		experiment_positions = []
 		concentrations = []
 		for line_hold in f:
@@ -138,13 +138,13 @@ with open("species.txt") as f:
 	fs = 1 / (positions[1] - positions[0])  # Sampling frequency
 
 	# Create a 5-pole low-pass filter with an 80 Hz cutoff
-	b, a = scipy.signal.butter(5, 1.25/6, fs=fs)
+	b, a = scipy.signal.butter(5, 1.25/2, fs=fs)
 
 	# Apply the filter using Gustafsson's method
 	avg_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c, method="gust")
 
-concentrations = [c*time/26315 for c in concentrations]
-plt.plot(experiment_positions, concentrations, label="Experiment", color='r', linewidth=0, marker="^")
+concentrations = [c for c in concentrations]
+plt.plot(experiment_positions, concentrations, label="Experiment", color='r')
 
 retained_experiment_fluence = 0  # arbitrary units
 retained_sim_fluence = 0
@@ -168,6 +168,8 @@ if plot_h:
 	# plt.plot(positions[:upto], vacancy_c[:upto], color='r', label="Vacancy Concentration")
 print("Summed retained concentration: "+str(np.sum(trapped_hydrogen_c)))
 plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
+plt.yscale('log')
+plt.ylim(2*10**-3, 10**0)
 plt.legend()
 plt.title("Trapped Hydrogen Concentration Vs. Depth\n $T = 300K, Fluence = 5 \cdot 10^{22}$ $[m^{-2}]$")
 plt.xlabel("Depth $[\mu m]$")

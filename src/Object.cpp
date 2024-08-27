@@ -584,7 +584,7 @@ void Object::computeSinks()
     Sgbv = 6*sqrt(Zdv*Sd + Zodsv*Sods)/GRAIN_SIZE;
     Sgbi = 6*sqrt(Zdi*Sd + Zodsi*Sods)/GRAIN_SIZE;
     
-    /* when internal sinks are weak */
+    /* when other internal sinks are weak, grain boundaries have enhanced trapping */
     Sgbi = 24 / GRAIN_SIZE / GRAIN_SIZE;
     Sgbv = 24 / GRAIN_SIZE / GRAIN_SIZE;
     

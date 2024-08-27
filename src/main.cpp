@@ -16,7 +16,6 @@ int main(int argc, char** argv)
     int lengthTag = 2;
     int dataTag = 3;
     MPI_Status status;
-    MPI_Request requests[4];
     int intPerMessage = 3;
 
     MPI_Init(&argc, &argv);
@@ -138,7 +137,7 @@ int main(int argc, char** argv)
 
         if (leftNeighbor >= 0)
         {
-            MPI_Isend(&numToSendLeft, 1, MPI_INT, leftNeighbor, lengthTag, MPI_COMM_WORLD, &requests[0]);
+            MPI_Send(&numToSendLeft, 1, MPI_INT, leftNeighbor, lengthTag, MPI_COMM_WORLD);
             if (numToSendLeft > 0)
             {
                 long int data[numToSendLeft*intPerMessage];
@@ -149,12 +148,12 @@ int main(int argc, char** argv)
                     data[intPerMessage*i+1] = bc.pointIndex;
                     data[intPerMessage*i+2] = bc.change; 
                 }
-                MPI_Isend(data, numToSendLeft*intPerMessage, MPI_LONG, leftNeighbor, dataTag, MPI_COMM_WORLD, &requests[1]);
+                MPI_Send(data, numToSendLeft*intPerMessage, MPI_LONG, leftNeighbor, dataTag, MPI_COMM_WORLD);
             }
         }
         if (rightNeighbor < numThreads)
         {
-            MPI_Isend(&numToSendRight, 1, MPI_INT, rightNeighbor, lengthTag, MPI_COMM_WORLD, &requests[2]);
+            MPI_Send(&numToSendRight, 1, MPI_INT, rightNeighbor, lengthTag, MPI_COMM_WORLD);
             if (numToSendRight > 0)
             {
                 long int data[numToSendRight*intPerMessage];
@@ -165,7 +164,7 @@ int main(int argc, char** argv)
                     data[intPerMessage*i+1] = bc.pointIndex;
                     data[intPerMessage*i+2] = bc.change; 
                 }
-                MPI_Isend(data, numToSendRight*intPerMessage, MPI_LONG, rightNeighbor, dataTag, MPI_COMM_WORLD, &requests[3]);
+                MPI_Send(data, numToSendRight*intPerMessage, MPI_LONG, rightNeighbor, dataTag, MPI_COMM_WORLD);
             }
         }
         if (leftNeighbor >= 0)
