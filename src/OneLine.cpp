@@ -20,7 +20,7 @@ OneLine::OneLine(
     setOneLine(hostObject, count, mobileObjects, allObjects, linePool);
 }
 
-OneLine::OneLine() : diffRToF(0.0), diffRToB(0.0), sinkR(0.0), SAVR(0.0), recombRER(0.0), recombRLH(0.0), totalRate(0.0)
+OneLine::OneLine() : diffRToF(0.0), diffRToB(0.0), sinkRDislocation(0.0), sinkRGrainBndry(0.0), SAVR(0.0), recombRER(0.0), recombRLH(0.0), totalRate(0.0)
 {
     for (int i = 0; i < LEVELS; i++)
         dissociationR[i] = 0.0;
@@ -50,11 +50,17 @@ Reaction OneLine::selectReaction(
     else {
         tempRate -= diffRToB;
     }
-    if (sinkR >= tempRate) {
-        return SINK;
+    if (sinkRDislocation >= tempRate) {
+        return SINKDISLOCATION;
     }
     else {
-        tempRate -= sinkR;
+        tempRate -= sinkRDislocation;
+    }
+    if (sinkRGrainBndry >= tempRate) {
+        return SINKGRAINBNDRY;
+    }
+    else {
+        tempRate -= sinkRGrainBndry;
     }
     if (SAVR >= tempRate) {
         return SAV;
@@ -153,7 +159,8 @@ const long double OneLine::computeTotalRate()
     totalRate = 0.0;
     totalRate += diffRToF; /* add one diffusion rate */
     totalRate += diffRToB; /* add another diffusion rate*/
-    totalRate += sinkR;    /* add sink rate */
+    totalRate += sinkRDislocation;    /* add dislocation sink rate */
+    totalRate += sinkRGrainBndry;     /* add grain boundary sink rate */
     totalRate += SAVR;     /* add super abundant vacancy rate */
     totalRate += recombRER; /* add one recombination rate */
     totalRate += recombRLH; /* add another recombination rate */
@@ -171,7 +178,7 @@ void OneLine::display(Object const * const hostObject)
     ofstream fs;
     fs.open("lines.txt", ios::app);
     fs << "Line for Oject" << hostObject->getKey() << ":    ";
-    fs << "(diff)" << diffRToF << ", " << diffRToB << "    " << "(sink)" << sinkR << "    ";
+    fs << "(diff)" << diffRToF << ", " << diffRToB << "    " << "(sink)" << sinkRDislocation << ", " << sinkRGrainBndry << "    ";
     for (int i = 0; i < LEVELS; ++i) {
         fs <<"(diss)"<< dissociationR[i] << "    ";
     }
@@ -330,11 +337,13 @@ void OneLine::computeSinkReaction(const Object* const hostObject, const int coun
 {
     if (!SINK_ON || count == 0)
     {
-        sinkR = 0.0;
+        sinkRDislocation = 0.0;
+        sinkRGrainBndry = 0.0;
         return;
     }
 
-    sinkR = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSink();
+    sinkRDislocation = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSinkDislocation();
+    sinkRGrainBndry = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSinkGrainBndry();
 }
 
 long double OneLine::computeBaseDissReaction(

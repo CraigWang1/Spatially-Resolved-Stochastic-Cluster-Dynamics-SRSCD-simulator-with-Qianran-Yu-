@@ -24,7 +24,8 @@ private:
     long double bind[LEVELS];
     double bindSH ; /* bind energy of H-H at surface */
     double r1, r1e;
-    double sinkStrength;
+    double sinkStrengthDislocation;
+    double sinkStrengthGrainBndry;
     
     // private functions
     void setKey(); /* use attributes to get key */
@@ -52,7 +53,8 @@ public:
     int getNumber(const int) const;  // get access to the number of object in this element
     int getTotalNumber() const;
     int getAttri(const int) const;   // get access to one attribute
-    double getSink() const;  // get access to sink strength
+    double getSinkDislocation() const;  // get access to dislocation sink strength
+    double getSinkGrainBndry() const;   // get access to grain boundary sink strength
     long double getBind(const int) const;  // get access to one bind
     double getR1()const;  // get access to r1
     double getR1e() const;  // get access to r1e

@@ -132,8 +132,10 @@ void SCDWrapper::computeMatrixRate(const int n)
         }
     }
     matrixRate[n] += damage.getTotalDamage(n);
-    matrixRate[n] += sinkDissRate[0][n];
-    matrixRate[n] += sinkDissRate[1][n];
+    matrixRate[n] += sinkDissRateDislocation[0][n];
+    matrixRate[n] += sinkDissRateDislocation[1][n];
+    matrixRate[n] += sinkDissRateGrainBndry[0][n];
+    matrixRate[n] += sinkDissRateGrainBndry[1][n];
 }
 
 void SCDWrapper::updateMatrixRate(const int n, const Reaction reaction)
@@ -151,42 +153,7 @@ void SCDWrapper::updateMatrixRate(const int n, const Reaction reaction)
         affectedEnd = POINTS - 1;
 
     for (int i = affectedStart; i <= affectedEnd; i++) {
-        matrixRate[i] = 0;
-        matrixRate[i] += damage.getTotalDamage(i);
-        matrixRate[i] += sinkDissRate[0][i];
-        matrixRate[i] += sinkDissRate[1][i];
-    }
-
-    unordered_map<int64, Object*>::iterator iter;
-    for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
-        int64 tempKey = iter->first;
-        Object* tempObject = iter->second;
-        int totalNumber = tempObject->getTotalNumber();
-        while(totalNumber == 0) {
-            iter++;
-            removeObjectFromMap(tempKey);
-            if (iter != allObjects.end()) {
-                tempObject = iter->second;
-                tempKey = iter->first;
-                totalNumber = tempObject->getTotalNumber();
-            }
-            else {
-                break;
-            }
-        }
-        if (iter == allObjects.end()) {
-            break;
-        }
-
-        for (int i = affectedStart; i <= affectedEnd; i++) {
-            Bundle* tempBundle = linePool[tempObject];
-            OneLine* tempLine = tempBundle->lines[i];
-            if (tempLine != nullptr) {
-                matrixRate[i] += tempLine->computeTotalRate();
-                //tempLine->display(tempObject);/* Qianran 0925 */
-            }
-        }
-
+        computeMatrixRate(i);
     }
 }
 
@@ -226,65 +193,6 @@ long double SCDWrapper::getDomainRate()
     return domainRate;
 }
 
-Object* SCDWrapper::selectReaction(
-                                   int64& theOtherKey,
-                                   Reaction& reaction,
-                                   int& count)
-{
-    int pointIndex;
-
-    // Generate a random long double
-    long double randomNum = distribution(engine);
-
-    long double randRate = randomNum * bulkRate;
-    long double tempRandRate = randRate;
-    Object* tempObject = nullptr;
-    Bundle* tempBundle;
-    OneLine* tempLine;
-    //fs << "BulkRate = " << bulkRate << "RandRate = " << randRate << endl;
-    for (pointIndex = 0; pointIndex < POINTS; ++pointIndex) {
-        if (matrixRate[pointIndex] < tempRandRate) {
-            tempRandRate -= matrixRate[pointIndex];
-            continue;
-        }/* if the event is not positioned in this element, move on to the next one */
-        else {
-            reaction = NONE;
-            unordered_map<int64, Object*>::iterator iter = allObjects.begin();
-            while (reaction == NONE && iter != allObjects.end()) {
-                tempObject = iter->second;
-                tempBundle = linePool[tempObject];
-                tempLine = tempBundle->lines[pointIndex];
-                if (tempLine != nullptr) {
-                    reaction = tempLine->selectReaction(tempObject, theOtherKey, tempRandRate);
-                }
-                ++iter;
-            }
-            if (reaction == NONE) {
-                reaction = damage.selectDamage(pointIndex, tempRandRate);
-            }
-            if (reaction == NONE){
-                if(sinkDissRate[0][pointIndex] >= tempRandRate){
-                    reaction = DISSV;
-                }else{
-                    reaction = DISSH;
-                }
-                
-            }
-            
-            count = pointIndex;
-            if (LOG_REACTIONS)
-                selectReactionFile << "Element = " << pointIndex + 1 <<", "<< "Reaction = " << reaction << endl << endl;
-            return tempObject;
-        }
-    }
-    // Sometimes there is a case where randRate == bulkRate, which might result in a 
-    // tiny bit of leftover number (eg. doing 9e14-9e14 gives 0.0001 when it should give 0)
-    // causing the program to think that no event was selected
-    cout << "returned nullptr" << endl;
-    cout << randRate << " " << bulkRate << " " << tempRandRate << endl;
-    return tempObject;
-}
-
 Object* SCDWrapper::selectDomainReaction(
                                    int64& theOtherKey,
                                    Reaction& reaction,
@@ -322,13 +230,31 @@ Object* SCDWrapper::selectDomainReaction(
                 reaction = damage.selectDamage(pointIndex, tempRandRate);
             }
             if (reaction == NONE){
-                if(sinkDissRate[0][pointIndex] >= tempRandRate){
-                    reaction = DISSV;
+                if (sinkDissRateDislocation[0][pointIndex] >= tempRandRate){
+                    reaction = DISSVDISLOCATION;
                 }else{
-                    tempRandRate -= sinkDissRate[0][pointIndex];
-                    if (sinkDissRate[1][pointIndex] >= tempRandRate){
-                        reaction = DISSH;
-                    }
+                    tempRandRate -= sinkDissRateDislocation[0][pointIndex];
+                }
+            }
+            if (reaction == NONE){
+                if (sinkDissRateDislocation[1][pointIndex] >= tempRandRate){
+                    reaction = DISSHDISLOCATION;
+                }else{
+                    tempRandRate -= sinkDissRateDislocation[1][pointIndex];
+                }
+            }
+            if (reaction == NONE){
+                if (sinkDissRateGrainBndry[0][pointIndex] >= tempRandRate){
+                    reaction = DISSVGRAINBNDRY;
+                }else{
+                    tempRandRate -= sinkDissRateGrainBndry[0][pointIndex];
+                }
+            }
+            if (reaction == NONE){
+                if (sinkDissRateGrainBndry[1][pointIndex] >= tempRandRate){
+                    reaction = DISSHGRAINBNDRY;
+                }else{
+                    tempRandRate -= sinkDissRateGrainBndry[1][pointIndex];
                 }
             }
             
@@ -371,11 +297,17 @@ void SCDWrapper::processEvent(
             if (LOG_REACTIONS)
                 processEventFile << hostObject->getKey() <<"  diffuses from element "<< n << " to element " << n+1 << endl;
             break;
-        case SINK:
+        case SINKDISLOCATION:
             processSinkEvent(hostObject, n);
             if (LOG_REACTIONS)
-                processEventFile << hostObject->getKey() <<"  in element "<< n << " goes to sink."<< endl;
-            writeSinkFile(hostObject, n, time); /* this step also updated sinkDissRate */
+                processEventFile << hostObject->getKey() <<"  in element "<< n << " goes to dislocation sink."<< endl;
+            writeSinkFile(hostObject, n, time, true); /* this step also updated sinkDissRate */
+            break;
+        case SINKGRAINBNDRY:
+            processSinkEvent(hostObject, n);
+            if (LOG_REACTIONS)
+                processEventFile << hostObject->getKey() <<"  in element "<< n << " goes to grain boundary sink."<< endl;
+            writeSinkFile(hostObject, n, time, false); /* this step also updated sinkDissRate */
             break;
         case DISSOCIATION:
             processDissoEvent(hostObject, n, theOtherKey, processEventFile);
@@ -409,13 +341,23 @@ void SCDWrapper::processEvent(
         case H:
             getHInsertion(n, dt, processEventFile);
             break;
-        case DISSV:
-            processSinkDissEvent(0, n);
+        case DISSVDISLOCATION:
+            processSinkDissEvent(0, n, true);
             dissV++;
             //cout << "dissV = " << dissV << endl;
             break;
-        case DISSH:
-            processSinkDissEvent(1, n);
+        case DISSHDISLOCATION:
+            processSinkDissEvent(1, n, true);
+            dissH++;
+            //cout << "dissH = " << dissH << endl;
+            break;
+        case DISSVGRAINBNDRY:
+            processSinkDissEvent(0, n, false);
+            dissV++;
+            //cout << "dissV = " << dissV << endl;
+            break;
+        case DISSHGRAINBNDRY:
+            processSinkDissEvent(1, n, false);
             dissH++;
             //cout << "dissH = " << dissH << endl;
             break;
@@ -470,17 +412,23 @@ void SCDWrapper::examineRate()
     }
 }
 
-void SCDWrapper::writeSinkFile(const Object * const hostObject, const long int n, const double time)
+void SCDWrapper::writeSinkFile(const Object * const hostObject, const long int n, const double time, bool dislocation)
 {
     int i;
     for (i = 0; i < LEVELS; i++) {
         int number = hostObject->getAttri(i);
         if (i == 0 && number<0) {
-            sinks[i][n] += abs(number);
+            if (dislocation)
+                sinksDislocation[i][n] += abs(number);
+            else
+                sinksGrainBndry[i][n] += abs(number);
             computeSinkDissRate(i, n);
         }
         else {
-            sinks[i + 1][n] += number;
+            if (dislocation)
+                sinksDislocation[i + 1][n] += number;
+            else
+                sinksGrainBndry[i + 1][n] += number;
             if(i == 2){
                 computeSinkDissRate(1, n);
             }
@@ -573,7 +521,10 @@ void SCDWrapper::writeSinkFile(const double time, const long int n, const int th
     //fs << "Aggregate time = " << time << "  step = " << n << endl;
     for (i = 0; i < POINTS; ++i) {
         for (j = 0; j < LEVELS + 1; ++j) {
-            outFile << sinks[j][i]<< "    ";
+            outFile << sinksDislocation[j][i]<< "    ";
+        }
+        for (j = 0; j < LEVELS + 1; ++j) {
+            outFile << sinksGrainBndry[j][i]<< "    ";
         }
         outFile << endl;
     }
@@ -609,12 +560,14 @@ void SCDWrapper::setSinks()
     int i, j;
     for (i = 0; i < LEVELS + 1; ++i){
         for (j = 0; j < POINTS; ++j) {
-            sinks[i][j] = 0;
+            sinksDislocation[i][j] = 0;
+            sinksGrainBndry[i][j] = 0;
         }
     }
     for (i = 0; i < 2; ++i){
         for (j = 0; j < POINTS; ++j) {
-            sinkDissRate[i][j] = 0;
+            sinkDissRateDislocation[i][j] = 0;
+            sinkDissRateGrainBndry[i][j] = 0;
         }
     }
 }
@@ -622,26 +575,45 @@ void SCDWrapper::setSinks()
 void SCDWrapper::computeSinkDissRate(const int type, const int point)
 {
     double b = jumped; //burger's vector 2.8e-8 cm
-    double ebH = 0.6, emH = 0.25; //binding and migration energy of hydrogen
-    double ebV = 1.0, emV = 1.29; //binding and migration energy of vacancy
-    double prefactor = 1.58e-3;
-    double prefactorv = 177e-4;
-    // vacancy dissociation
+    double ebHDislocation = 0.6, ebHGrainBndry = 1.11; //binding and migration energy of hydrogen
+    double ebVDislocation = 1.0, ebVGrainBndry = 1.53; //binding and migration energy of vacancy
+    double efH = H_FORM_E;  // [eV] energy of formation for hydrogen
+    double efV = 3.23;      // [eV] energy of formation for vacancies
+
+    // vacancy emission
     if(type == 0){
-        sinkDissRate[type][point] = 2.0*PI*b*DISLOCATION*VOLUME/ALATT/ALATT*NU0*exp(-ebV/KB/TEMPERATURE)*(sinks[0][point]-DENSITY*VOLUME*exp(-3.23/KB/TEMPERATURE));
-        if (sinkDissRate[type][point] < 0)
-            sinkDissRate[type][point] = 0;
-        // sinkDissRate[type][point] = (2*PI*DISLOCATION*VOLUME/ALATT/ALATT/b)*sinks[0][point]*prefactorv*exp(-(ebV+emV)/KB/TEMPERATURE);
-        // sinkDissRate[type][point] = 0.0;
+        if (sinksDislocation[0][point] > 0){
+            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-ebVDislocation/KB/TEMPERATURE)*(1.0-sinksDislocation[0][point]/(DENSITY*VOLUME*exp(-efV/KB/TEMPERATURE)));
+        }
+        else{
+            sinkDissRateDislocation[type][point] = 0;
+        }
+        if (sinksGrainBndry[0][point] > 0){
+            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-ebVGrainBndry/KB/TEMPERATURE)*(1.0-sinksGrainBndry[0][point]/(DENSITY*VOLUME*exp(-efV/KB/TEMPERATURE)));
+        }
+        else{
+            sinkDissRateGrainBndry[type][point] = 0;
+        }
     }
-    // hydrogen dissocaiton
+    // hydrogen emission
     if(type == 1){
-        sinkDissRate[type][point] = 2.0*PI*b*DISLOCATION*VOLUME/ALATT/ALATT*NU0*exp(-ebH/KB/TEMPERATURE)*(sinks[3][point]-DENSITY*VOLUME*exp(-1.04/KB/TEMPERATURE));
-        if (sinkDissRate[type][point] < 0)
-            sinkDissRate[type][point] = 0;        
-        // sinkDissRate[type][point] = (2.0*PI*DISLOCATION*VOLUME/ALATT/ALATT/b)*sinks[3][point]*prefactor*exp(-(ebH+emH)/KB/TEMPERATURE);
-        // cout << sinkDissRate[type][point] << endl;
+        if (sinksDislocation[3][point] > 0){
+            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-ebHDislocation/KB/TEMPERATURE)*(1.0-sinksDislocation[3][point]/(DENSITY*VOLUME*exp(-efH/KB/TEMPERATURE)));
+        }
+        else{
+            sinkDissRateDislocation[type][point] = 0;
+        }
+        if (sinksGrainBndry[3][point] > 0){
+            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-ebHGrainBndry/KB/TEMPERATURE)*(1.0-sinksGrainBndry[3][point]/(DENSITY*VOLUME*exp(-efH/KB/TEMPERATURE)));
+        }
+        else{
+            sinkDissRateGrainBndry[type][point] = 0;
+        }
     }
+    if (sinkDissRateDislocation[type][point] < 0)
+        sinkDissRateDislocation[type][point] = 0;
+    if (sinkDissRateGrainBndry[type][point] < 0)
+        sinkDissRateGrainBndry[type][point] = 0;
 }
 
 int64 SCDWrapper::atomProperty(SCDWrapper::InsertStyle mode, const int n)
@@ -978,12 +950,23 @@ void SCDWrapper::updateNetCombDissRate(const Object* const hostObject, const int
 }
 
 void SCDWrapper::updateSinks(const int point, const int* number){
-    for(int i = 0; i< LEVELS+1; i++){
-        sinks[i][point] = number[i];
-        if(i==0){
-            computeSinkDissRate(i,point);
-        }else if(i==3){
-            computeSinkDissRate(1,point);
+    for (int type = 0; type < 2; type++)
+    {
+        for (int level = 0; level < LEVELS+1; level++)
+        {
+            if (type == 0) // dislocation
+            {
+                sinksDislocation[level][point] = number[type*(LEVELS+1)+level];
+            }
+            else // grain boundary
+            {
+                sinksGrainBndry[level][point] = number[type*(LEVELS+1)+level];
+            }
+
+            if (level == 0)
+                computeSinkDissRate(0, point);
+            else if (level == 3)
+                computeSinkDissRate(1, point);
         }
     }
 }
@@ -1031,17 +1014,6 @@ void SCDWrapper::processSinkEvent(Object * hostObject, const int n)
 {
     ++reactions[2][n];
     reduceFromObjectMap(hostObject->getKey(), n);
-    /*
-    if(key == -1000000){
-        //case 1V
-        sinks[0][n]++;
-        computeSinkDissRate(0, n);
-    }else if(key == 1){
-        // case 1H
-        sinks[3][n]++;
-        computeSinkDissRate(1, n);
-    }
-    */
 } /* if sink rate != 0, diffusivity of this object is not 0 */
 
 void SCDWrapper::processDissoEvent(
@@ -1230,16 +1202,25 @@ void SCDWrapper::processRecombEvent(Object* hostObject, const int n, bool ER)
         reduceFromObjectMap(hostObject->getKey(), n, 2);
 }
 
-void SCDWrapper::processSinkDissEvent(const int type, const int point)
+void SCDWrapper::processSinkDissEvent(const int type, const int point, bool dislocation)
 {
     // dissV event
     int64 productKey = 0;
-    if(type == 0){
-        sinks[0][point]--;
+    if(type == 0)
+    {
+        if (dislocation)
+            sinksDislocation[0][point]--;
+        else
+            sinksGrainBndry[0][point]--;
         productKey = -1000000; //1V
-    }else if(type ==1){
-        //dissH event
-        sinks[3][point]--;
+    }
+    // dissH event
+    else if(type ==1)
+    {
+        if (dislocation)
+            sinksDislocation[3][point]--;
+        else
+            sinksGrainBndry[3][point]--;
         productKey = 1;
     }
     addToObjectMap(productKey, point);
@@ -1381,7 +1362,7 @@ void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
 void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
 {
     int64 objectKey;
-    int numberSinks[LEVELS+1] = { 0 };
+    int numberSinks[2*(LEVELS+1)] = { 0 };  // LEVELS + 1 to separate vacancies and sia, *2 because separate dislocations and grain boundaries
     int number[POINTS] = { 0 };
     int step = 0;
     string skip;
@@ -1871,9 +1852,15 @@ vector<BoundaryChange> SCDWrapper::getSpatialElement(int n)
 
 void SCDWrapper::getSink(int n, int* output)
 {
-    for (int level = 0; level < LEVELS+1; level++)  // levels + 1 because vacancy and sia each have their own levels, so vac + sia + helium + H = 4 levels = 3 + 1
+    for (int type = 0; type < 2; type++)
     {
-        output[level] = sinks[level][n];
+        for (int level = 0; level < LEVELS+1; level++)  // levels + 1 because vacancy and sia each have their own levels, so vac + sia + helium + H = 4 levels = 3 + 1
+        {
+            if (type == 0)
+                output[type*(LEVELS+1)+level] = sinksDislocation[level][n];
+            else
+                output[type*(LEVELS+1)+level] = sinksGrainBndry[level][n];
+        }
     }
 }
 
@@ -1896,14 +1883,20 @@ void SCDWrapper::addSpatialElement(int newGhostIndex, vector<BoundaryChange> new
         addToObjectMap(bc.objKey, bc.pointIndex, bc.change);
     }
 
-    /* Put it new sink counts into our new boundary index */
-    for (int level = 0; level < LEVELS+1; level++)
+    /* Put in new sink counts into our new boundary index */
+    for (int type = 0; type < 2; type++)
     {
-        sinks[level][newBoundaryIndex] = newBoundarySinks[level];
-        if (level == 0)
-            computeSinkDissRate(0, newBoundaryIndex);  // V Diss rate
-        else if (level == 3)
-            computeSinkDissRate(1, newBoundaryIndex);  // H Diss rate
+        for (int level = 0; level < LEVELS+1; level++)
+        {
+            if (type == 0)
+                sinksDislocation[level][newBoundaryIndex] = newBoundarySinks[type*(LEVELS+1)+level];
+            else
+                sinksGrainBndry[level][newBoundaryIndex] = newBoundarySinks[type*(LEVELS+1)+level];
+            if (level == 0)
+                computeSinkDissRate(0, newBoundaryIndex);  // V Diss rate
+            else if (level == 3)
+                computeSinkDissRate(1, newBoundaryIndex);  // H Diss rate
+        }
     }
 
     clearBoundaryChangeQs();  // from the add/reduceToObjectMap calls

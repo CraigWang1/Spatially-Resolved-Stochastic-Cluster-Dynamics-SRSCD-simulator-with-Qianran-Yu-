@@ -76,6 +76,7 @@ int main(int argc, char** argv)
     cout << H_SATURATION_CONCENTRATION * VOLUME << endl;
     
     while(!done)
+    // for (int i = 0; i < 100; i++)
     {
         long double localDomainRate = srscd->getDomainRate();
         long double maxDomainRate;
@@ -111,7 +112,7 @@ int main(int argc, char** argv)
         hostObject = srscd->selectDomainReaction(theOtherKey, reaction, pointIndex);/* choose an event */
 
         /*
-        string reactions[] = {"diffF", "diffB", "sink", "diss", "comb", "sav", "recombER", "recombLH", "none", "particle", "HE", "H", "dissV", "dissH", "error"};        
+        string reactions[] = {"diffF", "diffB", "sinkDisloc", "sinkGrain", "diss", "comb", "sav", "recombER", "recombLH", "none", "particle", "HE", "H", "dissVDisloc", "dissVGrain", "dissHDisloc", "dissHGrain", "error"};        
         cout << reactions[reaction] << " " << pointIndex << " " << theOtherKey;
         if (hostObject != nullptr)
             cout << " " << hostObject->getKey();
@@ -304,11 +305,11 @@ int main(int argc, char** argv)
                             }
                             long int data[3] = {};
                             MPI_Send(data, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD); // Send end of transmission message                        }
-                            int sinks[LEVELS+1];
+                            int sinks[2*(LEVELS+1)];
                             srscd->getSink(srscd->getStartIndex(), sinks);
 
                             /* Transfer sinks of the boundary element that we are going to give */
-                            MPI_Send(sinks, LEVELS+1, MPI_INT, leftNeighbor, tag, MPI_COMM_WORLD);
+                            MPI_Send(sinks, 2*(LEVELS+1), MPI_INT, leftNeighbor, tag, MPI_COMM_WORLD);
 
                             /* Set up this new domain */
                             srscd->setDomain(srscd->getStartIndex()+1, srscd->getEndIndex());
@@ -330,8 +331,8 @@ int main(int argc, char** argv)
                             }
 
                             /* Receive sinks of the new boundary element the other processor gave us */
-                            int newBoundarySinks[LEVELS+1];
-                            MPI_Recv(newBoundarySinks, LEVELS+1, MPI_INT, leftNeighbor, tag, MPI_COMM_WORLD, &status);
+                            int newBoundarySinks[2*(LEVELS+1)];
+                            MPI_Recv(newBoundarySinks, 2*(LEVELS+1), MPI_INT, leftNeighbor, tag, MPI_COMM_WORLD, &status);
 
                             /* Set up this new domain */
                             srscd->addSpatialElement(srscd->getStartIndex()-2, receivedTransferChanges, srscd->getStartIndex()-1, newBoundarySinks);
@@ -366,8 +367,8 @@ int main(int argc, char** argv)
                             }
 
                             /* Receive sinks of the new boundary element the other processor gave us */
-                            int newBoundarySinks[LEVELS+1];
-                            MPI_Recv(newBoundarySinks, LEVELS+1, MPI_INT, rightNeighbor, tag, MPI_COMM_WORLD, &status);
+                            int newBoundarySinks[2*(LEVELS+1)];
+                            MPI_Recv(newBoundarySinks, 2*(LEVELS+1), MPI_INT, rightNeighbor, tag, MPI_COMM_WORLD, &status);
 
                             /* Set up this new domain */
                             srscd->addSpatialElement(srscd->getEndIndex()+2, receivedTransferChanges, srscd->getEndIndex()+1, newBoundarySinks);
@@ -387,11 +388,11 @@ int main(int argc, char** argv)
                             }
                             long int data[3] = {};
                             MPI_Send(data, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD); // Send end of transmission message                        }
-                            int sinks[LEVELS+1];
+                            int sinks[2*(LEVELS+1)];
                             srscd->getSink(srscd->getEndIndex(), sinks);
 
                             /* Transfer sinks of the boundary element that we are going to give */
-                            MPI_Send(sinks, LEVELS+1, MPI_INT, rightNeighbor, tag, MPI_COMM_WORLD);
+                            MPI_Send(sinks, 2*(LEVELS+1), MPI_INT, rightNeighbor, tag, MPI_COMM_WORLD);
 
                             /* Set up this new domain */
                             srscd->setDomain(srscd->getStartIndex(), srscd->getEndIndex()-1);
@@ -426,11 +427,11 @@ int main(int argc, char** argv)
                             }
                             long int data[3] = {};
                             MPI_Send(data, 3, MPI_LONG, rightNeighbor, tag, MPI_COMM_WORLD); // Send end of transmission message                        }
-                            int sinks[LEVELS+1];
+                            int sinks[2*(LEVELS+1)];
                             srscd->getSink(srscd->getEndIndex(), sinks);
 
                             /* Transfer sinks of the boundary element that we are going to give */
-                            MPI_Send(sinks, LEVELS+1, MPI_INT, rightNeighbor, tag, MPI_COMM_WORLD);
+                            MPI_Send(sinks, 2*(LEVELS+1), MPI_INT, rightNeighbor, tag, MPI_COMM_WORLD);
 
                             /* Set up this new domain */
                             srscd->setDomain(srscd->getStartIndex(), srscd->getEndIndex()-1);
@@ -452,8 +453,8 @@ int main(int argc, char** argv)
                             }
 
                             /* Receive sinks of the new boundary element the other processor gave us */
-                            int newBoundarySinks[LEVELS+1];
-                            MPI_Recv(newBoundarySinks, LEVELS+1, MPI_INT, rightNeighbor, tag, MPI_COMM_WORLD, &status);
+                            int newBoundarySinks[2*(LEVELS+1)];
+                            MPI_Recv(newBoundarySinks, 2*(LEVELS+1), MPI_INT, rightNeighbor, tag, MPI_COMM_WORLD, &status);
 
                             /* Set up this new domain */
                             srscd->addSpatialElement(srscd->getEndIndex()+2, receivedTransferChanges, srscd->getEndIndex()+1, newBoundarySinks);
@@ -488,8 +489,8 @@ int main(int argc, char** argv)
                             }
 
                             /* Receive sinks of the new boundary element the other processor gave us */
-                            int newBoundarySinks[LEVELS+1];
-                            MPI_Recv(newBoundarySinks, LEVELS+1, MPI_INT, leftNeighbor, tag, MPI_COMM_WORLD, &status);
+                            int newBoundarySinks[2*(LEVELS+1)];
+                            MPI_Recv(newBoundarySinks, 2*(LEVELS+1), MPI_INT, leftNeighbor, tag, MPI_COMM_WORLD, &status);
 
                             /* Set up this new domain */
                             srscd->addSpatialElement(srscd->getStartIndex()-2, receivedTransferChanges, srscd->getStartIndex()-1, newBoundarySinks);
@@ -509,11 +510,11 @@ int main(int argc, char** argv)
                             }
                             long int data[3] = {};
                             MPI_Send(data, 3, MPI_LONG, leftNeighbor, tag, MPI_COMM_WORLD); // Send end of transmission message                        }
-                            int sinks[LEVELS+1];
+                            int sinks[2*(LEVELS+1)];
                             srscd->getSink(srscd->getEndIndex(), sinks);
 
                             /* Transfer sinks of the boundary element that we are going to give */
-                            MPI_Send(sinks, LEVELS+1, MPI_INT, leftNeighbor, tag, MPI_COMM_WORLD);
+                            MPI_Send(sinks, 2*(LEVELS+1), MPI_INT, leftNeighbor, tag, MPI_COMM_WORLD);
 
                             /* Set up this new domain */
                             srscd->setDomain(srscd->getStartIndex()+1, srscd->getEndIndex());

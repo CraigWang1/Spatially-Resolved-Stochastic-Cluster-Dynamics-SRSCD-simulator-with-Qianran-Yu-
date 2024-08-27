@@ -93,9 +93,14 @@ int Object::getAttri(const int index) const
     return attributes[index];
 }
 
-double Object::getSink() const
+double Object::getSinkDislocation() const
 {
-    return sinkStrength;
+    return sinkStrengthDislocation;
+}
+
+double Object::getSinkGrainBndry() const
+{
+    return sinkStrengthGrainBndry;
 }
 
 long double Object::getBind(const int index) const
@@ -170,7 +175,7 @@ void Object::display() const
     cout << endl;
     cout << "r1 = " << r1 << endl;
     cout << "r1e = " << r1e << endl;
-    cout << "sink strength: " << sinkStrength << endl;
+    cout << "sink strength: " << sinkStrengthDislocation <<  " " << sinkStrengthGrainBndry << endl;
     cout << endl;
 }
 
@@ -573,7 +578,6 @@ void Object::computeSinks()
     double Zgbv = 1.0, Zgbi = 1.0;
     // double Zsv = 1.0, Zsi = 1.1;
     double Sd, Sods, Sgbv, Sgbi;
-    double s[2] = { 0 };
     /* 1. Dislocation sink strength: */
     Sd = DISLOCATION*exp(-1*KB*(TEMPERATURE - 300));
     
@@ -584,22 +588,16 @@ void Object::computeSinks()
     Sgbv = 6*sqrt(Zdv*Sd + Zodsv*Sods)/GRAIN_SIZE;
     Sgbi = 6*sqrt(Zdi*Sd + Zodsi*Sods)/GRAIN_SIZE;
     
-    /* when other internal sinks are weak, grain boundaries have enhanced trapping */
-    Sgbi = 24 / GRAIN_SIZE / GRAIN_SIZE;
-    Sgbv = 24 / GRAIN_SIZE / GRAIN_SIZE;
-    
-    /* 4. Thin foil/interface: */
-    // double Sf = (2*sqrt(Zdi*5d + Zodsi*Sods)/FOIL_THICKNESS)*coth(sqrt(Zdi*5d + Zodsi*Sods)*FOIL_THINKNESS/4); */
-    /* When internal sinks are weak */
-    //Sf = 8 / FOIL_THICKNESS / FOIL_THICKNESS;
-    //s[0] = Zdv * Sd + Zgbv * Sgbv + Zodsv * Sods + Zsv * Sf;
-    //s[1] = Zdi * Sd + Zgbi * Sgbi + Zodsi * Sods + Zsi * Sf;
-    
-    s[0] = Zdv * Sd + Zgbv * Sgbv + Zodsv * Sods;
-    s[1] = Zdi * Sd + Zgbi * Sgbi + Zodsi * Sods;
-    //s[0] = Zdv * Sd;
-    //s[1] = Zdi * Sd;
-    sinkStrength = attributes[0] < 0 ? s[0] : s[1];
+    if (attributes[0] <= 0) // Vacancies or H objects
+    {
+        sinkStrengthDislocation = Sd * Zdv;
+        sinkStrengthGrainBndry = 6*sqrt(sinkStrengthDislocation)/GRAIN_SIZE;
+    }
+    else // SIA objects
+    {
+        sinkStrengthDislocation = Sd * Zdi;
+        sinkStrengthGrainBndry = 6*sqrt(sinkStrengthDislocation)/GRAIN_SIZE;
+    }
 }
 
 void Object::setProperties(const int count, const int n)

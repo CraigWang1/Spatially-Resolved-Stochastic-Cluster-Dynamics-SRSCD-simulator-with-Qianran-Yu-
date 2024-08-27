@@ -13,7 +13,8 @@ private:
     // private data member
     long double diffRToF;            // diffusion rate from jth element to (j-1)th element
     long double diffRToB;            // diffusion rate from jth element to (j+1)th latter one
-    long double sinkR;                 // go to sink reaction rate
+    long double sinkRDislocation;                 // rate of getting absorbed to dislocation sink
+    long double sinkRGrainBndry;                  // rate of getting absorbed to grain boundary sink
     long double dissociationR[LEVELS];
     long double SAVR;                // super abundant vacancy reaction rate
     long double recombRER;          // Eley-Rideal Recombination at the surface for H

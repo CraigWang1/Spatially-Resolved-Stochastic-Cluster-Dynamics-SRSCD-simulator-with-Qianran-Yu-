@@ -34,8 +34,10 @@ private:
     
     Damage damage;
     Cpdf cpdf;
-    int sinks[LEVELS+1][POINTS];
-    long double sinkDissRate[2][POINTS];
+    int sinksDislocation[LEVELS+1][POINTS];
+    int sinksGrainBndry[LEVELS+1][POINTS];
+    long double sinkDissRateDislocation[2][POINTS];
+    long double sinkDissRateGrainBndry[2][POINTS]; // only vac and H allowed to emit from sinks, b/c SIA has high binding energy with sinks 
     // dissociation rate of V/H from dislocations
     int reactions[8][POINTS];
     int startIndex, endIndex; // the indices of which points this processor is responsible for
@@ -92,7 +94,7 @@ private:
     void processCombEvent(Object*, const int, const int64, fstream& );  /* process combination reaction */
     void processSAVEvent(Object*, const int);      /* process super-abundant-vacancy reaction */
     void processRecombEvent(Object*, const int, bool);   /* process surface recombination event: 1H+1H forms H2 and leaves material surface */
-    void processSinkDissEvent(const int, const int); /* process dissociation from sink event */
+    void processSinkDissEvent(const int, const int, bool); /* process dissociation from sink event */
     /* get insertion functions */
     void getElectronInsertion(const int);
     void getNeutronInsertion(const int);
@@ -101,7 +103,7 @@ private:
     void getHeInsertion(const int);  // deal with damage[1]
     void getHInsertion(const int, const double, fstream&);   // deal with damage[2]
     /* write file funcitons*/
-    void writeSinkFile(const Object* const, const long int n, const double);
+    void writeSinkFile(const Object* const, const long int n, const double, bool);
     /* sinks.out only writes when sink reaction happens, now this function is not "writing things" but only updating sinks[][] */
     void writeSpeciesFile(const double, const long int, const int);
     void writeClusterFile(const double, const long int);
@@ -123,7 +125,6 @@ public:
     void computeDomainRate();
     long double getBulkRate();
     long double getDomainRate();
-    Object* selectReaction(int64&, Reaction&, int&);  // select reaction
     Object* selectDomainReaction(int64&, Reaction&, int&);
     void processEvent(const Reaction, Object*, const int, const int64, const double, const double);    // deal with reactions
     ~SCDWrapper();          /* destructor to delete everything newed */
