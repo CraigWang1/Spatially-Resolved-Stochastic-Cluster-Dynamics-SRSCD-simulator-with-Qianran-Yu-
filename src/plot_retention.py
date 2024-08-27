@@ -90,7 +90,7 @@ for i in range(len(fluences)):
 # Plot Simulation
 # with open("/home/craig/Downloads/Spatially-Resolved-Stochastic-Cluster-Dynamics-SRSCD-simulator-with-Qianran-Yu-/src/species.txt") as f:
 with open("species.txt") as f:
-	positions = [0.010272 + i*.020 for i in range(POINTS)]  #micrometer
+	positions = [0.000272 + i*.020 for i in range(POINTS)]
 	trapped_hydrogen_c = np.zeros(POINTS)
 	free_hydrogen_c = np.zeros(POINTS)
 	vacancy_c = np.zeros(POINTS)
@@ -115,33 +115,43 @@ with open("species.txt") as f:
 		if v_per_cluster > 0:
 			vacancy_c += np.array(line_hold[2:]).astype(float) * v_per_cluster
 			plot_v = True
-	trapped_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
-	free_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
-	vacancy_c[0] *= VOLUME / SURFACE_VOLUME
 
-	trapped_hydrogen_c /= VOLUME
-	free_hydrogen_c /= VOLUME
-	vacancy_c /= VOLUME
+with open("sink0.txt") as f:
+	f.readline()
+	f.readline()
+	numH = []
+	for line_hold in f:
+		line_hold = line_hold.split()
+		numH.append(int(line_hold[3]) + int(line_hold[7]))
+	trapped_hydrogen_c += np.array(numH).astype(float)
 
-	all_hydrogen_c = free_hydrogen_c + trapped_hydrogen_c
+trapped_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
+free_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
+vacancy_c[0] *= VOLUME / SURFACE_VOLUME
 
-	for i in range(len(trapped_hydrogen_c)):
-		trapped_hydrogen_c[i] = trapped_hydrogen_c[i] / (DENSITY + trapped_hydrogen_c[i]) * 100
+trapped_hydrogen_c /= VOLUME
+free_hydrogen_c /= VOLUME
+vacancy_c /= VOLUME
 
-	# Apply Butterworth filter with filtfilt for zero phase shift
-	def lowpass(data: np.ndarray, cutoff: float, sample_rate: float, poles: int = 5):
-		sos = scipy.signal.butter(poles, cutoff, 'lowpass', fs=sample_rate, output='sos')
-		filtered_data = scipy.signal.sosfiltfilt(sos, data)
-		return filtered_data	
+all_hydrogen_c = free_hydrogen_c + trapped_hydrogen_c
 
-	cutoff = 5  # Cutoff frequency
-	fs = 1 / (positions[1] - positions[0])  # Sampling frequency
+for i in range(len(trapped_hydrogen_c)):
+	trapped_hydrogen_c[i] = trapped_hydrogen_c[i] / (DENSITY + trapped_hydrogen_c[i]) * 100
 
-	# Create a 5-pole low-pass filter with an 80 Hz cutoff
-	b, a = scipy.signal.butter(5, 1.25/2, fs=fs)
+# Apply Butterworth filter with filtfilt for zero phase shift
+def lowpass(data: np.ndarray, cutoff: float, sample_rate: float, poles: int = 5):
+	sos = scipy.signal.butter(poles, cutoff, 'lowpass', fs=sample_rate, output='sos')
+	filtered_data = scipy.signal.sosfiltfilt(sos, data)
+	return filtered_data	
 
-	# Apply the filter using Gustafsson's method
-	avg_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c, method="gust")
+cutoff = 5  # Cutoff frequency
+fs = 1 / (positions[1] - positions[0])  # Sampling frequency
+
+# Create a 5-pole low-pass filter with an 80 Hz cutoff
+b, a = scipy.signal.butter(5, 1.25/2, fs=fs)
+
+# Apply the filter using Gustafsson's method
+avg_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c, method="gust")
 
 concentrations = [c for c in concentrations]
 plt.plot(experiment_positions, concentrations, label="Experiment", color='r')
@@ -158,8 +168,8 @@ print("Sim retained vs. experiment retained: "+str(retained_sim_fluence/retained
 
 if plot_h:
 	# plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
-	plt.plot(positions, trapped_hydrogen_c, label="Simulation", alpha=0.3)
-	plt.plot(positions, avg_hydrogen_c, label="Simulation Filtered", color='blue', marker='^', linestyle='-', markersize=0)
+	plt.plot(positions[1:], trapped_hydrogen_c[1:], label="Simulation")
+	# plt.plot(positions, avg_hydrogen_c, label="Simulation Filtered", color='blue', marker='^', linestyle='-', markersize=0)
 	# plt.plot(positions[:upto], all_hydrogen_c[:upto], label="Hydrogen Concentration")
 # if plot_v:
 	# indices_to_delete = [i for i in range(len(vacancy_c)) if vacancy_c[i] == 0]		
@@ -167,11 +177,11 @@ if plot_h:
 	# nonzero_vacancy_c = np.delete(vacancy_c, indices_to_delete)
 	# plt.plot(positions[:upto], vacancy_c[:upto], color='r', label="Vacancy Concentration")
 print("Summed retained concentration: "+str(np.sum(trapped_hydrogen_c)))
-plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
+# plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
 plt.yscale('log')
 plt.ylim(2*10**-3, 10**0)
 plt.legend()
-plt.title("Trapped Hydrogen Concentration Vs. Depth\n $T = 300K, Fluence = 5 \cdot 10^{22}$ $[m^{-2}]$")
+plt.title("Trapped Hydrogen Concentration Vs. Depth\n $T = 383K, Fluence = 1 \cdot 10^{24}$ $[m^{-2}]$")
 plt.xlabel("Depth $[\mu m]$")
 plt.ylabel("Trapped Hydrogen Concentration $[at. \%]$")
 plt.show()
