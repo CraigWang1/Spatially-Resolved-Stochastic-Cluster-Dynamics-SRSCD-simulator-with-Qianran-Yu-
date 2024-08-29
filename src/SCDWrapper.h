@@ -41,7 +41,8 @@ private:
     // dissociation rate of V/H from dislocations
     int reactions[8][POINTS];
     int startIndex, endIndex; // the indices of which points this processor is responsible for
-    
+    long int numHDesorbed;
+
     /* hold reactions, 1st dimension is reaction type, second dimension is element, value is total number of this reaction */
     long double matrixRate[POINTS];    // total rate in every element(point)
     long double bulkRate;  // total rate in the whole bulk;
@@ -50,7 +51,7 @@ private:
     double totalDpa;
     bool lastElemSaturated;
     enum InsertStyle {INTERSTITIAL, SUBSTITUTIONAL};
-    ofstream fs1, fs2, fs3, fs4, fs5, fs6;
+    ofstream fs1, fs2, fs3, fs4, fs5, fs6, desorbedFile;
     fstream selectReactionFile, processEventFile;
     fstream fv;
     // GnuplotS gs, gr; /* plot species.out and reaction */
@@ -84,8 +85,6 @@ private:
     /* when one mobile object has been removed,
      ** rates of this object with other extisting objects should also be removed
      */
-    void updateCombDissRatePair(int combinedObjectAttr[], const int);
-    void updateNetCombDissRate(const Object* const hostObject, const int);
     void updateSinks(const int, const int*); /* only for restart use */
     /* process event functions */
     void processDiffEvent(Object*, const int, const char);     /* process diffusion reactionObject */
@@ -93,7 +92,7 @@ private:
     void processDissoEvent(Object*, const int, const int64, fstream& ); /* process dissociation event */
     void processCombEvent(Object*, const int, const int64, fstream& );  /* process combination reaction */
     void processSAVEvent(Object*, const int);      /* process super-abundant-vacancy reaction */
-    void processRecombEvent(Object*, const int, bool);   /* process surface recombination event: 1H+1H forms H2 and leaves material surface */
+    void processRecombEvent(Object*, const int, bool, double);   /* process surface recombination event: 1H+1H forms H2 and leaves material surface */
     void processSinkDissEvent(const int, const int, bool); /* process dissociation from sink event */
     /* get insertion functions */
     void getElectronInsertion(const int);
@@ -165,6 +164,8 @@ public:
     vector<BoundaryChange> getSpatialElement(int);
     void getSink(int, int*);
     void addSpatialElement(int, vector<BoundaryChange>, int, int*);
+    void recalculateAllRates();
+    void writeDesorbedFile(double);
 };
 
 #endif

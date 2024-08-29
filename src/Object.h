@@ -20,7 +20,6 @@ private:
     int totalNumber; // number of this object in the whole system
     unsigned int dimensionality;
     double diffusivity;
-    double recombCoeff;
     long double bind[LEVELS];
     double bindSH ; /* bind energy of H-H at surface */
     double r1, r1e;
@@ -34,7 +33,6 @@ private:
     int setDimensionality();
     void computeR1R1e();
     void computeDiffCoeff();
-    void computeRecombCoeff();
     void computeBindTerm();
     void computeSinks();
     void setProperties(const int, const int);
@@ -49,7 +47,6 @@ public:
     // functions that get access to private data memeber
     int64 getKey() const;  // get access to object key;
     double getDiff() const;  // get access to diffusivity
-    double getRecomb() const; // get access to surface recombination coefficient
     int getNumber(const int) const;  // get access to the number of object in this element
     int getTotalNumber() const;
     int getAttri(const int) const;   // get access to one attribute
@@ -62,6 +59,7 @@ public:
     double getBindSH() const; // get binding energy of surface hydrogen
     void getThreeNumber(const int, int*) const;// get access to object number (number[POINTS])
     void display() const;
+    void computeThermalProperties();  // compute properties that are affected by temperature (this is especially needed for TDS)
 };
 
 int64 attrToKey(const int* const);  // take array of attributes and return the object key

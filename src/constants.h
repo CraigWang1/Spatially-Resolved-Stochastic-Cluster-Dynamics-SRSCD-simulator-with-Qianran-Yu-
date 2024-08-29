@@ -25,7 +25,7 @@
 #define ALATT 3.165e-08     // [cm] Lattice parameter for W.
 #define ATOMICVOLUME 0.0158 //[nm^3] Atomic volume of W.
 #define BURGER 0.28 //[nm] burger's vector of W.
-#define DISLOCATION 1e+8   // [cm^-2] Dislocation density.
+#define DISLOCATION 1.0e+8   // [cm^-2] Dislocation density.
 //#define DISLOCATION 0.0
 #define ODS_R 2.5e-07       // [cm] ODS-particle radius.
 //#define ODS_DENSITY 2.6e+17 // [cm^-3] ODS-particle density.
@@ -50,11 +50,10 @@
 #define HH_BIND_E 0.02          // [eV] Binding Energy of H-H
 // Run parameters:
 #define ION               // Irradiation type.
-#define TOTAL_TIME 10000   // [s] Total simulated time.
+#define TOTAL_TIME 1400   // [s] Total simulated time.
 #define TOTAL_DPA 2        // Total DPA damage to reach.
 #define VOLUME 1.0e-17    // [cm^3] System volume.
 #define DIVIDING_AREA 5.0e-12  // [cm^2] Area of the surface in between volume elements.
-#define TEMPERATURE 383.0  // [K] System temperature.
 //#define RATIO_HE 1.1       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_HE 0       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_H 0
@@ -86,22 +85,25 @@ enum Reaction { DIFFUSETOF, DIFFUSETOB, SINKDISLOCATION, SINKGRAINBNDRY, DISSOCI
  ** END: SIGNAL-> non damage been selected, rate index in this element goes to the end
  */
 
-const double AVG_ION_EN[POINTS] = {0, 22342, 21202, 16767, 15427, 19102, 23477, 27934, 25724, 21525, 23409, 26167, 30148, 28405, 28622, 33293, 25380, 28119, 35640, 41737, 36054, 38115, 40023, 43367, 40388, 43523, 46082, 31469, 37833, 40849, 39033, 39739, 37562, 35608, 39525, 35038, 33527, 31842, 28732, 28872, 31789, 26140, 25478, 23078, 18575, 16248, 16883, 13112, 11587, 10769, 9441, 7145, 5443, 4832, 4088, 3359, 2229, 2682, 2621, 1144, 727, 630, 408, 514, 163, 207, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-const double H_SATURATION_CONCENTRATION = DENSITY * exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
-const double SURFACE_VOLUME = VOLUME / 20. * SURFACE_THICKNESS; // surface element is the thin surface layer + one bulk element
-
-
 const bool LOG_REACTIONS = false;
 
 /* Configure which features to run */
 const bool IRRADIATION_ON = false;
-const bool HYDROGEN_ON = true;
+const bool HYDROGEN_ON = false;
 const bool COMB_ON = true; // combination reaction
 const bool SINK_ON = true; // sink reaction
 const bool DISS_ON = true; // dissociation reaction
 const bool DIFF_ON = true; // diffusion reaction
 const bool SAV_ON = true;  // super abundant vacancy reaction
 const bool RECOMB_ON = true; // surface recombination (surface release) reaction
+const double TEMP_INCREASE_RATE = 0.5;   // K/s for when doing thermal desorption spectroscopy simulations. For now TDS is only supported in serial (1 processor max)
+extern double TEMPERATURE;  // Temperature is set in main.cpp
+
+
+
+const double AVG_ION_EN[POINTS] = {0, 22342, 21202, 16767, 15427, 19102, 23477, 27934, 25724, 21525, 23409, 26167, 30148, 28405, 28622, 33293, 25380, 28119, 35640, 41737, 36054, 38115, 40023, 43367, 40388, 43523, 46082, 31469, 37833, 40849, 39033, 39739, 37562, 35608, 39525, 35038, 33527, 31842, 28732, 28872, 31789, 26140, 25478, 23078, 18575, 16248, 16883, 13112, 11587, 10769, 9441, 7145, 5443, 4832, 4088, 3359, 2229, 2682, 2621, 1144, 727, 630, 408, 514, 163, 207, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+const double H_SATURATION_CONCENTRATION = DENSITY * exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
+const double SURFACE_VOLUME = VOLUME / 20. * SURFACE_THICKNESS; // surface element is the thin surface layer + one bulk element
 
 /* Unit conversion factors */
 const double NM_TO_CM = 1.0e-7;

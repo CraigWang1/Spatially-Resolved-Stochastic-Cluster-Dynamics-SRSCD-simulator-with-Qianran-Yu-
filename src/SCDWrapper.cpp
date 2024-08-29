@@ -37,9 +37,11 @@ SCDWrapper::SCDWrapper():allObjects(), engine(rd()), distribution(0.0L, 1.0L), d
     setSinks();
 
     lastElemSaturated = false;
+    numHDesorbed = 0;
 
     selectReactionFile.open("selectReaction.txt", ios::app);
     processEventFile.open("Reactionts.txt", ios::app);
+    desorbedFile.open("Desorbed.txt", ios::app);
     /* set format of gs --- species */
     /*
     gs.set_title("Species");
@@ -323,12 +325,12 @@ void SCDWrapper::processEvent(
                 processEventFile << hostObject->getKey() << "  in element " << n << " experiences SAV (ejects interstitial)" << endl;
             break;
         case RECOMBER:
-            processRecombEvent(hostObject, n, true);
+            processRecombEvent(hostObject, n, true, time);
             if (LOG_REACTIONS)
                 processEventFile << hostObject->getKey() << "  in element " << n << " experiences an ER recombination to form H2 and leave the front of the material" << endl;
             break;
         case RECOMBLH:
-            processRecombEvent(hostObject, n, false);
+            processRecombEvent(hostObject, n, false, time);
             if (LOG_REACTIONS)
                 processEventFile << hostObject->getKey() << "  in element " << n << " experiences a LH recombination to form H2 and leave the back of the material" << endl;
             break;
@@ -440,7 +442,10 @@ void SCDWrapper::writeSpeciesFile(const double time, const long int n, const int
 {
     if (threadID == 0)
     {
-        fluenceH = FLUX_H * time; // Only take simulation progress parameters from thread id 0
+        if (HYDROGEN_ON)
+            fluenceH = FLUX_H * time; // Only take simulation progress parameters from thread id 0
+        else
+            fluenceH = 0;
     }
 
     ofstream fo;
@@ -579,17 +584,26 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
     double ebVDislocation = 1.0, ebVGrainBndry = 1.53; //binding and migration energy of vacancy
     double efH = H_FORM_E;  // [eV] energy of formation for hydrogen
     double efV = 3.23;      // [eV] energy of formation for vacancies
+    double excessTerm = 1;
 
     // vacancy emission
     if(type == 0){
         if (sinksDislocation[0][point] > 0){
-            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-ebVDislocation/KB/TEMPERATURE)*(1.0-sinksDislocation[0][point]/(DENSITY*VOLUME*exp(-efV/KB/TEMPERATURE)));
+            if (TEMP_INCREASE_RATE > 0) // thermal desorption test
+                excessTerm = 1;         // allow lots of emission during thermal desorption b/c vacuum outside of material
+            else
+                excessTerm = 1.0-sinksDislocation[0][point]/(DENSITY*VOLUME*exp(-efV/KB/TEMPERATURE));
+            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-ebVDislocation/KB/TEMPERATURE)*excessTerm;
         }
         else{
             sinkDissRateDislocation[type][point] = 0;
         }
         if (sinksGrainBndry[0][point] > 0){
-            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-ebVGrainBndry/KB/TEMPERATURE)*(1.0-sinksGrainBndry[0][point]/(DENSITY*VOLUME*exp(-efV/KB/TEMPERATURE)));
+            if (TEMP_INCREASE_RATE > 0) // thermal desorption test
+                excessTerm = 1;         // allow lots of emission during thermal desorption b/c vacuum outside of material
+            else
+                excessTerm = 1.0-sinksGrainBndry[0][point]/(DENSITY*VOLUME*exp(-efV/KB/TEMPERATURE));
+            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-ebVGrainBndry/KB/TEMPERATURE)*excessTerm;
         }
         else{
             sinkDissRateGrainBndry[type][point] = 0;
@@ -598,13 +612,21 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
     // hydrogen emission
     if(type == 1){
         if (sinksDislocation[3][point] > 0){
-            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-ebHDislocation/KB/TEMPERATURE)*(1.0-sinksDislocation[3][point]/(DENSITY*VOLUME*exp(-efH/KB/TEMPERATURE)));
+            if (TEMP_INCREASE_RATE > 0) // thermal desorption test
+                excessTerm = 1;         // allow lots of emission during thermal desorption b/c vacuum outside of material
+            else
+                excessTerm = 1.0-sinksDislocation[3][point]/(DENSITY*VOLUME*exp(-efH/KB/TEMPERATURE));
+            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-ebHDislocation/KB/TEMPERATURE)*excessTerm;
         }
         else{
             sinkDissRateDislocation[type][point] = 0;
         }
         if (sinksGrainBndry[3][point] > 0){
-            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-ebHGrainBndry/KB/TEMPERATURE)*(1.0-sinksGrainBndry[3][point]/(DENSITY*VOLUME*exp(-efH/KB/TEMPERATURE)));
+            if (TEMP_INCREASE_RATE > 0) // thermal desorption test
+                excessTerm = 1;         // allow lots of emission during thermal desorption b/c vacuum outside of material
+            else
+                excessTerm = 1.0-sinksGrainBndry[3][point]/(DENSITY*VOLUME*exp(-efH/KB/TEMPERATURE));
+            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-ebHGrainBndry/KB/TEMPERATURE)*excessTerm;
         }
         else{
             sinkDissRateGrainBndry[type][point] = 0;
@@ -739,8 +761,6 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
     {
         damage.updateDamageTwo(count, allObjects);
     }
-
-    // updateNetCombDissRate(hostObject, count);
 }
 
 void SCDWrapper::addReactionToOther(Object const * const mobileObject)
@@ -809,144 +829,6 @@ void SCDWrapper::removeRateToOther(const int64 deleteKey)
             }
         }
     }
-}
-
-void SCDWrapper::updateCombDissRatePair(int combinedObjectAttr[], const int count)
-{
-    // /*
-    //  * Find and update the net combination rate of a species that combines and its conjugate product species that dissociates
-    //  * For now, only do this calculation for H + SIA/V cluster, because that is the 
-    //  * most common reaction.
-    //  *
-    //  * combinedObject - the Object that results after a combination event
-    //  */
-
-    // int attrIndex = 2;   /* For now just focus on H monomer */
-    // if (combinedObjectAttr[attrIndex] <= 0)
-    // {
-    //     // cout << "updateCombDissRatePair is only meant to be used with the product of cluster + H reaction, this function is being used wrong" << endl;
-    //     return;
-    // }
-
-    // int64 HKey = 1;
-    // int prevObjectAttr[LEVELS] = {0}; /* The Object that combines with H to form the combinedObject */
-    // for (int i = 0; i < LEVELS; i++)
-    //     prevObjectAttr[i] = combinedObjectAttr[i];
-    // prevObjectAttr[attrIndex] -= 1;  /* The object from before it combined with H */
-
-    // int64 prevObjectKey = attrToKey(prevObjectAttr);
-    // int64 combinedObjectKey = attrToKey(combinedObjectAttr);
-
-    // bool foundHObj = allObjects.find(HKey) != allObjects.end() && allObjects[HKey]->getNumber(count) > 0;
-    // bool foundPrevObj = allObjects.find(prevObjectKey) != allObjects.end() && allObjects[prevObjectKey]->getNumber(count) > 0;
-    // bool foundCombSpecies = foundHObj && foundPrevObj;
-    // bool foundCombResult = allObjects.find(combinedObjectKey) != allObjects.end() && allObjects[combinedObjectKey]->getNumber(count) > 0;
-    // Object *hostObject, *mobileObject, *combinedObject;
-    // OneLine *hostLine, *combinedLine;
-
-    // if (!foundHObj && !foundPrevObj && !foundCombResult)
-    //     return;  /* All species don't exist, nothing to compare */
-
-    // if (foundHObj)
-    //     mobileObject = allObjects[HKey];
-    // else
-    //     mobileObject = new Object(HKey, count);
-
-    // if (foundPrevObj)
-    // {
-    //     hostObject = allObjects[prevObjectKey];
-    //     hostLine = linePool[hostObject]->lines[count];
-    // }
-    // else
-    // {
-    //     hostObject = new Object(prevObjectKey, count);
-    //     hostLine = new OneLine();
-    // }
-
-    // if (foundCombResult)
-    // {
-    //     combinedObject = allObjects[combinedObjectKey];
-    //     combinedLine = linePool[combinedObject]->lines[count];
-    // }
-    // else
-    // {
-    //     combinedObject = new Object(combinedObjectKey, count);
-    //     combinedLine = new OneLine();
-    // }
-
-    // if (foundCombSpecies && foundCombResult)
-    // {
-    //     long double baseCombRate = 0.0;
-    //     long double baseDissRate = 0.0;
-    //     if (hostLine != nullptr)
-    //         baseCombRate = hostLine->computeCombReaction(hostObject, mobileObject, count);
-    //     if (combinedLine != nullptr)
-    //         baseDissRate = combinedLine->computeDissReaction(combinedObject, attrIndex, count);
-    //     if (baseCombRate > baseDissRate)
-    //     {
-    //         if (hostLine != nullptr && foundCombSpecies)
-    //             hostLine->setCombReaction(mobileObject->getKey(), baseCombRate - baseDissRate);
-    //         if (combinedLine != nullptr && foundCombResult)
-    //             combinedLine->setDissReaction(attrIndex, 0.0);
-    //     }
-    //     else  /* diss >= comb */
-    //     {
-    //         if (hostLine != nullptr && foundCombSpecies)
-    //             hostLine->setCombReaction(mobileObject->getKey(), 0.0);
-    //         if (combinedLine != nullptr && foundCombResult)
-    //             combinedLine->setDissReaction(attrIndex, baseDissRate - baseCombRate);
-    //     }
-    // }
-
-    // if (!foundHObj)
-    //     delete mobileObject;
-    // if (!foundPrevObj)
-    // {
-    //     delete hostObject;
-    //     delete hostLine;
-    // }
-    // if (!foundCombResult)
-    // {
-    //     delete combinedObject;
-    //     delete combinedLine;
-    // }
-}
-
-void SCDWrapper::updateNetCombDissRate(const Object* const hostObject, const int count)
-{
-    // /* 
-    //  * Find the net combination rate (comb - diss, or vice versa if diss >= comb).
-    //  * For now, only do this calculation for H + SIA/V cluster, because that is the 
-    //  * most common reaction.
-    //  */
-
-    // /* Update this comb rate and the product's diss rate */
-    // int64 HKey = 1;
-    // int attrIndex = 2; /* for now, only focus on H + cluster comb and diss reactions */
-    // int originalAttr[LEVELS] = {0};
-    // int productAttr[LEVELS] = {0};
-
-    // if (hostObject->getKey() != HKey)
-    // {
-    //     for (int i = 0; i < LEVELS; i++)
-    //     {
-    //         originalAttr[i] = hostObject->getAttri(i);
-    //         productAttr[i] = hostObject->getAttri(i);
-    //     }
-    //     productAttr[attrIndex]++;   /* Product of this cluster + H comb reaction */
-    //     updateCombDissRatePair(productAttr, count);  /* Update this comb rate, and next object's diss rate */
-    //     updateCombDissRatePair(originalAttr, count); /* Update this diss rate, and prev object's comb rate */ 
-    // }
-    // else /* hostObject is 1H object */
-    // {
-    //     for (unordered_map<int64, Object*>::iterator iter = allObjects.begin(); iter != allObjects.end(); ++iter)
-    //     {
-    //         Object* otherObject = iter->second;
-    //         for (int i = 0; i < LEVELS; i++)
-    //             productAttr[i] = hostObject->getAttri(i) + otherObject->getAttri(i);
-    //         updateCombDissRatePair(productAttr, count); /* Update this comb rate, and next object's diss rate. No need to update this object's diss rate because a change in the 1H species count doesn't affect this object's diss rate directly. */
-    //     }
-    // }
 }
 
 void SCDWrapper::updateSinks(const int point, const int* number){
@@ -1186,7 +1068,7 @@ void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
     reduceFromObjectMap(hostObject->getKey(), n);
 }
 
-void SCDWrapper::processRecombEvent(Object* hostObject, const int n, bool ER)
+void SCDWrapper::processRecombEvent(Object* hostObject, const int n, bool ER, double time)
 {
     if (n != 0)
         cerr << "Recomb Error" << endl;
@@ -1199,7 +1081,12 @@ void SCDWrapper::processRecombEvent(Object* hostObject, const int n, bool ER)
     if (ER)
         reduceFromObjectMap(hostObject->getKey(), n, 1);
     else
+    {
         reduceFromObjectMap(hostObject->getKey(), n, 2);
+        numHDesorbed += 2;
+        if (TEMP_INCREASE_RATE > 0) // when doing thermal desorption
+            writeDesorbedFile(time);
+    }
 }
 
 void SCDWrapper::processSinkDissEvent(const int type, const int point, bool dislocation)
@@ -1349,8 +1236,6 @@ void SCDWrapper::getHeInsertion(const int n)
 
 void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
 {
-    fluenceH += FLUX_H*dt; /* 4.00e+16 is H flux */
-
     ++reactions[6][n];
     int channel = 2;
     int64 clusterKey = atomProperty(INTERSTITIAL, channel + 1);
@@ -1372,9 +1257,9 @@ void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
     ifstream file("sink.txt");
     if (file.good()) {
         for(int j = 0; j < POINTS; j++){
-            while (getline(file, oneLine)) {
+            if (getline(file, oneLine)) {
                 lineHold.str(oneLine);
-                for (int i = 0; i < LEVELS+1; i++) {
+                for (int i = 0; i < 2*(LEVELS+1); i++) {
                     lineHold >> numberSinks[i];
                 }
                 srscd->updateSinks(j,numberSinks);
@@ -1382,6 +1267,7 @@ void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
             }
         }
     }
+    srscd->writeSinkFile(0, 0, 0);
     file.close();
     /* update species informtion */
     ifstream ofile("restart.txt");
@@ -1900,4 +1786,36 @@ void SCDWrapper::addSpatialElement(int newGhostIndex, vector<BoundaryChange> new
     }
 
     clearBoundaryChangeQs();  // from the add/reduceToObjectMap calls
+}
+
+void SCDWrapper::recalculateAllRates()
+{
+    unordered_map<int64, Object*>::iterator iter;
+    for (iter = allObjects.begin(); iter != allObjects.end(); ++iter)
+    {
+        Object* object = iter->second;
+        object->computeThermalProperties();
+    }
+
+    for (int point = 0; point < POINTS; point++)
+    {
+        for (iter = allObjects.begin(); iter != allObjects.end(); ++iter)
+        {
+            Object* object = iter->second;
+            if (object->getNumber(point) > 0)
+                updateObjectInMap(object, point);
+        }
+
+        // Omit damage recalculation for now, assume it doesn't change with temperature
+
+        computeSinkDissRate(0, point);
+        computeSinkDissRate(1, point);
+    }
+
+    examineDomainRate();
+}
+
+void SCDWrapper::writeDesorbedFile(double time)
+{
+    desorbedFile << time << " " << numHDesorbed << endl;
 }

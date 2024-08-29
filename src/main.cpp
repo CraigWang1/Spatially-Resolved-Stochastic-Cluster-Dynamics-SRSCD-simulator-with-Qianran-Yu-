@@ -8,6 +8,9 @@
 #include <cassert>
 #include"SCDWrapper.h"
 
+double TEMPERATURE = 350;  // [K], this is extern so all files have access to this
+const double startingTemp = TEMPERATURE;
+
 int main(int argc, char** argv) 
 {
     int threadID, numThreads;
@@ -34,6 +37,7 @@ int main(int argc, char** argv)
     long int iStep = 0;
     double random;
     double advTime = 0.0;
+    double prevRecalculateTDSRatesTime = 0;
     double dt = 0.0;
     double system_dt = 0.0;
     double accTime = 0.0;
@@ -53,6 +57,7 @@ int main(int argc, char** argv)
     fstream st;
     /* check whether to restart*/
     restart(iStep, advTime, srscd);
+    srscd->writeFile(advTime, iStep, threadID);
     while (advTime > write_time)
         write_time += write_increment;
     srscd->examineRate();
@@ -76,8 +81,14 @@ int main(int argc, char** argv)
     cout << H_SATURATION_CONCENTRATION * VOLUME << endl;
     
     while(!done)
-    // for (int i = 0; i < 100; i++)
     {
+        if (TEMP_INCREASE_RATE > 0 && advTime - prevRecalculateTDSRatesTime > 1) // if doing thermal desorption, recalculate thermal properties once per second (not all the time) to reduce computational burden (stepwise temperature increase)
+        {
+            TEMPERATURE = startingTemp + advTime * TEMP_INCREASE_RATE;
+            srscd->recalculateAllRates();
+            prevRecalculateTDSRatesTime = advTime;
+        }
+
         long double localDomainRate = srscd->getDomainRate();
         long double maxDomainRate;
 

@@ -284,7 +284,11 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         // special case for 1H diffusion from Surface to Bulk
         else if (count == 0)
         {
-            double absorbE = 1.10 + 0.939*(1.0/(1.0+exp( (surfaceSaturationFraction-0.232)/0.0683 )));  // from Hodille 2020
+            double absorbE;
+            if (TEMP_INCREASE_RATE == 0)  // no thermal desorption, assume atmosphere environment so use experiment data
+                absorbE = 1.10 + 0.939*(1.0/(1.0+exp( (surfaceSaturationFraction-0.232)/0.0683 )));  // from Hodille 2020
+            else                          // doing thermal desorption, assume vacuum environment so use DFT data
+                absorbE = -3.6592e-8 * exp(16.9129*surfaceSaturationFraction) + 1.71738;             // Ajmalghan 2019
             double freq = NU0 * exp(-absorbE / KB / TEMPERATURE);            prefactor = freq * surfaceConc * DIVIDING_AREA;
             diffRToB = prefactor;
             diffRToF = 0.0;
@@ -328,6 +332,9 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
             diffRToB = prefactor*(concentration - backConcentration);
         }
         else {
+            diffRToB = 0.0;
+        }
+        if (TEMP_INCREASE_RATE > 0 && count == POINTS - 1) { // if doing TDS, don't let stuff escape thru the back, so we can count it as it emerges from surface
             diffRToB = 0.0;
         }
     }
@@ -621,7 +628,7 @@ void OneLine::computeRecombReaction(
     double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
 
     // Calculate ER recomb rate
-    if (numH >= 1)
+    if (numH >= 1 && HYDROGEN_ON)   // incident atom collides with adsorbed atom, so hydrogen must be on for this to work
     {
         double crossSectionERRecomb = 1.7e-17; // [cm^2] cross-section of ER recombination from Zhenhou Wang 2020
         recombRER = FLUX_H * crossSectionERRecomb * surfaceConc * DIVIDING_AREA; 
@@ -630,11 +637,15 @@ void OneLine::computeRecombReaction(
         recombRER = 0.0;
     
     // Calculate LH recomb rate
-    if (numH >= 2)
+    if (numH >= 2)                  // two atoms combine at the surface to form H2 and desorb
     {
-        double desorbE = 0.525 + 0.591*(1.0/(1.0+exp( (surfaceSaturationFraction-0.247)/0.0692 ))); // from Hodille 2020
+        double desorbE;
+        if (TEMP_INCREASE_RATE == 0)  // assume atmospheric environment, use experiment desorption energy barrier
+            desorbE = 2.0*(0.525 + 0.591*(1.0/(1.0+exp( (surfaceSaturationFraction-0.247)/0.0692 )))); // from Hodille 2020
+        else                          // doing thermal desorption, assume vacuum environment, use DFT desorption energy barrier
+            desorbE = -0.00195416 * exp(5.87242*surfaceSaturationFraction) + 1.48996;            // Ajmalghan 2019
         double desorptionR = NU0 * pow(ALATT, 2); // [cm^2 s^-1]
-        recombRLH = desorptionR * exp(-2.0 * desorbE / KB / TEMPERATURE) * surfaceConc * surfaceConc * DIVIDING_AREA;
+        recombRLH = desorptionR * exp(-desorbE / KB / TEMPERATURE) * surfaceConc * surfaceConc * DIVIDING_AREA;
     }
     else
         recombRLH = 0.0;

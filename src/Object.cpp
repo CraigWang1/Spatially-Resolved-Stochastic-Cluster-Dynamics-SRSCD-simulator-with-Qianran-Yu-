@@ -28,9 +28,7 @@ Object::Object(const int64 key, const int *number):oKey(key), totalNumber(0)
 {
     setAttributes(key);
     dimensionality = setDimensionality();
-    computeDiffCoeff();
-    computeRecombCoeff();
-    computeBindTerm();
+    computeThermalProperties();
     computeR1R1e();
     computeSinks();
     setNumber();
@@ -71,11 +69,6 @@ int64 Object::getKey() const
 double Object::getDiff() const
 {
     return diffusivity;
-}
-
-double Object::getRecomb() const
-{
-    return recombCoeff;
 }
 
 int Object::getNumber(const int count) const
@@ -326,23 +319,6 @@ void Object::computeDiffCoeff()
     diffusivity = prefactor*exp(-energy_m / KB / TEMPERATURE);
 }
 
-void Object::computeRecombCoeff()
-{
-    /* Surface recombination coefficient for H in W (Causey 2002) */
-    if (attributes[0] == 0 &&
-        attributes[1] == 0 &&
-        attributes[2] == 1)
-    {   /* Only 1H can recombine at surface to form H2 and leave material */
-        double prefactor = 3.2e-7;
-        double energy = 1.16; 
-        recombCoeff = prefactor * exp(-energy/KB/TEMPERATURE);
-    }
-    else
-    {
-        recombCoeff = 0.0;
-    }
-}
-
 void Object::computeBindTerm()
 {
     long double energy_d[LEVELS] = { 0.0 };
@@ -574,19 +550,12 @@ void Object::computeSinks()
     /* The total sink strength for all defects are stored in the array s.
      [0] for vacancies; [1] for SIAs; */
     double Zdv = 1.0, Zdi = 1.1;
-    double Zodsv = 0.0, Zodsi = 0.0;
-    double Zgbv = 1.0, Zgbi = 1.0;
     // double Zsv = 1.0, Zsi = 1.1;
-    double Sd, Sods, Sgbv, Sgbi;
+    double Sd;
     /* 1. Dislocation sink strength: */
-    Sd = DISLOCATION*exp(-1*KB*(TEMPERATURE - 300));
+    Sd = DISLOCATION;
     
-    /* 2. ODS-particle sink strength: */
-    Sods = 4 * PI * ODS_R * ODS_DENSITY;
-    
-    /* 3. Grain boundary sink strength: */
-    Sgbv = 6*sqrt(Zdv*Sd + Zodsv*Sods)/GRAIN_SIZE;
-    Sgbi = 6*sqrt(Zdi*Sd + Zodsi*Sods)/GRAIN_SIZE;
+    /* 2. Grain boundary sink strength: */
     
     if (attributes[0] <= 0) // Vacancies or H objects
     {
@@ -600,14 +569,19 @@ void Object::computeSinks()
     }
 }
 
+void Object::computeThermalProperties()
+{
+    /* Properties that depend on temperature */
+    computeDiffCoeff();
+    computeBindTerm();
+}
+
 void Object::setProperties(const int count, const int n)
 {
     setNumber();
     addNumber(count, n);
     dimensionality = setDimensionality();
-    computeDiffCoeff();
-    computeRecombCoeff();
-    computeBindTerm();
+    computeThermalProperties();
     computeR1R1e();
     computeSinks();
 }
