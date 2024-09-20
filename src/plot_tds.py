@@ -35,6 +35,17 @@ with open("/home/craig/research/experiment_retention_383K/tds.txt") as f:
 		experiment_temperatures.append(float(line_hold[0]))
 		experiment_desorbed_flux.append(float(line_hold[1])*10**17)
 
+total = 0
+temp = 0
+for i in range(len(experiment_temperatures)-1):
+	temperature = experiment_temperatures[i]
+	flux = experiment_desorbed_flux[i]
+	if temperature > 400 and temperature < 600:
+		temp += flux
+	total += flux
+
+print(temp/total)
+
 temperatures = []
 desorbed_flux = []
 for i in range(len(times)-200):
@@ -42,6 +53,7 @@ for i in range(len(times)-200):
 	dt = times[i+200] - times[i]
 	dN = desorbed[i+200] - desorbed[i]
 	desorbed_flux.append(dN/dt/DIVIDING_AREA)
+
 
 fs = 1 / (times[1] - times[0])  # Sampling frequency
 

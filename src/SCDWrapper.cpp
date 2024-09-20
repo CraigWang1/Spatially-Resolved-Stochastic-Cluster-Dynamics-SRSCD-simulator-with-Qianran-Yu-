@@ -585,57 +585,42 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
     double efH = H_FORM_E;  // [eV] energy of formation for hydrogen
     double efV = 3.23;      // [eV] energy of formation for vacancies
     double excessTerm = 1;
+    int numH = 0;
+    int numV = 0;
+    int64 HKey = 1;
+    int64 VKey = -1000000;
+    if (allObjects.find(HKey) != allObjects.end())
+        numH = allObjects[HKey]->getNumber(point);
+    if (allObjects.find(VKey) != allObjects.end())
+        numV = allObjects[VKey]->getNumber(point);
 
     // vacancy emission
-    if(type == 0){
-        if (sinksDislocation[0][point] > 0){
-            if (TEMP_INCREASE_RATE > 0) // thermal desorption test
-                excessTerm = 1;         // allow lots of emission during thermal desorption b/c vacuum outside of material
-            else
-                excessTerm = 1.0-sinksDislocation[0][point]/(DENSITY*VOLUME*exp(-efV/KB/TEMPERATURE));
-            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-ebVDislocation/KB/TEMPERATURE)*excessTerm;
-        }
-        else{
+    if(type == 0)
+    {
+        excessTerm = 1.0-numV/(DENSITY*VOLUME*exp(-efV/KB/TEMPERATURE));
+        if (sinksDislocation[0][point] > 0 && excessTerm > 0)
+            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-(ebVDislocation)/KB/TEMPERATURE)*excessTerm;
+        else
             sinkDissRateDislocation[type][point] = 0;
-        }
-        if (sinksGrainBndry[0][point] > 0){
-            if (TEMP_INCREASE_RATE > 0) // thermal desorption test
-                excessTerm = 1;         // allow lots of emission during thermal desorption b/c vacuum outside of material
-            else
-                excessTerm = 1.0-sinksGrainBndry[0][point]/(DENSITY*VOLUME*exp(-efV/KB/TEMPERATURE));
-            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-ebVGrainBndry/KB/TEMPERATURE)*excessTerm;
-        }
-        else{
+
+        if (sinksGrainBndry[0][point] > 0 && excessTerm > 0)
+            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-(ebVGrainBndry)/KB/TEMPERATURE)*excessTerm;
+        else
             sinkDissRateGrainBndry[type][point] = 0;
-        }
     }
     // hydrogen emission
-    if(type == 1){
-        if (sinksDislocation[3][point] > 0){
-            if (TEMP_INCREASE_RATE > 0) // thermal desorption test
-                excessTerm = 1;         // allow lots of emission during thermal desorption b/c vacuum outside of material
-            else
-                excessTerm = 1.0-sinksDislocation[3][point]/(DENSITY*VOLUME*exp(-efH/KB/TEMPERATURE));
-            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-ebHDislocation/KB/TEMPERATURE)*excessTerm;
-        }
-        else{
+    else if(type == 1){
+        excessTerm = 1.0-numH/(DENSITY*VOLUME*exp(-efH/KB/TEMPERATURE));
+        if (sinksDislocation[3][point] > 0 && excessTerm > 0)
+            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-(ebHDislocation)/KB/TEMPERATURE)*excessTerm;
+        else
             sinkDissRateDislocation[type][point] = 0;
-        }
-        if (sinksGrainBndry[3][point] > 0){
-            if (TEMP_INCREASE_RATE > 0) // thermal desorption test
-                excessTerm = 1;         // allow lots of emission during thermal desorption b/c vacuum outside of material
-            else
-                excessTerm = 1.0-sinksGrainBndry[3][point]/(DENSITY*VOLUME*exp(-efH/KB/TEMPERATURE));
-            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-ebHGrainBndry/KB/TEMPERATURE)*excessTerm;
-        }
-        else{
+
+        if (sinksGrainBndry[3][point] > 0 && excessTerm > 0)
+            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-(ebHGrainBndry)/KB/TEMPERATURE)*excessTerm;
+        else
             sinkDissRateGrainBndry[type][point] = 0;
-        }
     }
-    if (sinkDissRateDislocation[type][point] < 0)
-        sinkDissRateDislocation[type][point] = 0;
-    if (sinkDissRateGrainBndry[type][point] < 0)
-        sinkDissRateGrainBndry[type][point] = 0;
 }
 
 int64 SCDWrapper::atomProperty(SCDWrapper::InsertStyle mode, const int n)
@@ -761,6 +746,11 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
     {
         damage.updateDamageTwo(count, allObjects);
     }
+
+    if (hostObject->getKey() == -1000000)
+        computeSinkDissRate(0, count);
+    else if (hostObject->getKey() == 1)
+        computeSinkDissRate(1, count);
 }
 
 void SCDWrapper::addReactionToOther(Object const * const mobileObject)
@@ -844,13 +834,10 @@ void SCDWrapper::updateSinks(const int point, const int* number){
             {
                 sinksGrainBndry[level][point] = number[type*(LEVELS+1)+level];
             }
-
-            if (level == 0)
-                computeSinkDissRate(0, point);
-            else if (level == 3)
-                computeSinkDissRate(1, point);
         }
     }
+    computeSinkDissRate(0, point);  // vacancy diss
+    computeSinkDissRate(1, point);  // H diss
 }
 
 /* private function */
@@ -1253,22 +1240,6 @@ void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
     string skip;
     string oneLine;
     stringstream lineHold;
-    /* update sink numbers */
-    ifstream file("sink.txt");
-    if (file.good()) {
-        for(int j = 0; j < POINTS; j++){
-            if (getline(file, oneLine)) {
-                lineHold.str(oneLine);
-                for (int i = 0; i < 2*(LEVELS+1); i++) {
-                    lineHold >> numberSinks[i];
-                }
-                srscd->updateSinks(j,numberSinks);
-                lineHold.clear();
-            }
-        }
-    }
-    srscd->writeSinkFile(0, 0, 0);
-    file.close();
     /* update species informtion */
     ifstream ofile("restart.txt");
     if (ofile.good()) {
@@ -1299,7 +1270,24 @@ void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
         }
     }
     ofile.close();
-    
+
+    /* update sink numbers */
+    ifstream file("sink.txt");
+    if (file.good()) {
+        for(int j = 0; j < POINTS; j++){
+            if (getline(file, oneLine)) {
+                lineHold.str(oneLine);
+                for (int i = 0; i < 2*(LEVELS+1); i++) {
+                    lineHold >> numberSinks[i];
+                }
+                srscd->updateSinks(j,numberSinks);
+                lineHold.clear();
+            }
+        }
+    }
+    srscd->writeSinkFile(0, 0, 0);
+    file.close();
+
     srscd->clearBoundaryChangeQs();
 }
 

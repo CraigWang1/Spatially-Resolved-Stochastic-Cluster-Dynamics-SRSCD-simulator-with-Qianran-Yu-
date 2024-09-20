@@ -124,6 +124,7 @@ with open("sink0.txt") as f:
 		line_hold = line_hold.split()
 		numH.append(int(line_hold[3]) + int(line_hold[7]))
 	trapped_hydrogen_c += np.array(numH).astype(float)
+	# print(sum(numH)/np.sum(trapped_hydrogen_c))
 
 trapped_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
 free_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
@@ -162,9 +163,8 @@ for i in range(len(experiment_positions)-1):
 	retained_experiment_fluence += concentrations[i] * (experiment_positions[i+1]-experiment_positions[i])
 for i in range(len(positions)-1):
 	retained_sim_fluence += trapped_hydrogen_c[i] * (positions[i+1]-positions[i])
-
 print()
-print("Sim retained vs. experiment retained: "+str(retained_sim_fluence/retained_experiment_fluence))
+print("Sim retained vs. experiment retained: "+str(retained_sim_fluence/retained_experiment_fluence/(time/10000)))
 
 if plot_h:
 	# plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)

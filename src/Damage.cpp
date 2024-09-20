@@ -130,7 +130,7 @@ void Damage::computeDamageTwo(const int n, unordered_map<int64, Object*>& allObj
     }
 
     double reflectionCoeff = -0.074 * log(H_DEPOSITION_ENERGY) + 0.96; // Data regression from Ogorodnikova 2015
-    double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);   // insertion rate formula form Zhenhou Wang 2020
+    double maxSurfaceConc = pow(DENSITY, 2.0/3.0);   // insertion rate formula form Zhenhou Wang 2020
     double surfaceConc = 0.0;
 
     int64 HKey = 1;

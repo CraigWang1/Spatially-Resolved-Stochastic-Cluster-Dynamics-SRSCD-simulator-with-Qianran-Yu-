@@ -31,7 +31,7 @@
 //#define ODS_DENSITY 2.6e+17 // [cm^-3] ODS-particle density.
 #define ODS_DENSITY 0.0
 //#define GRAIN_SIZE 0.01    // [cm] Typical grain size.
-#define GRAIN_SIZE 0.0002 //[cm]
+#define GRAIN_SIZE 0.0003 //[cm]
 #define FOIL_THICKNESS 0.0002 //[cm] Foil thickness from UCSD (2000nm)
 #define ELEMENT_THICKNESS 20.0 // [nm] thickness of bulk spatial element
 #define SURFACE_THICKNESS 0.544 //[nm] thickness of surface (conrresponds to two monolayers of tungsten)
@@ -40,7 +40,7 @@
 #define GAMMA 1.0           // Fraction of surface emission.
 #define TDE 90              // [eV] Threshold displacement energy for W.
 #define HEAT_OF_SOLUTION 1.04   // [eV] Heat of solution of H in W.
-#define SAV_ENERGY 0.94          // [eV] energy that controls SAV rate
+#define SAV_ENERGY 1.18          // [eV] energy that controls SAV rate
 #define H_DEPOSITION_ENERGY 113.0 // [eV] energy of an H atom in the incident flux
 #define H_MIGRATION_ENERGY 0.25   // [eV] energy needed for an H to diffuse through lattice
 #define H_DIRECT_IMPLANTATION_FRACTION 0.965 // [unitless] the fraction of nonreflected H flux that bypasses the surface layer and gets directly implanted in bulk, depends on H energy, obtained from SRIM
@@ -50,7 +50,7 @@
 #define HH_BIND_E 0.02          // [eV] Binding Energy of H-H
 // Run parameters:
 #define ION               // Irradiation type.
-#define TOTAL_TIME 1400   // [s] Total simulated time.
+#define TOTAL_TIME 10000   // [s] Total simulated time.
 #define TOTAL_DPA 2        // Total DPA damage to reach.
 #define VOLUME 1.0e-17    // [cm^3] System volume.
 #define DIVIDING_AREA 5.0e-12  // [cm^2] Area of the surface in between volume elements.
@@ -89,14 +89,14 @@ const bool LOG_REACTIONS = false;
 
 /* Configure which features to run */
 const bool IRRADIATION_ON = false;
-const bool HYDROGEN_ON = false;
+const bool HYDROGEN_ON = true;
 const bool COMB_ON = true; // combination reaction
 const bool SINK_ON = true; // sink reaction
 const bool DISS_ON = true; // dissociation reaction
 const bool DIFF_ON = true; // diffusion reaction
-const bool SAV_ON = true;  // super abundant vacancy reaction
+const bool SAV_ON = false;  // super abundant vacancy reaction
 const bool RECOMB_ON = true; // surface recombination (surface release) reaction
-const double TEMP_INCREASE_RATE = 0.5;   // K/s for when doing thermal desorption spectroscopy simulations. For now TDS is only supported in serial (1 processor max)
+const double TEMP_INCREASE_RATE = 0;   // K/s for when doing thermal desorption spectroscopy simulations. For now TDS is only supported in serial (1 processor max)
 extern double TEMPERATURE;  // Temperature is set in main.cpp
 
 

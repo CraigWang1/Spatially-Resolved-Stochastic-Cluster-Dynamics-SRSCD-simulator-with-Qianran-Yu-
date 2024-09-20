@@ -256,14 +256,14 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         if (allObjects.find(HKey) != allObjects.end())
             surfaceConc = allObjects[HKey]->getNumber(0) / DIVIDING_AREA;  // [cm^-2] concentration
 
-        double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);
+        double maxSurfaceConc = pow(DENSITY, 2.0/3.0);
         double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
 
         // special case for 1H diffusion from Bulk to Surface 
         if (count == 1)
         {
             double jumpingDist = maxSurfaceConc / 6 / DENSITY;
-            double freq = NU0 * exp(-H_MIGRATION_ENERGY / KB / TEMPERATURE);
+            double freq = NU0 * exp(-(H_MIGRATION_ENERGY+0.02) / KB / TEMPERATURE);
         
             prefactor = freq * jumpingDist * (1 - surfaceSaturationFraction) * DIVIDING_AREA;
             diffRToF = prefactor * concentration;
@@ -285,11 +285,15 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         else if (count == 0)
         {
             double absorbE;
-            if (TEMP_INCREASE_RATE == 0)  // no thermal desorption, assume atmosphere environment so use experiment data
-                absorbE = 1.10 + 0.939*(1.0/(1.0+exp( (surfaceSaturationFraction-0.232)/0.0683 )));  // from Hodille 2020
-            else                          // doing thermal desorption, assume vacuum environment so use DFT data
+            // double desorbE = -0.00195416 * exp(5.87242*surfaceSaturationFraction) + 1.48996;            // Ajmalghan 2019
+            double desorbE = 2.0*(0.9 - 0.2*surfaceSaturationFraction - 0.7*pow(surfaceSaturationFraction, 12));
+            // if (TEMP_INCREASE_RATE == 0)  // no thermal desorption, assume atmosphere environment so use experiment data
+                // absorbE = 1.10 + 0.939*(1.0/(1.0+exp( (surfaceSaturationFraction-0.232)/0.0683 )));  // from Hodille 2020
+            // else                          // doing thermal desorption, assume vacuum environment so use DFT data
                 absorbE = -3.6592e-8 * exp(16.9129*surfaceSaturationFraction) + 1.71738;             // Ajmalghan 2019
-            double freq = NU0 * exp(-absorbE / KB / TEMPERATURE);            prefactor = freq * surfaceConc * DIVIDING_AREA;
+                // absorbE = desorbE/2. + HEAT_OF_SOLUTION + H_MIGRATION_ENERGY + 0.02;
+            double freq = NU0 * exp(-absorbE / KB / TEMPERATURE);            
+            prefactor = freq * surfaceConc * DIVIDING_AREA;
             diffRToB = prefactor;
             diffRToF = 0.0;
             return;
@@ -508,6 +512,16 @@ long double OneLine::computeBaseCombReaction(
         return 0.0;
     }
 
+    // Disable SIA combining with V-H cluster if H/V >= 1 (like SIA will bounce off)
+    if (hostObject->getAttri(0) < 0 &&
+        hostObject->getAttri(2) > 0 &&
+        hostObject->getAttri(2) >= abs(hostObject->getAttri(0)) &&
+        mobileObject->getAttri(0) > 0 &&
+        mobileObject->getAttri(2) == 0)
+    {
+        return 0.0;
+    }
+
     /*
     if(hostObject->getKey() == 1 && mobileObject->getKey() == 2){
         return 0.0;
@@ -624,7 +638,7 @@ void OneLine::computeRecombReaction(
     if (allObjects.find(HKey) != allObjects.end())
         surfaceConc = numH / DIVIDING_AREA;  // [cm^-2] concentration
 
-    double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);
+    double maxSurfaceConc = pow(DENSITY, 2.0/3.0);
     double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
 
     // Calculate ER recomb rate
@@ -640,10 +654,12 @@ void OneLine::computeRecombReaction(
     if (numH >= 2)                  // two atoms combine at the surface to form H2 and desorb
     {
         double desorbE;
-        if (TEMP_INCREASE_RATE == 0)  // assume atmospheric environment, use experiment desorption energy barrier
-            desorbE = 2.0*(0.525 + 0.591*(1.0/(1.0+exp( (surfaceSaturationFraction-0.247)/0.0692 )))); // from Hodille 2020
-        else                          // doing thermal desorption, assume vacuum environment, use DFT desorption energy barrier
+        // if (TEMP_INCREASE_RATE == 0)  // assume atmospheric environment, use experiment desorption energy barrier
+            // desorbE = 2.0*(0.525 + 0.591*(1.0/(1.0+exp( (surfaceSaturationFraction-0.247)/0.0692 )))); // from Hodille 2020
+        // else                          // doing thermal desorption, assume vacuum environment, use DFT desorption energy barrier
             desorbE = -0.00195416 * exp(5.87242*surfaceSaturationFraction) + 1.48996;            // Ajmalghan 2019
+            // desorbE = 0.019+1.453/(1.0+exp((surfaceSaturationFraction-1.000)/0.111));
+            // desorbE = 2.0*(0.9 - 0.2*surfaceSaturationFraction - 0.7*pow(surfaceSaturationFraction, 12));
         double desorptionR = NU0 * pow(ALATT, 2); // [cm^2 s^-1]
         recombRLH = desorptionR * exp(-desorbE / KB / TEMPERATURE) * surfaceConc * surfaceConc * DIVIDING_AREA;
     }
