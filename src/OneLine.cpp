@@ -263,7 +263,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         if (count == 1)
         {
             double jumpingDist = maxSurfaceConc / 6 / DENSITY;
-            double freq = NU0 * exp(-(H_MIGRATION_ENERGY+0.02) / KB / TEMPERATURE);
+            double freq = NU0 * exp(-(H_MIGRATION_ENERGY+0.02) / KB / TEMPERATURE);  // add 0.02 eV because of Tajuki Oda 2023
         
             prefactor = freq * jumpingDist * (1 - surfaceSaturationFraction) * DIVIDING_AREA;
             diffRToF = prefactor * concentration;
@@ -293,7 +293,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
                 // absorbE = 1.10 + 0.939*(1.0/(1.0+exp( (surfaceSaturationFraction-0.232)/0.0683 )));  // from Hodille 2020
             // else                          // doing thermal desorption, assume vacuum environment so use DFT data
                 // absorbE = -3.6592e-8 * exp(16.9129*surfaceSaturationFraction) + 1.71738;             // Ajmalghan 2019
-                absorbE = desorbE/2. + HEAT_OF_SOLUTION + H_MIGRATION_ENERGY;
+                absorbE = desorbE/2. + HEAT_OF_SOLUTION + H_MIGRATION_ENERGY + 0.02;   // Add 0.02 from Tajuki Oda 2023
             double freq = NU0 * exp(-absorbE / KB / TEMPERATURE);            
             prefactor = freq * surfaceConc * DIVIDING_AREA;
             diffRToB = prefactor;

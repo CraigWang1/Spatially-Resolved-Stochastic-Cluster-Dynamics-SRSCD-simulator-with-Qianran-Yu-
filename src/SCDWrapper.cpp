@@ -594,17 +594,19 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
     if (allObjects.find(VKey) != allObjects.end())
         numV = allObjects[VKey]->getNumber(point);
 
+    double vacMigrationEnergy = 1.29;  // [eV] Qianran Yu 2020
+
     // vacancy emission
     if(type == 0)
     {
         excessTerm = 1.0-numV/(DENSITY*VOLUME*exp(-efV/KB/TEMPERATURE));
         if (sinksDislocation[0][point] > 0 && excessTerm > 0)
-            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-(ebVDislocation)/KB/TEMPERATURE)*excessTerm;
+            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-(ebVDislocation+vacMigrationEnergy)/KB/TEMPERATURE)*excessTerm;
         else
             sinkDissRateDislocation[type][point] = 0;
 
         if (sinksGrainBndry[0][point] > 0 && excessTerm > 0)
-            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-(ebVGrainBndry)/KB/TEMPERATURE)*excessTerm;
+            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-(ebVGrainBndry+vacMigrationEnergy)/KB/TEMPERATURE)*excessTerm;
         else
             sinkDissRateGrainBndry[type][point] = 0;
     }
