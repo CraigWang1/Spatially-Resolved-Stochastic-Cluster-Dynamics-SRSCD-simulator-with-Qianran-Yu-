@@ -580,7 +580,7 @@ void SCDWrapper::setSinks()
 void SCDWrapper::computeSinkDissRate(const int type, const int point)
 {
     double b = jumped; //burger's vector 2.8e-8 cm
-    double ebHDislocation = 0.6, ebHGrainBndry = 1.11; //binding and migration energy of hydrogen
+    double ebHDislocation = 0.55, ebHGrainBndry = 1.11; //binding and migration energy of hydrogen
     double ebVDislocation = 1.0, ebVGrainBndry = 1.53; //binding and migration energy of vacancy
     double efH = H_FORM_E;  // [eV] energy of formation for hydrogen
     double efV = 3.23;      // [eV] energy of formation for vacancies
@@ -612,12 +612,12 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
     else if(type == 1){
         excessTerm = 1.0-numH/(DENSITY*VOLUME*exp(-efH/KB/TEMPERATURE));
         if (sinksDislocation[3][point] > 0 && excessTerm > 0)
-            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-(ebHDislocation)/KB/TEMPERATURE)*excessTerm;
+            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-(ebHDislocation+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*excessTerm;
         else
             sinkDissRateDislocation[type][point] = 0;
 
         if (sinksGrainBndry[3][point] > 0 && excessTerm > 0)
-            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-(ebHGrainBndry)/KB/TEMPERATURE)*excessTerm;
+            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-(ebHGrainBndry+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*excessTerm;
         else
             sinkDissRateGrainBndry[type][point] = 0;
     }
