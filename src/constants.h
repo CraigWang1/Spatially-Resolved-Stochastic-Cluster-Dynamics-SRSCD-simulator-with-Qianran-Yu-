@@ -31,7 +31,7 @@
 //#define ODS_DENSITY 2.6e+17 // [cm^-3] ODS-particle density.
 #define ODS_DENSITY 0.0
 //#define GRAIN_SIZE 0.01    // [cm] Typical grain size.
-#define GRAIN_SIZE 0.0003 //[cm]
+#define GRAIN_SIZE 0.001 //[cm] Grain size from UCSD experiment
 #define FOIL_THICKNESS 0.0002 //[cm] Foil thickness from UCSD (2000nm)
 #define ELEMENT_THICKNESS 20.0 // [nm] thickness of bulk spatial element
 #define SURFACE_THICKNESS 0.544 //[nm] thickness of surface (conrresponds to two monolayers of tungsten)

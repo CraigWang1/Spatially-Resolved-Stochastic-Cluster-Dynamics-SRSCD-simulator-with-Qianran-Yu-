@@ -208,13 +208,19 @@ int Object::setDimensionality()
 void Object::computeR1R1e()
 {
     int ndef = attributes[0];
-    if (ndef < 0) {
+    if (ndef < 0) {       // V cluster (assume to be spherical cluster)
         r1 = r1e = pow(3.0*fabs((double)ndef)*avol/4.0/PI, 1.0/3.0);
     }
-    else if (ndef > 0) {
+    else if (ndef > 0) {  // SIA cluster (assumed to form circular loop)
         r1 = r1e = sqrt((double)ndef*avol/jumped/PI);
     }
-    else if (ndef == 0) {
+    else if (ndef == 0 && attributes[2] > 1) { // H cluster, assumed to be square 2D platelet (Jie Hou 2018)
+        r1 = r1e = sqrt((double)attributes[2])*ALATT/2.0;   // half of the side length of the square
+    }
+    else if (ndef == 0 && attributes[2] == 1) { // 1H
+        r1 = r1e = ALATT * sqrt(3.0)/4.0;   // tetrahedral interstitial site radius
+    }
+    else { // shouldn't get here
         r1 = r1e = jumped;
     }
 }
