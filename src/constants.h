@@ -40,7 +40,7 @@
 #define GAMMA 1.0           // Fraction of surface emission.
 #define TDE 90              // [eV] Threshold displacement energy for W.
 #define HEAT_OF_SOLUTION 1.04   // [eV] Heat of solution of H in W.
-#define SAV_ENERGY 1.18          // [eV] energy that controls SAV rate
+#define SAV_ENERGY 0.0         // [eV] energy that controls SAV rate
 #define H_DEPOSITION_ENERGY 113.0 // [eV] energy of an H atom in the incident flux
 #define H_MIGRATION_ENERGY 0.25   // [eV] energy needed for an H to diffuse through lattice
 #define H_DIRECT_IMPLANTATION_FRACTION 0.965 // [unitless] the fraction of nonreflected H flux that bypasses the surface layer and gets directly implanted in bulk, depends on H energy, obtained from SRIM
@@ -94,7 +94,7 @@ const bool COMB_ON = true; // combination reaction
 const bool SINK_ON = true; // sink reaction
 const bool DISS_ON = true; // dissociation reaction
 const bool DIFF_ON = true; // diffusion reaction
-const bool SAV_ON = false;  // super abundant vacancy reaction
+const bool SAV_ON = true;  // super abundant vacancy reaction
 const bool RECOMB_ON = true; // surface recombination (surface release) reaction
 const double TEMP_INCREASE_RATE = 0;   // K/s for when doing thermal desorption spectroscopy simulations. For now TDS is only supported in serial (1 processor max)
 extern double TEMPERATURE;  // Temperature is set in main.cpp
