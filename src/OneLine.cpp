@@ -231,15 +231,20 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     double concentration = 0;
     double frontConcentration = 0;
     double backConcentration = objectN[2] / VOLUME;
-    if (count == 0)
+    if (count == SURFACE_INDEX)
     {
-        concentration = objectN[0] / SURFACE_VOLUME;  /* First mesh element has slightly larger volume of normal mesh element size + surface layer size */
+        concentration = 0;  /* surface layer corresponds to adsorbed layer of hydrogen at surface */
         frontConcentration = H_SATURATION_CONCENTRATION;
     }
-    else if (count == 1)
+    else if (count == SUBSURFACE_INDEX)
+    {
+        concentration = objectN[0] / SUBSURFACE_VOLUME;
+        frontConcentration = 0;
+    }
+    else if (count == 2)
     {
         concentration = objectN[0] / VOLUME;
-        frontConcentration = objectN[1] / SURFACE_VOLUME;
+        frontConcentration = objectN[1] / SUBSURFACE_VOLUME;
     }
     else
     {
@@ -248,8 +253,8 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     }
 
     // Account for special cases from 2020 Zhenhou Wang
-    if((count == 1 && hostObject->getKey() == 1) ||
-        (count == 0 && hostObject->getKey() == 1))
+    if((count == SUBSURFACE_INDEX && hostObject->getKey() == 1) ||
+        (count == SURFACE_INDEX && hostObject->getKey() == 1))
     {
         double surfaceConc = 0.0; 
         int64 HKey = 1;
@@ -259,8 +264,8 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);
         double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
 
-        // special case for 1H diffusion from Bulk to Surface 
-        if (count == 1)
+        // special case for 1H diffusion from Subsurface to Surface 
+        if (count == SUBSURFACE_INDEX)
         {
             double jumpingDist = maxSurfaceConc / 6 / DENSITY;
             double freq = NU0 * exp(-(H_MIGRATION_ENERGY+0.02) / KB / TEMPERATURE);  // add 0.02 eV because of Tajuki Oda 2023
@@ -274,14 +279,14 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
             // Normal Diffusion to the second bulk element
             if (concentration > backConcentration)
             {
-                double lengthb = ELEMENT_THICKNESS * NM_TO_CM; // first element to second element distance (20nm) 
+                double lengthb = (SUBSURFACE_THICKNESS + ELEMENT_THICKNESS)/2.0 * NM_TO_CM; // first element to second element distance (20nm) 
                 /* if diffusable */
                 prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthb;
                 diffRToB = prefactor*(concentration - backConcentration);
             }
             return;
         }
-        // special case for 1H diffusion from Surface to Bulk
+        // special case for 1H diffusion from Surface to Subsurface
         else if (count == 0)
         {
             double absorbE;
@@ -306,13 +311,23 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         /* by having two diffusion rates, this rate will never be less than 0 */
         /* length measured in cm */
         double lengthf = 0.0, lengthb = 0.0;
-        if(count == 0){
-            lengthf = (ELEMENT_THICKNESS + SURFACE_THICKNESS) / 2. * NM_TO_CM; // thickness of W surface is 0.544nm, this length is centroid to vacuum 
-            lengthb =  (ELEMENT_THICKNESS + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
-        }else if(count == 1){
-            lengthf =  (ELEMENT_THICKNESS + SURFACE_THICKNESS / 2.) * NM_TO_CM; /* surface to first element distance */
-            lengthb = ELEMENT_THICKNESS * NM_TO_CM; // first element to second element distance (20nm) 
-        }else{
+        if(count == SURFACE_INDEX)
+        {   
+            lengthf = (ELEMENT_THICKNESS + SUBSURFACE_THICKNESS) / 2. * NM_TO_CM; // this value doesn't matter b/c can't diffuse out into vacuum 
+            lengthb = (SUBSURFACE_THICKNESS) / 2. * NM_TO_CM; /* surface to first element distance */
+        }
+        else if(count == SUBSURFACE_INDEX)
+        {
+            lengthf =  SUBSURFACE_THICKNESS / 2. * NM_TO_CM; /* surface to first element distance */
+            lengthb = (ELEMENT_THICKNESS + SUBSURFACE_THICKNESS) / 2. * NM_TO_CM; // first element to second element distance (20nm) 
+        }
+        else if (count == 2)
+        {
+            lengthf = (ELEMENT_THICKNESS + SUBSURFACE_THICKNESS) / 2. * NM_TO_CM;
+            lengthb = ELEMENT_THICKNESS * NM_TO_CM;
+        }
+        else
+        {
             lengthf = lengthb = ELEMENT_THICKNESS * NM_TO_CM; /* other element distances */
         }
 
@@ -321,7 +336,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         * Diffusion goes from area of higher concentration to lower concentration
         * Object not allowed to diffuse out through the front
         */
-        if (concentration > frontConcentration && count != 0) {
+        if (concentration > frontConcentration && count != 0 && count != 1) {
             /* if diffusable, surface objects diffusing into vacuum is considered */
             prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthf;
             diffRToF = prefactor*(concentration - frontConcentration);
@@ -348,7 +363,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
 
 void OneLine::computeSinkReaction(const Object* const hostObject, const int count)
 {
-    if (!SINK_ON || count == 0)
+    if (!SINK_ON || count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
     {
         sinkRDislocation = 0.0;
         sinkRGrainBndry = 0.0;
@@ -364,7 +379,7 @@ long double OneLine::computeBaseDissReaction(
                                   const int index,
                                   const int count) const
 {
-    if (!DISS_ON || count == 0)
+    if (!DISS_ON || count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
     {
         return 0.0;
     }
@@ -475,7 +490,7 @@ long double OneLine::computeBaseCombReaction(
                                     const Object* const mobileObject,
                                     const int count) const
 {    
-    if (!COMB_ON || count == 0)
+    if (!COMB_ON || count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
     {
         return 0.0;
     }
@@ -484,10 +499,8 @@ long double OneLine::computeBaseCombReaction(
     double r12;
     double dimensionTerm;
     double volume;
-    if(count == 0){
-        volume = SURFACE_VOLUME;
-        // volume on surface layer = volume/20nm * 0.54nm
-        
+    if(count == SURFACE_INDEX || count == SUBSURFACE_INDEX){
+        volume = SUBSURFACE_VOLUME; // shouldn't get here
     }else{
         volume = VOLUME;
     }
@@ -502,9 +515,9 @@ long double OneLine::computeBaseCombReaction(
 
     // H+H-->2H
     // Disable H clustering for now b/c not sure how it works with SAV
-    if (hostObject->getKey() == 1 && mobileObject->getKey() == 1){
-        return 0.0;
-    }
+    // if (hostObject->getKey() == 1 && mobileObject->getKey() == 1){
+        // return 0.0;
+    // }
 
     // Disable multiples of 1V-12H + 1H because vacancy can store max 12H, save sim time
     if (hostObject->getAttri(0) < 0 && 
@@ -602,7 +615,7 @@ void OneLine::computeSAVReaction(
 {
     SAVR = 0;
 
-    if (!SAV_ON || count == 0)
+    if (!SAV_ON || count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
     {
         return;
     }
@@ -612,8 +625,8 @@ void OneLine::computeSAVReaction(
     {
         int numH = hostObject->getAttri(2);
         int numVacancies = abs(hostObject->getAttri(0));
-        double thresholdH = 4*numVacancies;
-        if (numH > thresholdH)
+        double thresholdH = 4.75*numVacancies + 4;   // Qianran Yu 2020, did linear fit from graph of excess sav energies
+        if (numH > thresholdH || hostObject->getKey() == 1)
         {
             SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * hostObject->getNumber(count);
         }
@@ -629,7 +642,7 @@ void OneLine::computeRecombReaction(
     recombRLH = 0.0;
 
     // only H can recombine at surface and leave surface
-    if (!RECOMB_ON || count != 0 || hostObject->getKey() != 1)
+    if (!RECOMB_ON || count != SURFACE_INDEX || hostObject->getKey() != 1)
     {
         return;
     }

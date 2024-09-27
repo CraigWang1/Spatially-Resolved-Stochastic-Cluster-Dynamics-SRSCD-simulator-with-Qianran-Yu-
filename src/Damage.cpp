@@ -139,13 +139,18 @@ void Damage::computeDamageTwo(const int n, unordered_map<int64, Object*>& allObj
 
     double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
 
-    if (n == 0 && surfaceConc < maxSurfaceConc) {
-        damage[n][2] = FLUX_H * (1 - reflectionCoeff) * (1 - surfaceSaturationFraction) * (1 - H_DIRECT_IMPLANTATION_FRACTION) * DIVIDING_AREA;
+    // if (n == 0 && surfaceConc < maxSurfaceConc) {
+    //     damage[n][2] = FLUX_H * (1 - reflectionCoeff) * (1 - surfaceSaturationFraction) * (1 - H_DIRECT_IMPLANTATION_FRACTION) * DIVIDING_AREA;
+    // }
+    // else if (n == 1) {
+    //     damage[n][2] = FLUX_H * (1 - reflectionCoeff) * H_DIRECT_IMPLANTATION_FRACTION * DIVIDING_AREA;
+    // }
+    if (n == 2) // the first bulk layer 
+    {
+        damage[n][2] = FLUX_H * (1 - reflectionCoeff) * DIVIDING_AREA;
     }
-    else if (n == 1) {
-        damage[n][2] = FLUX_H * (1 - reflectionCoeff) * H_DIRECT_IMPLANTATION_FRACTION * DIVIDING_AREA;
-    }
-    else {
+    else 
+    {
         damage[n][2] = 0.0;
     }
 }

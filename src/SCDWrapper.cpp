@@ -580,7 +580,7 @@ void SCDWrapper::setSinks()
 void SCDWrapper::computeSinkDissRate(const int type, const int point)
 {
     double b = jumped; //burger's vector 2.8e-8 cm
-    double ebHDislocation = 0.55, ebHGrainBndry = 1.11; //binding and migration energy of hydrogen
+    double ebHDislocation = 0.55, ebHGrainBndry = 1.0; //binding and migration energy of hydrogen
     double ebVDislocation = 1.0, ebVGrainBndry = 1.53; //binding and migration energy of vacancy
     double efH = H_FORM_E;  // [eV] energy of formation for hydrogen
     double efV = 3.23;      // [eV] energy of formation for vacancies
@@ -614,12 +614,12 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
     else if(type == 1){
         excessTerm = 1.0-numH/(DENSITY*VOLUME*exp(-efH/KB/TEMPERATURE));
         if (sinksDislocation[3][point] > 0 && excessTerm > 0)
-            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-(ebHDislocation+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*excessTerm;
+            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-(ebHDislocation+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*excessTerm*sinksDislocation[3][point];
         else
             sinkDissRateDislocation[type][point] = 0;
 
         if (sinksGrainBndry[3][point] > 0 && excessTerm > 0)
-            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-(ebHGrainBndry+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*excessTerm;
+            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-(ebHGrainBndry+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*excessTerm*sinksGrainBndry[3][point];
         else
             sinkDissRateGrainBndry[type][point] = 0;
     }
@@ -1009,13 +1009,12 @@ void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
      * Eject an interstitial (which increases vacancy by 1)
      */
     const int64 HKey = 1;
+
     if (hostObject->getKey() == HKey)
     {   /* SAV for 1H (b/c H/V ratio > 4) is only enabled when H is oversaturated, SAV for VH clusters with H/V ratio > 4 is always enabled */
         double HConcentration = 0;
         unordered_map<int64, Object*>::iterator iter;
         double volume = VOLUME;
-        if (n == 0)
-            volume = SURFACE_VOLUME;  // first mesh element is slightly bigger because of added surface layer
         for (iter = HObjects.begin(); iter != HObjects.end(); ++iter)
         {
             Object* HObject = iter->second;
@@ -1323,8 +1322,8 @@ int SCDWrapper::countDefectNumber(const int count, string type){
     unordered_map<int64, Object*>::iterator iter;
     for(int i=0; i<POINTS; i++){
         double volume;
-        if(i==0){
-            volume = SURFACE_VOLUME; /* volume at front is thin surface layer */
+        if(i==0 || i == 1){
+            volume = SUBSURFACE_VOLUME; /* volume at front is thin surface layer */
         }else{
             volume = VOLUME;
         }

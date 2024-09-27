@@ -208,13 +208,19 @@ int Object::setDimensionality()
 void Object::computeR1R1e()
 {
     int ndef = attributes[0];
-    if (ndef < 0) {
+    if (ndef < 0) {       // V cluster (assume to be spherical cluster)
         r1 = r1e = pow(3.0*fabs((double)ndef)*avol/4.0/PI, 1.0/3.0);
     }
-    else if (ndef > 0) {
+    else if (ndef > 0) {  // SIA cluster (assumed to form circular loop)
         r1 = r1e = sqrt((double)ndef*avol/jumped/PI);
     }
-    else if (ndef == 0) {
+    else if (ndef == 0 && attributes[2] > 1) { // H cluster, assumed to be square 2D platelet (Jie Hou 2018)
+        r1 = r1e = sqrt((double)attributes[2])*ALATT/2.0;   // half of the side length of the square
+    }
+    else if (ndef == 0 && attributes[2] == 1) { // 1H
+        r1 = r1e = ALATT * sqrt(3.0)/4.0;   // tetrahedral interstitial site radius
+    }
+    else { // shouldn't get here
         r1 = r1e = jumped;
     }
 }
@@ -303,7 +309,7 @@ void Object::computeDiffCoeff()
         if (attributes[0] != 0) { // SIA-H and V-H clusters immobile.
             prefactor = 0.0;
         }
-        else if (attributes[2] == 1 || attributes[2] == 2) { // H1, H2.
+        else if (attributes[2] == 1) { // H1
             /*
             //number below is from ppt Liu(2015) at 300K D_H=10e-9 m^2/s = 10e-5 cm^2/s
             prefactor = 3.8e-3;
@@ -530,10 +536,90 @@ void Object::computeBindTerm()
         else if (attributes[0]== 0) { // nH clusters, this is binding energy of nH cluster dissociating 1 H from Qin(2015)
             if (attributes[2]==1) { // H
                 energy_b = 0;
-            }
+            }   /* Data from Hou 2018 for planar H platelet clusters */
             else {
-                energy_b = 0.38 - 0.45*exp(-attributes[2]/12.04); // Hou 2019
+                energy_b = 0.38 - 0.45*exp(-attributes[2]/12.04);
             }
+            // else if (attributes[2] == 2) { // 2H
+            //     // energy_b = 0.04;
+            //     energy_b = 1;
+            // }
+            // else if (attributes[2] == 3) {
+            //     // energy_b = -0.03;
+            //     energy_b = 2;
+            // }
+            // else if (attributes[2] == 4) {
+            //     energy_b = 0.32;
+            // }
+            // else if (attributes[2] == 5) {
+            //     energy_b = 0.07;
+            // }
+            // else if (attributes[2] == 6) {
+            //     energy_b = 0.30;
+            // }
+            // else if (attributes[2] == 7) {
+            //     energy_b = 0.37;
+            // }
+            // else if (attributes[2] == 8) {
+            //     energy_b = 0.28;
+            // }
+            // else if (attributes[2] == 9) {
+            //     energy_b = 0.33;
+            // }
+            // else if (attributes[2] == 10) {
+            //     energy_b = 0.35;
+            // }
+            // else if (attributes[2] == 11) {
+            //     energy_b = 0.24;
+            // }
+            // else if (attributes[2] == 12) {
+            //     energy_b = 0.26;
+            // }
+            // else if (attributes[2] == 13) {
+            //     energy_b = 0.35;
+            // }
+            // else if (attributes[2] == 14) {
+            //     energy_b = 0.26;
+            // }
+            // else if (attributes[2] == 15) {
+            //     energy_b = 0.27;
+            // }
+            // else if (attributes[2] == 16) {
+            //     energy_b = 0.39;
+            // }
+            // else {
+            //     energy_b = 0.32; // extrapolation
+            // }
+
+
+
+            // else {  // nH
+                // energy_b = 0.38 - 0.45*exp(-(double)attributes[2]/12.04);
+            // }
+            // else if (attributes[2] == 2) { // 2H
+            //     energy_b = 0.01;
+            // }
+            // else if (attributes[2] == 3) { // 3H
+            //     energy_b = -0.01;
+            // }
+            // else if (attributes[2] == 4) {
+            //     energy_b = -0.05;
+            // }
+            // else if (attributes[2] == 5) {
+            //     energy_b = -0.06;
+            // }
+            // else if (attributes[2] == 6) {
+            //     energy_b = -0.01;
+            // }
+            // else if (attributes[2] == 7) {
+            //     energy_b = 0.05;
+            // }
+            // else if (attributes[2] == 8) {
+            //     energy_b = 0.03;
+            // }
+            // else {
+            //     energy_b = 0;
+            // }
 
             energy_d[2] = energy_b + emh;
             if (attributes[2] >= 100000)
