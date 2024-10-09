@@ -58,10 +58,10 @@ for i in range(len(times)-200):
 fs = 1 / (times[1] - times[0])  # Sampling frequency
 
 # Create a 5-pole low-pass filter with an 80 Hz cutoff
-b, a = scipy.signal.butter(5, 0.01/5, fs=fs)
+# b, a = scipy.signal.butter(5, 0.01/5, fs=fs)
 
 # Apply the filter using Gustafsson's method
-avg = scipy.signal.filtfilt(b, a, desorbed_flux, method="gust")
+# avg = scipy.signal.filtfilt(b, a, desorbed_flux, method="gust")
 
 plt.plot(temperatures, desorbed_flux, label="Simulation")
 plt.plot(experiment_temperatures, experiment_desorbed_flux, color='r', label="Experiment")

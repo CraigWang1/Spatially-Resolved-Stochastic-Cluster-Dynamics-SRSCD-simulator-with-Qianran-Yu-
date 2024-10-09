@@ -580,7 +580,7 @@ void SCDWrapper::setSinks()
 void SCDWrapper::computeSinkDissRate(const int type, const int point)
 {
     double b = jumped; //burger's vector 2.8e-8 cm
-    double ebHDislocation = 0.55, ebHGrainBndry = 1.11; //binding and migration energy of hydrogen
+    double ebHDislocation = 0.55, ebHGrainBndry = 1.0; //binding and migration energy of hydrogen
     double ebVDislocation = 1.0, ebVGrainBndry = 1.53; //binding and migration energy of vacancy
     double efH = H_FORM_E;  // [eV] energy of formation for hydrogen
     double efV = 3.23;      // [eV] energy of formation for vacancies
@@ -601,25 +601,33 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
     {
         excessTerm = 1.0-numV/(DENSITY*VOLUME*exp(-efV/KB/TEMPERATURE));
         if (sinksDislocation[0][point] > 0 && excessTerm > 0)
-            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-(ebVDislocation+vacMigrationEnergy)/KB/TEMPERATURE)*excessTerm;
+            sinkDissRateDislocation[type][point] = NU0*exp(-(ebVDislocation+vacMigrationEnergy)/KB/TEMPERATURE)*sinksDislocation[0][point];
+            // sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-(ebVDislocation+vacMigrationEnergy)/KB/TEMPERATURE)*excessTerm;
         else
             sinkDissRateDislocation[type][point] = 0;
 
         if (sinksGrainBndry[0][point] > 0 && excessTerm > 0)
-            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-(ebVGrainBndry+vacMigrationEnergy)/KB/TEMPERATURE)*excessTerm;
+            sinkDissRateGrainBndry[type][point] = NU0*exp(-(ebVGrainBndry+vacMigrationEnergy)/KB/TEMPERATURE)*sinksGrainBndry[0][point];
+            // sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-(ebVGrainBndry+vacMigrationEnergy)/KB/TEMPERATURE)*excessTerm;
         else
             sinkDissRateGrainBndry[type][point] = 0;
     }
     // hydrogen emission
     else if(type == 1){
-        excessTerm = 1.0-numH/(DENSITY*VOLUME*exp(-efH/KB/TEMPERATURE));
+        // excessTerm = 1.0-numH/(DENSITY*VOLUME*exp(-efH/KB/TEMPERATURE));
+        excessTerm = 1.0;
         if (sinksDislocation[3][point] > 0 && excessTerm > 0)
-            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-(ebHDislocation+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*excessTerm;
+            sinkDissRateDislocation[type][point] = NU0*exp(-(ebHDislocation+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*sinksDislocation[3][point];
+            // sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-(ebHDislocation+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*excessTerm;
         else
             sinkDissRateDislocation[type][point] = 0;
 
         if (sinksGrainBndry[3][point] > 0 && excessTerm > 0)
-            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-(ebHGrainBndry+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*excessTerm;
+        {
+            excessTerm = 1.0;
+            sinkDissRateGrainBndry[type][point] = NU0*exp(-(ebHGrainBndry+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*sinksGrainBndry[3][point];
+            // sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-(ebHGrainBndry+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*excessTerm*sinksGrainBndry[3][point];
+        }
         else
             sinkDissRateGrainBndry[type][point] = 0;
     }
