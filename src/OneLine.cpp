@@ -228,6 +228,9 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     double prefactor = 0.0;
     int objectN[3];   
     hostObject->getThreeNumber(count, objectN);
+    int currNum = objectN[0];
+    int frontNum = objectN[1];
+    int backNum = objectN[2];
     double concentration = 0;
     double frontConcentration = 0;
     double backConcentration = objectN[2] / VOLUME;
@@ -277,7 +280,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
             diffRToB = 0.0;
 
             // Normal Diffusion to the second bulk element
-            if (concentration > backConcentration)
+            if (concentration > backConcentration) // allow 1H to diffuse into neigbouring volume element if both vol elems have 1H
             {
                 double lengthb = (SUBSURFACE_THICKNESS + ELEMENT_THICKNESS)/2.0 * NM_TO_CM; // first element to second element distance (20nm) 
                 /* if diffusable */
@@ -293,12 +296,12 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
             // double desorbE = -0.00195416 * exp(5.87242*surfaceSaturationFraction) + 1.48996;            // Ajmalghan 2019
             // double desorbE = 2.0*(0.9 - 0.2*surfaceSaturationFraction - 0.7*pow(surfaceSaturationFraction, 12));
             // double desorbE = 1.023 + 0.584/(1.0 + exp(7.38e-16 * surfaceConc - 2.85));
-            double desorbE = 2.0*(0.525 + 0.591*(1.0/(1.0+exp( (surfaceSaturationFraction-0.247)/0.0692 )))); // from Hodille 2020
+            // double desorbE = 2.0*(0.525 + 0.591*(1.0/(1.0+exp( (surfaceSaturationFraction-0.247)/0.0692 )))); // from Hodille 2020
             // if (TEMP_INCREASE_RATE == 0)  // no thermal desorption, assume atmosphere environment so use experiment data
                 // absorbE = 1.10 + 0.939*(1.0/(1.0+exp( (surfaceSaturationFraction-0.232)/0.0683 )));  // from Hodille 2020
             // else                          // doing thermal desorption, assume vacuum environment so use DFT data
-                // absorbE = -3.6592e-8 * exp(16.9129*surfaceSaturationFraction) + 1.71738;             // Ajmalghan 2019
-                absorbE = desorbE/2. + HEAT_OF_SOLUTION + H_MIGRATION_ENERGY + 0.02;   // Add 0.02 from Tajuki Oda 2023
+                absorbE = -3.6592e-8 * exp(16.9129*surfaceSaturationFraction) + 1.71738;             // Ajmalghan 2019
+                // absorbE = desorbE/2. + HEAT_OF_SOLUTION + H_MIGRATION_ENERGY + 0.02;   // Add 0.02 from Tajuki Oda 2023
             double freq = NU0 * exp(-absorbE / KB / TEMPERATURE);            
             prefactor = freq * surfaceConc * DIVIDING_AREA;
             diffRToB = prefactor;
@@ -335,8 +338,11 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         * 1. compute diffusion rate to the front element 
         * Diffusion goes from area of higher concentration to lower concentration
         * Object not allowed to diffuse out through the front
+        * Allow neighbouring elements with 1H each to diffuse into each other like real life.
         */
-        if (concentration > frontConcentration && count != 0 && count != 1) {
+        if ((concentration > frontConcentration)
+             && count != 0 && count != 1) 
+        {
             /* if diffusable, surface objects diffusing into vacuum is considered */
             prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthf;
             diffRToF = prefactor*(concentration - frontConcentration);
@@ -613,6 +619,10 @@ void OneLine::computeSAVReaction(
                                  const Object* const hostObject,
                                  const int count)
 {
+    /*
+     * Allow overpressurized VH cluster to eject W atom to create another vacancy.
+     * And allow 2H clusters to eject W atom to create vacancy.
+     */
     SAVR = 0;
 
     if (!SAV_ON || count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
@@ -625,8 +635,8 @@ void OneLine::computeSAVReaction(
     {
         int numH = hostObject->getAttri(2);
         int numVacancies = abs(hostObject->getAttri(0));
-        double thresholdH = 4.75*numVacancies + 4;   // Qianran Yu 2020, did linear fit from graph of excess sav energies
-        if (numH > thresholdH || hostObject->getKey() == 1)
+        double thresholdH = 4.0*numVacancies;   // Qianran Yu 2020, did linear fit from graph of excess sav energies
+        if ((numVacancies > 0 && numH > thresholdH) || (numH >= 2 && numVacancies == 0))
         {
             SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * hostObject->getNumber(count);
         }
@@ -670,9 +680,9 @@ void OneLine::computeRecombReaction(
     {
         double desorbE;
         // if (TEMP_INCREASE_RATE == 0)  // assume atmospheric environment, use experiment desorption energy barrier
-            desorbE = 2.0*(0.525 + 0.591*(1.0/(1.0+exp( (surfaceSaturationFraction-0.247)/0.0692 )))); // from Hodille 2020
+            // desorbE = 2.0*(0.525 + 0.591*(1.0/(1.0+exp( (surfaceSaturationFraction-0.247)/0.0692 )))); // from Hodille 2020
         // else                          // doing thermal desorption, assume vacuum environment, use DFT desorption energy barrier
-            // desorbE = -0.00195416 * exp(5.87242*surfaceSaturationFraction) + 1.48996;            // Ajmalghan 2019
+            desorbE = -0.00195416 * exp(5.87242*surfaceSaturationFraction) + 1.48996;            // Ajmalghan 2019
             // desorbE = 0.019+1.453/(1.0+exp((surfaceSaturationFraction-1.000)/0.111));
             // desorbE = 2.0*(0.9 - 0.2*surfaceSaturationFraction - 0.7*pow(surfaceSaturationFraction, 12));
             // desorbE = 1.023 + 0.584/(1.0 + exp(7.38e-16 * surfaceConc - 2.85));

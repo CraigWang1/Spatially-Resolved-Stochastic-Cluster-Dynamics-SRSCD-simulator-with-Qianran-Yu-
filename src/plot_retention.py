@@ -165,6 +165,7 @@ for i in range(len(positions)-1):
 	retained_sim_fluence += trapped_hydrogen_c[i] * (positions[i+1]-positions[i])
 print()
 print("Sim retained vs. experiment retained: "+str(retained_sim_fluence/retained_experiment_fluence/(time/10000)))
+# print(retained_sim_fluence)
 
 if plot_h:
 	# plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)

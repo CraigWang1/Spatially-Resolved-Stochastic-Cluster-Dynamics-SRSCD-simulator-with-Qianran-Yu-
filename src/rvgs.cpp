@@ -134,7 +134,9 @@ double Normal(double m, double s)
     const double p4 = 0.453642210148e-4;  const double q4 = 0.385607006340e-2;
     double u, t, p, q, z;
     
-    u = (double)rand()/RAND_MAX;
+    do {
+        u = (double)rand()/RAND_MAX;
+    } while (u == 0 || u == 1);
     if (u < 0.5)
         t = sqrt(-2.0 * log(u));
     else

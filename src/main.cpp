@@ -8,7 +8,7 @@
 #include <cassert>
 #include"SCDWrapper.h"
 
-double TEMPERATURE = 383;  // [K], this is extern so all files have access to this
+double TEMPERATURE = 350;  // [K], this is extern so all files have access to this
 const double startingTemp = TEMPERATURE;
 
 int main(int argc, char** argv) 
@@ -130,16 +130,6 @@ int main(int argc, char** argv)
         */
 
         srscd->processEvent(reaction, hostObject, pointIndex, theOtherKey, advTime, accTime); /* process event */
-
-        if (srscd->getDomainRate() < 1)
-        {
-            srscd->writeFile(advTime, iStep, threadID);
-            string reactions[] = {"diffF", "diffB", "sinkDisloc", "sinkGrain", "diss", "comb", "sav", "recombER", "recombLH", "none", "particle", "HE", "H", "dissVDisloc", "dissVGrain", "dissHDisloc", "dissHGrain", "error"};        
-            cout << reactions[reaction] << " " << pointIndex << " " << theOtherKey;
-            if (hostObject != nullptr)
-                cout << " " << hostObject->getKey();
-            cout << endl;        
-        }
 
         if(reaction == Reaction::H || reaction == Reaction::PARTICLE)
         {

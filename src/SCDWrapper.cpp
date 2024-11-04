@@ -580,7 +580,7 @@ void SCDWrapper::setSinks()
 void SCDWrapper::computeSinkDissRate(const int type, const int point)
 {
     double b = jumped; //burger's vector 2.8e-8 cm
-    double ebHDislocation = 0.55, ebHGrainBndry = 1.0; //binding and migration energy of hydrogen
+    double ebHDislocation = 0.55, ebHGrainBndry = 0.88; //binding and migration energy of hydrogen
     double ebVDislocation = 1.0, ebVGrainBndry = 1.53; //binding and migration energy of vacancy
     double efH = H_FORM_E;  // [eV] energy of formation for hydrogen
     double efV = 3.23;      // [eV] energy of formation for vacancies
@@ -612,14 +612,16 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
     }
     // hydrogen emission
     else if(type == 1){
+        ebHGrainBndry = Normal(0.9, 0.1);
+        
         excessTerm = 1.0-numH/(DENSITY*VOLUME*exp(-efH/KB/TEMPERATURE));
         if (sinksDislocation[3][point] > 0 && excessTerm > 0)
-            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-(ebHDislocation+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*excessTerm*sinksDislocation[3][point];
+            sinkDissRateDislocation[type][point] = NU0*exp(-(ebHDislocation+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*excessTerm*sinksDislocation[3][point];
         else
             sinkDissRateDislocation[type][point] = 0;
 
         if (sinksGrainBndry[3][point] > 0 && excessTerm > 0)
-            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-(ebHGrainBndry+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*excessTerm*sinksGrainBndry[3][point];
+            sinkDissRateGrainBndry[type][point] = NU0*exp(-(ebHGrainBndry+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*excessTerm*sinksGrainBndry[3][point];
         else
             sinkDissRateGrainBndry[type][point] = 0;
     }
@@ -956,6 +958,14 @@ void SCDWrapper::processCombEvent(
         productAttr[i] = hostObject->getAttri(i) + theOtherObject->getAttri(i);
     } /* now I have the attribute of the product object */
     productKey = attrToKey(productAttr);
+    if (productKey == 2)
+    {
+        // cout << "2 at " << n << endl;
+    }
+    else if (productKey == 3)
+    {
+        cout << "3 at " << n << endl;
+    }
     if(hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && productAttr[0] > 0 && productAttr[2] > 0){
         /* Vn-Hm + xxx -> SIAp-Hq (n, m are not zero) */
         /* change above reaction to Vn-Hm + xxx -> SIAp + q*H */
