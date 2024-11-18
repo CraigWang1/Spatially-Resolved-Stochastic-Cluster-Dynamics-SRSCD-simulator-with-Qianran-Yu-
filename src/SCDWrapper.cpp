@@ -40,8 +40,8 @@ SCDWrapper::SCDWrapper():allObjects(), engine(rd()), distribution(0.0L, 1.0L), d
     numHDesorbed = 0;
 
     selectReactionFile.open("selectReaction.txt", ios::app);
-    processEventFile.open("Reactionts.txt", ios::app);
-    desorbedFile.open("Desorbed.txt", ios::app);
+    processEventFile.open("Reactions.txt", ios::app);
+    desorbedFile.open("Desorbed.txt", ios::out);
     /* set format of gs --- species */
     /*
     gs.set_title("Species");
@@ -612,8 +612,6 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
     }
     // hydrogen emission
     else if(type == 1){
-        ebHGrainBndry = Normal(0.9, 0.1);
-        
         excessTerm = 1.0-numH/(DENSITY*VOLUME*exp(-efH/KB/TEMPERATURE));
         if (sinksDislocation[3][point] > 0 && excessTerm > 0)
             sinkDissRateDislocation[type][point] = NU0*exp(-(ebHDislocation+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*excessTerm*sinksDislocation[3][point];
@@ -958,14 +956,6 @@ void SCDWrapper::processCombEvent(
         productAttr[i] = hostObject->getAttri(i) + theOtherObject->getAttri(i);
     } /* now I have the attribute of the product object */
     productKey = attrToKey(productAttr);
-    if (productKey == 2)
-    {
-        // cout << "2 at " << n << endl;
-    }
-    else if (productKey == 3)
-    {
-        cout << "3 at " << n << endl;
-    }
     if(hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && productAttr[0] > 0 && productAttr[2] > 0){
         /* Vn-Hm + xxx -> SIAp-Hq (n, m are not zero) */
         /* change above reaction to Vn-Hm + xxx -> SIAp + q*H */
@@ -1018,27 +1008,26 @@ void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
      * Superabundant vacancy mechanism.
      * Eject an interstitial (which increases vacancy by 1)
      */
-    const int64 HKey = 1;
+    // const int64 HKey = 1;
+    // if (hostObject->getAttri(0) == 0 && hostObject->getAttri(2) > 0) // if nH object
+    // {   /* SAV for nH (b/c H/V ratio > 4) is only enabled when H is oversaturated, SAV for VH clusters with H/V ratio > 4 is always enabled */
+    //     double HConcentration = 0;
+    //     unordered_map<int64, Object*>::iterator iter;
+    //     double volume = VOLUME;
+    //     for (iter = HObjects.begin(); iter != HObjects.end(); ++iter)
+    //     {
+    //         Object* HObject = iter->second;
+    //         HConcentration += HObject->getNumber(n) * HObject->getAttri(2) / volume;
+    //     }
 
-    if (hostObject->getKey() == HKey)
-    {   /* SAV for 1H (b/c H/V ratio > 4) is only enabled when H is oversaturated, SAV for VH clusters with H/V ratio > 4 is always enabled */
-        double HConcentration = 0;
-        unordered_map<int64, Object*>::iterator iter;
-        double volume = VOLUME;
-        for (iter = HObjects.begin(); iter != HObjects.end(); ++iter)
-        {
-            Object* HObject = iter->second;
-            HConcentration += HObject->getNumber(n) * HObject->getAttri(2) / volume;
-        }
+    //     double saturation_concentration = getHSaturationConcentration();
 
-        double saturation_concentration = getHSaturationConcentration();
-
-        // If it's not saturated, SAV doesn't need to create more vacancies
-        if (HConcentration < saturation_concentration)
-        {
-            return;
-        }
-    }
+    //     // If it's not saturated, SAV doesn't need to create more vacancies
+    //     if (HConcentration < saturation_concentration)
+    //     {
+    //         return;
+    //     }
+    // }
 
     // Eject interstitial
     int64 SIAKey = (int64)pow(10.0, (double)EXP10 * (LEVELS - 1)); /* Key for SIA. */
@@ -1050,14 +1039,6 @@ void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
         productAttr[i] = hostObject->getAttri(i);
 
     productAttr[0] -= 1;
-
-    if (productAttr[0] < 0 && productAttr[2] > abs(productAttr[0])*4)
-    {
-        /* If the product has too many H per vacancy, eject the rest of the H */
-        int excessH = productAttr[2] - abs(productAttr[0])*4;
-        productAttr[2] -= excessH;
-        addToObjectMap(HKey, n, excessH);
-    }
 
     int64 productKey = attrToKey(productAttr);
 

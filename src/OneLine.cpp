@@ -228,9 +228,6 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     double prefactor = 0.0;
     int objectN[3];   
     hostObject->getThreeNumber(count, objectN);
-    int currNum = objectN[0];
-    int frontNum = objectN[1];
-    int backNum = objectN[2];
     double concentration = 0;
     double frontConcentration = 0;
     double backConcentration = objectN[2] / VOLUME;
@@ -363,6 +360,9 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         }
         if (TEMP_INCREASE_RATE > 0 && count == POINTS - 1) { // if doing TDS, don't let stuff escape thru the back, so we can count it as it emerges from surface
             diffRToB = 0.0;
+        }
+        if (hostObject->getAttri(0) > 0 && hostObject->getAttri(2) == 0 && count == POINTS - 1) {
+            diffRToB = 0.0; // Don't let SIA diffuse out of box so it can recombine with vacancies at the edge
         }
     }
 }
@@ -505,6 +505,7 @@ long double OneLine::computeBaseCombReaction(
     double r12;
     double dimensionTerm;
     double volume;
+    double adjustmentFactor = 1;
     if(count == SURFACE_INDEX || count == SUBSURFACE_INDEX){
         volume = SUBSURFACE_VOLUME; // shouldn't get here
     }else{
@@ -533,14 +534,16 @@ long double OneLine::computeBaseCombReaction(
         return 0.0;
     }
 
-    // Disable SIA combining with V-H cluster if H/V >= 1 (like SIA will bounce off)
+    // Harder for SIA to recombine with V-H cluster if H/V ratio is high
     if (hostObject->getAttri(0) < 0 &&
         hostObject->getAttri(2) > 0 &&
-        hostObject->getAttri(2) >= abs(hostObject->getAttri(0)) &&
         mobileObject->getAttri(0) > 0 &&
         mobileObject->getAttri(2) == 0)
     {
-        return 0.0;
+        double HVratio = (double)hostObject->getAttri(2) / abs(hostObject->getAttri(0));
+        adjustmentFactor = -HVratio/10. + 1; // linear regression so that when HVratio = 5, factor = 1/2
+        if (adjustmentFactor < 0)
+            adjustmentFactor = 0;
     }
 
     /*
@@ -554,7 +557,7 @@ long double OneLine::computeBaseCombReaction(
 
     r12 = hostObject->getR1() + mobileObject->getR1();
     dimensionTerm = computeDimensionTerm(r12, hostObject, mobileObject, count);
-    return 4.0*PI*concentration*r12*dimensionTerm;
+    return 4.0*PI*concentration*r12*dimensionTerm*adjustmentFactor;
 }
 
 long double OneLine::computeCombReaction(
@@ -636,9 +639,13 @@ void OneLine::computeSAVReaction(
         int numH = hostObject->getAttri(2);
         int numVacancies = abs(hostObject->getAttri(0));
         double thresholdH = 4.0*numVacancies;   // Qianran Yu 2020, did linear fit from graph of excess sav energies
-        if ((numVacancies > 0 && numH > thresholdH) || (numH >= 2 && numVacancies == 0))
+        if (numH > thresholdH)
         {
-            SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * hostObject->getNumber(count);
+            if (hostObject->getAttri(0) < 0 
+                || (numVacancies == 0 && numH >= 2))
+            {
+                SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * hostObject->getNumber(count);
+            }
         }
     }
 }
@@ -682,10 +689,12 @@ void OneLine::computeRecombReaction(
         // if (TEMP_INCREASE_RATE == 0)  // assume atmospheric environment, use experiment desorption energy barrier
             // desorbE = 2.0*(0.525 + 0.591*(1.0/(1.0+exp( (surfaceSaturationFraction-0.247)/0.0692 )))); // from Hodille 2020
         // else                          // doing thermal desorption, assume vacuum environment, use DFT desorption energy barrier
-            desorbE = -0.00195416 * exp(5.87242*surfaceSaturationFraction) + 1.48996;            // Ajmalghan 2019
+            // desorbE = -0.00195416 * exp(5.87242*surfaceSaturationFraction) + 1.48996;            // Ajmalghan 2019
+            // desorbE = 1.40259 - 0.00881176*exp(5.45029*surfaceSaturationFraction - 1.22515);
             // desorbE = 0.019+1.453/(1.0+exp((surfaceSaturationFraction-1.000)/0.111));
             // desorbE = 2.0*(0.9 - 0.2*surfaceSaturationFraction - 0.7*pow(surfaceSaturationFraction, 12));
             // desorbE = 1.023 + 0.584/(1.0 + exp(7.38e-16 * surfaceConc - 2.85));
+            desorbE = 1.029 + 0.700/(1.0+exp((surfaceSaturationFraction-0.475)/0.151));
         double desorptionR = NU0 * pow(ALATT, 2); // [cm^2 s^-1]
         recombRLH = desorptionR * exp(-desorbE / KB / TEMPERATURE) * surfaceConc * surfaceConc * DIVIDING_AREA;
     }
