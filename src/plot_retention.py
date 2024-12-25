@@ -123,7 +123,7 @@ with open("sink0.txt") as f:
 	for line_hold in f:
 		line_hold = line_hold.split()
 		numH.append(int(line_hold[3]) + int(line_hold[7]))
-	trapped_hydrogen_c += np.array(numH).astype(float)
+	# trapped_hydrogen_c += np.array(numH).astype(float)
 	# print(sum(numH)/np.sum(trapped_hydrogen_c))
 
 trapped_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME

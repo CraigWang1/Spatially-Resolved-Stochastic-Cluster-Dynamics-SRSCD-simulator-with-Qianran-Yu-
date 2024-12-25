@@ -230,26 +230,36 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     hostObject->getThreeNumber(count, objectN);
     double concentration = 0;
     double frontConcentration = 0;
-    double backConcentration = objectN[2] / VOLUME;
+    double backConcentration = 0;
     if (count == SURFACE_INDEX)
     {
         concentration = 0;  /* surface layer corresponds to adsorbed layer of hydrogen at surface */
         frontConcentration = H_SATURATION_CONCENTRATION;
+        backConcentration = objectN[2] / SUBSURFACE_VOLUME;
     }
     else if (count == SUBSURFACE_INDEX)
     {
         concentration = objectN[0] / SUBSURFACE_VOLUME;
         frontConcentration = 0;
+        backConcentration = objectN[2] / FIRST_BULK_VOLUME;
     }
-    else if (count == 2)
+    else if (count == FIRST_BULK_INDEX)
+    {
+        concentration = objectN[0] / FIRST_BULK_VOLUME;
+        frontConcentration = objectN[1] / SUBSURFACE_VOLUME;
+        backConcentration = objectN[2] / VOLUME;
+    }
+    else if (count == FIRST_BULK_INDEX + 1)
     {
         concentration = objectN[0] / VOLUME;
-        frontConcentration = objectN[1] / SUBSURFACE_VOLUME;
+        frontConcentration = objectN[1] / FIRST_BULK_VOLUME;
+        backConcentration = objectN[2] / VOLUME;
     }
     else
     {
         concentration = objectN[0] / VOLUME;
         frontConcentration = objectN[1] / VOLUME;
+        backConcentration = objectN[2] / VOLUME;
     }
 
     // Account for special cases from 2020 Zhenhou Wang
@@ -279,7 +289,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
             // Normal Diffusion to the second bulk element
             if (concentration > backConcentration) // allow 1H to diffuse into neigbouring volume element if both vol elems have 1H
             {
-                double lengthb = (SUBSURFACE_THICKNESS + ELEMENT_THICKNESS)/2.0 * NM_TO_CM; // first element to second element distance (20nm) 
+                double lengthb = (SUBSURFACE_THICKNESS + FIRST_BULK_THICKNESS)/2.0 * NM_TO_CM; // first element to second element distance (20nm) 
                 /* if diffusable */
                 prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthb;
                 diffRToB = prefactor*(concentration - backConcentration);
@@ -295,9 +305,9 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
             // double desorbE = 1.023 + 0.584/(1.0 + exp(7.38e-16 * surfaceConc - 2.85));
             // double desorbE = 2.0*(0.525 + 0.591*(1.0/(1.0+exp( (surfaceSaturationFraction-0.247)/0.0692 )))); // from Hodille 2020
             // if (TEMP_INCREASE_RATE == 0)  // no thermal desorption, assume atmosphere environment so use experiment data
-                // absorbE = 1.10 + 0.939*(1.0/(1.0+exp( (surfaceSaturationFraction-0.232)/0.0683 )));  // from Hodille 2020
+                absorbE = 1.10 + 0.939*(1.0/(1.0+exp( (surfaceSaturationFraction-0.232)/0.0683 )));  // from Hodille 2020
             // else                          // doing thermal desorption, assume vacuum environment so use DFT data
-                absorbE = -3.6592e-8 * exp(16.9129*surfaceSaturationFraction) + 1.71738;             // Ajmalghan 2019
+                // absorbE = -3.6592e-8 * exp(16.9129*surfaceSaturationFraction) + 1.71738;             // Ajmalghan 2019
                 // absorbE = desorbE/2. + HEAT_OF_SOLUTION + H_MIGRATION_ENERGY + 0.02;   // Add 0.02 from Tajuki Oda 2023
             double freq = NU0 * exp(-absorbE / KB / TEMPERATURE);            
             prefactor = freq * surfaceConc * DIVIDING_AREA;
@@ -311,19 +321,24 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         /* by having two diffusion rates, this rate will never be less than 0 */
         /* length measured in cm */
         double lengthf = 0.0, lengthb = 0.0;
-        if(count == SURFACE_INDEX)
+        if (count == SURFACE_INDEX)
         {   
             lengthf = (ELEMENT_THICKNESS + SUBSURFACE_THICKNESS) / 2. * NM_TO_CM; // this value doesn't matter b/c can't diffuse out into vacuum 
             lengthb = (SUBSURFACE_THICKNESS) / 2. * NM_TO_CM; /* surface to first element distance */
         }
-        else if(count == SUBSURFACE_INDEX)
+        else if (count == SUBSURFACE_INDEX)
         {
             lengthf =  SUBSURFACE_THICKNESS / 2. * NM_TO_CM; /* surface to first element distance */
-            lengthb = (ELEMENT_THICKNESS + SUBSURFACE_THICKNESS) / 2. * NM_TO_CM; // first element to second element distance (20nm) 
+            lengthb = (SUBSURFACE_THICKNESS + FIRST_BULK_THICKNESS) / 2. * NM_TO_CM;  
         }
-        else if (count == 2)
+        else if (count == FIRST_BULK_INDEX)
         {
-            lengthf = (ELEMENT_THICKNESS + SUBSURFACE_THICKNESS) / 2. * NM_TO_CM;
+            lengthf = (SUBSURFACE_THICKNESS + FIRST_BULK_THICKNESS) / 2. * NM_TO_CM;
+            lengthb = (FIRST_BULK_THICKNESS + ELEMENT_THICKNESS) / 2. * NM_TO_CM;
+        }
+        else if (count == FIRST_BULK_INDEX + 1)
+        {
+            lengthf = (FIRST_BULK_THICKNESS + ELEMENT_THICKNESS) / 2. * NM_TO_CM;
             lengthb = ELEMENT_THICKNESS * NM_TO_CM;
         }
         else
@@ -338,7 +353,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         * Allow neighbouring elements with 1H each to diffuse into each other like real life.
         */
         if ((concentration > frontConcentration)
-             && count != 0 && count != 1) 
+             && count != SURFACE_INDEX && count != SUBSURFACE_INDEX) 
         {
             /* if diffusable, surface objects diffusing into vacuum is considered */
             prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthf;
@@ -506,11 +521,13 @@ long double OneLine::computeBaseCombReaction(
     double dimensionTerm;
     double volume;
     double adjustmentFactor = 1;
-    if(count == SURFACE_INDEX || count == SUBSURFACE_INDEX){
+    if (count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
         volume = SUBSURFACE_VOLUME; // shouldn't get here
-    }else{
+    else if (count == FIRST_BULK_INDEX)
+        volume = FIRST_BULK_THICKNESS;
+    else
         volume = VOLUME;
-    }
+    
     
     if (hostObject->getKey() != mobileObject->getKey()) {
         concentration = hostObject->getNumber(count)*mobileObject->getNumber(count) / volume;
@@ -521,10 +538,10 @@ long double OneLine::computeBaseCombReaction(
     }
 
     // H+H-->2H
-    // Disable H clustering for now b/c not sure how it works with SAV
-    // if (hostObject->getKey() == 1 && mobileObject->getKey() == 1){
-        // return 0.0;
-    // }
+    // Disable H clustering for now to reduce complexity
+    if (hostObject->getKey() == 1 && mobileObject->getKey() == 1){
+        return 0.0;
+    }
 
     // Disable multiples of 1V-12H + 1H because vacancy can store max 12H, save sim time
     if (hostObject->getAttri(0) < 0 && 
@@ -627,6 +644,11 @@ void OneLine::computeSAVReaction(
      * And allow 2H clusters to eject W atom to create vacancy.
      */
     SAVR = 0;
+    double volume = VOLUME;
+    if (count == SUBSURFACE_INDEX)
+        volume = SUBSURFACE_VOLUME;
+    else if (count == FIRST_BULK_INDEX)
+        volume = FIRST_BULK_VOLUME;
 
     if (!SAV_ON || count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
     {
@@ -636,16 +658,23 @@ void OneLine::computeSAVReaction(
     // If we have a mV-nH object, or nH object
     if (hostObject->getAttri(0) <= 0 && hostObject->getAttri(2) > 0 && hostObject->getNumber(count) > 0)
     {
-        int numH = hostObject->getAttri(2);
+        int numHPerCluster = hostObject->getAttri(2);
         int numVacancies = abs(hostObject->getAttri(0));
-        double thresholdH = 4.0*numVacancies;   // Qianran Yu 2020, did linear fit from graph of excess sav energies
-        if (numH > thresholdH)
+        double clusterThresholdH = 4.0*numVacancies;   // Qianran Yu 2020, did linear fit from graph of excess sav energies
+        if (numHPerCluster > clusterThresholdH)
         {
-            if (hostObject->getAttri(0) < 0 
-                || (numVacancies == 0 && numH >= 2))
+            // 1H is SAV candidate only if dissolved H concentration is oversaturated
+            if (hostObject->getKey() == 1) 
             {
-                SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * hostObject->getNumber(count);
+                double maxSolubilityConc = DENSITY * exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
+                double maxNumH = maxSolubilityConc * volume;
+                int extraH = ceil(hostObject->getNumber(count) - maxNumH);
+                if (extraH > 0)
+                    SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * extraH;
             }
+            // Overpressurized VH cluster is always SAV candidate
+            else
+                SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * hostObject->getNumber(count);
         }
     }
 }

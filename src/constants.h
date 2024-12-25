@@ -35,6 +35,7 @@
 #define FOIL_THICKNESS 0.0002 //[cm] Foil thickness from UCSD (2000nm)
 #define ELEMENT_THICKNESS 20.0 // [nm] thickness of bulk spatial element
 #define SUBSURFACE_THICKNESS 0.544 //[nm] thickness of surface (conrresponds to two monolayers of tungsten)
+#define FIRST_BULK_THICKNESS 8.0   //[nm] thickness of first bulk index (sized so that its centroid corresponds to mean projective range of incident H ions)
 #define NU0 1.0e+13           // [Hz] Attempt frequency.
 #define C_DENSITY 10        // [appm] C-atom density
 #define GAMMA 1.0           // Fraction of surface emission.
@@ -68,6 +69,7 @@
 #define POINTS 252       // number of elements: one surface(Point 0), one subsurface (Point 1), other bulk elements(NO.1,2,3,4,...,250)
 #define SURFACE_INDEX 0     // the surface layer corresponding of adsorbed layer on material surface (not inside material)
 #define SUBSURFACE_INDEX 1  // the small subsurface layer to facilitate transport from surface to bulk
+#define FIRST_BULK_INDEX 2  // the first bulk layer that all the H ions get implanted into
 // Auxiliary definitions:
 enum Reaction { DIFFUSETOF, DIFFUSETOB, SINKDISLOCATION, SINKGRAINBNDRY, DISSOCIATION, COMBINATION, SAV, RECOMBER, RECOMBLH, NONE, PARTICLE, HE, H, DISSVDISLOCATION, DISSVGRAINBNDRY, DISSHDISLOCATION, DISSHGRAINBNDRY, ERROR};
 
@@ -101,11 +103,10 @@ const bool RECOMB_ON = true; // surface recombination (surface release) reaction
 const double TEMP_INCREASE_RATE = 0.;   // K/s for when doing thermal desorption spectroscopy simulations. For now TDS is only supported in serial (1 processor max)
 extern double TEMPERATURE;  // Temperature is set in main.cpp
 
-
-
 const double AVG_ION_EN[POINTS] = {0, 0, 22342, 21202, 16767, 15427, 19102, 23477, 27934, 25724, 21525, 23409, 26167, 30148, 28405, 28622, 33293, 25380, 28119, 35640, 41737, 36054, 38115, 40023, 43367, 40388, 43523, 46082, 31469, 37833, 40849, 39033, 39739, 37562, 35608, 39525, 35038, 33527, 31842, 28732, 28872, 31789, 26140, 25478, 23078, 18575, 16248, 16883, 13112, 11587, 10769, 9441, 7145, 5443, 4832, 4088, 3359, 2229, 2682, 2621, 1144, 727, 630, 408, 514, 163, 207, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 const double H_SATURATION_CONCENTRATION = DENSITY * exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
-const double SUBSURFACE_VOLUME = VOLUME / 20. * SUBSURFACE_THICKNESS; // surface element is the thin surface layer + one bulk element
+const double SUBSURFACE_VOLUME = VOLUME / 20. * SUBSURFACE_THICKNESS; // subsurface element is the thin surface layer
+const double FIRST_BULK_VOLUME = VOLUME / 20. * FIRST_BULK_THICKNESS; // first bulk element is the element just past the subsurface where all H ions get implanted into
 
 /* Unit conversion factors */
 const double NM_TO_CM = 1.0e-7;

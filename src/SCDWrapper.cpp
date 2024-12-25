@@ -596,23 +596,29 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
 
     double vacMigrationEnergy = 1.29;  // [eV] Qianran Yu 2020
 
+    double volume = VOLUME;
+    if (point == SUBSURFACE_INDEX)
+        volume = SUBSURFACE_VOLUME;
+    else if (point == FIRST_BULK_INDEX)
+        volume = FIRST_BULK_VOLUME;
+
     // vacancy emission
     if(type == 0)
     {
-        excessTerm = 1.0-numV/(DENSITY*VOLUME*exp(-efV/KB/TEMPERATURE));
+        excessTerm = 1.0-numV/(DENSITY*volume*exp(-efV/KB/TEMPERATURE));
         if (sinksDislocation[0][point] > 0 && excessTerm > 0)
-            sinkDissRateDislocation[type][point] = 2.0*PI*VOLUME*DISLOCATION/b*NU0*exp(-(ebVDislocation+vacMigrationEnergy)/KB/TEMPERATURE)*excessTerm;
+            sinkDissRateDislocation[type][point] = 2.0*PI*volume*DISLOCATION/b*NU0*exp(-(ebVDislocation+vacMigrationEnergy)/KB/TEMPERATURE)*excessTerm;
         else
             sinkDissRateDislocation[type][point] = 0;
 
         if (sinksGrainBndry[0][point] > 0 && excessTerm > 0)
-            sinkDissRateGrainBndry[type][point] = 6.0*VOLUME/GRAIN_SIZE/b/b*NU0*exp(-(ebVGrainBndry+vacMigrationEnergy)/KB/TEMPERATURE)*excessTerm;
+            sinkDissRateGrainBndry[type][point] = 6.0*volume/GRAIN_SIZE/b/b*NU0*exp(-(ebVGrainBndry+vacMigrationEnergy)/KB/TEMPERATURE)*excessTerm;
         else
             sinkDissRateGrainBndry[type][point] = 0;
     }
     // hydrogen emission
     else if(type == 1){
-        excessTerm = 1.0-numH/(DENSITY*VOLUME*exp(-efH/KB/TEMPERATURE));
+        excessTerm = 1.0-numH/(DENSITY*volume*exp(-efH/KB/TEMPERATURE));
         if (sinksDislocation[3][point] > 0 && excessTerm > 0)
             sinkDissRateDislocation[type][point] = NU0*exp(-(ebHDislocation+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*excessTerm*sinksDislocation[3][point];
         else
@@ -1008,27 +1014,6 @@ void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
      * Superabundant vacancy mechanism.
      * Eject an interstitial (which increases vacancy by 1)
      */
-    // const int64 HKey = 1;
-    // if (hostObject->getAttri(0) == 0 && hostObject->getAttri(2) > 0) // if nH object
-    // {   /* SAV for nH (b/c H/V ratio > 4) is only enabled when H is oversaturated, SAV for VH clusters with H/V ratio > 4 is always enabled */
-    //     double HConcentration = 0;
-    //     unordered_map<int64, Object*>::iterator iter;
-    //     double volume = VOLUME;
-    //     for (iter = HObjects.begin(); iter != HObjects.end(); ++iter)
-    //     {
-    //         Object* HObject = iter->second;
-    //         HConcentration += HObject->getNumber(n) * HObject->getAttri(2) / volume;
-    //     }
-
-    //     double saturation_concentration = getHSaturationConcentration();
-
-    //     // If it's not saturated, SAV doesn't need to create more vacancies
-    //     if (HConcentration < saturation_concentration)
-    //     {
-    //         return;
-    //     }
-    // }
-
     // Eject interstitial
     int64 SIAKey = (int64)pow(10.0, (double)EXP10 * (LEVELS - 1)); /* Key for SIA. */
     addToObjectMap(SIAKey, n);
@@ -1313,11 +1298,13 @@ int SCDWrapper::countDefectNumber(const int count, string type){
     unordered_map<int64, Object*>::iterator iter;
     for(int i=0; i<POINTS; i++){
         double volume;
-        if(i==0 || i == 1){
+        if(i==0 || i == 1)
             volume = SUBSURFACE_VOLUME; /* volume at front is thin surface layer */
-        }else{
+        else if (i == FIRST_BULK_INDEX)
+            volume = FIRST_BULK_VOLUME;
+        else
             volume = VOLUME;
-        }
+        
         for (iter = allObjects.begin(); iter != allObjects.end(); ++iter){
             Object* thisObject = iter -> second;
             int totalNumber  = thisObject -> getNumber(i);
@@ -1596,7 +1583,7 @@ double SCDWrapper::getTotalDpa(){
 
 double SCDWrapper::getHSaturationConcentration() const
 {
-    return H_SATURATION_CONCENTRATION;
+    return DENSITY * exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
     double concentration = H_SATURATION_CONCENTRATION;
     bool dimer = false;
     bool vhpair = false;

@@ -145,7 +145,7 @@ void Damage::computeDamageTwo(const int n, unordered_map<int64, Object*>& allObj
     // else if (n == 1) {
     //     damage[n][2] = FLUX_H * (1 - reflectionCoeff) * H_DIRECT_IMPLANTATION_FRACTION * DIVIDING_AREA;
     // }
-    if (n == 2) // the first bulk layer 
+    if (n == FIRST_BULK_INDEX) // the first bulk layer 
     {
         damage[n][2] = FLUX_H * (1 - reflectionCoeff) * DIVIDING_AREA;
     }
