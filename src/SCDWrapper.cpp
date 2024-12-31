@@ -580,7 +580,7 @@ void SCDWrapper::setSinks()
 void SCDWrapper::computeSinkDissRate(const int type, const int point)
 {
     double b = jumped; //burger's vector 2.8e-8 cm
-    double ebHDislocation = 0.55, ebHGrainBndry = 0.88; //binding and migration energy of hydrogen
+    double ebHDislocation = 0.55, ebHGrainBndry = 0.91; //binding and migration energy of hydrogen
     double ebVDislocation = 1.0, ebVGrainBndry = 1.53; //binding and migration energy of vacancy
     double efH = H_FORM_E;  // [eV] energy of formation for hydrogen
     double efV = 3.23;      // [eV] energy of formation for vacancies

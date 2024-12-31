@@ -130,14 +130,14 @@ void Damage::computeDamageTwo(const int n, unordered_map<int64, Object*>& allObj
     }
 
     double reflectionCoeff = -0.074 * log(H_DEPOSITION_ENERGY) + 0.96; // Data regression from Ogorodnikova 2015
-    double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);   // insertion rate formula form Zhenhou Wang 2020
-    double surfaceConc = 0.0;
+    // double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);   // insertion rate formula form Zhenhou Wang 2020
+    // double surfaceConc = 0.0;
 
-    int64 HKey = 1;
-    if (allObjects.find(HKey) != allObjects.end())
-        surfaceConc = allObjects[HKey]->getNumber(0) / DIVIDING_AREA;  // [cm^-2] concentration
+    // int64 HKey = 1;
+    // if (allObjects.find(HKey) != allObjects.end())
+        // surfaceConc = allObjects[HKey]->getNumber(0) / DIVIDING_AREA;  // [cm^-2] concentration
 
-    double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
+    // double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
 
     // if (n == 0 && surfaceConc < maxSurfaceConc) {
     //     damage[n][2] = FLUX_H * (1 - reflectionCoeff) * (1 - surfaceSaturationFraction) * (1 - H_DIRECT_IMPLANTATION_FRACTION) * DIVIDING_AREA;

@@ -41,7 +41,7 @@
 #define GAMMA 1.0           // Fraction of surface emission.
 #define TDE 90              // [eV] Threshold displacement energy for W.
 #define HEAT_OF_SOLUTION 1.04   // [eV] Heat of solution of H in W.
-#define SAV_ENERGY 1.03         // [eV] energy that controls SAV rate
+#define SAV_ENERGY 1.04         // [eV] energy that controls SAV rate
 #define H_DEPOSITION_ENERGY 113.0 // [eV] energy of an H atom in the incident flux
 #define H_MIGRATION_ENERGY 0.25   // [eV] energy needed for an H to diffuse through lattice
 #define H_DIRECT_IMPLANTATION_FRACTION 0.965 // [unitless] the fraction of nonreflected H flux that bypasses the surface layer and gets directly implanted in bulk, depends on H energy, obtained from SRIM
@@ -51,9 +51,8 @@
 #define HH_BIND_E 0.02          // [eV] Binding Energy of H-H
 // Run parameters:
 #define ION               // Irradiation type.
-#define TOTAL_TIME 10000   // [s] Total simulated time.
+#define TOTAL_TIME 1400   // [s] Total simulated time.
 #define TOTAL_DPA 2        // Total DPA damage to reach.
-#define VOLUME 1.0e-17    // [cm^3] System volume.
 #define DIVIDING_AREA 5.0e-12  // [cm^2] Area of the surface in between volume elements.
 //#define RATIO_HE 1.1       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_HE 0       // [appm/dpa] He-to-dpa ratio.
@@ -93,23 +92,24 @@ const bool LOG_REACTIONS = false;
 
 /* Configure which features to run */
 const bool IRRADIATION_ON = false;
-const bool HYDROGEN_ON = true;
+const bool HYDROGEN_ON = false;
 const bool COMB_ON = true; // combination reaction
 const bool SINK_ON = true; // sink reaction
 const bool DISS_ON = true; // dissociation reaction
 const bool DIFF_ON = true; // diffusion reaction
 const bool SAV_ON = true;  // super abundant vacancy reaction
 const bool RECOMB_ON = true; // surface recombination (surface release) reaction
-const double TEMP_INCREASE_RATE = 0.;   // K/s for when doing thermal desorption spectroscopy simulations. For now TDS is only supported in serial (1 processor max)
+const double TEMP_INCREASE_RATE = 0.5;   // K/s for when doing thermal desorption spectroscopy simulations. For now TDS is only supported in serial (1 processor max)
 extern double TEMPERATURE;  // Temperature is set in main.cpp
-
-const double AVG_ION_EN[POINTS] = {0, 0, 22342, 21202, 16767, 15427, 19102, 23477, 27934, 25724, 21525, 23409, 26167, 30148, 28405, 28622, 33293, 25380, 28119, 35640, 41737, 36054, 38115, 40023, 43367, 40388, 43523, 46082, 31469, 37833, 40849, 39033, 39739, 37562, 35608, 39525, 35038, 33527, 31842, 28732, 28872, 31789, 26140, 25478, 23078, 18575, 16248, 16883, 13112, 11587, 10769, 9441, 7145, 5443, 4832, 4088, 3359, 2229, 2682, 2621, 1144, 727, 630, 408, 514, 163, 207, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-const double H_SATURATION_CONCENTRATION = DENSITY * exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
-const double SUBSURFACE_VOLUME = VOLUME / 20. * SUBSURFACE_THICKNESS; // subsurface element is the thin surface layer
-const double FIRST_BULK_VOLUME = VOLUME / 20. * FIRST_BULK_THICKNESS; // first bulk element is the element just past the subsurface where all H ions get implanted into
 
 /* Unit conversion factors */
 const double NM_TO_CM = 1.0e-7;
+
+const double AVG_ION_EN[POINTS] = {0, 0, 22342, 21202, 16767, 15427, 19102, 23477, 27934, 25724, 21525, 23409, 26167, 30148, 28405, 28622, 33293, 25380, 28119, 35640, 41737, 36054, 38115, 40023, 43367, 40388, 43523, 46082, 31469, 37833, 40849, 39033, 39739, 37562, 35608, 39525, 35038, 33527, 31842, 28732, 28872, 31789, 26140, 25478, 23078, 18575, 16248, 16883, 13112, 11587, 10769, 9441, 7145, 5443, 4832, 4088, 3359, 2229, 2682, 2621, 1144, 727, 630, 408, 514, 163, 207, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+const double H_SATURATION_CONCENTRATION = DENSITY * exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
+const double SUBSURFACE_VOLUME = DIVIDING_AREA * SUBSURFACE_THICKNESS * NM_TO_CM; // [cm^3] subsurface element is the thin surface layer
+const double FIRST_BULK_VOLUME = DIVIDING_AREA * FIRST_BULK_THICKNESS * NM_TO_CM; // [cm^3] first bulk element is the element just past the subsurface where all H ions get implanted into
+const double VOLUME = DIVIDING_AREA * ELEMENT_THICKNESS * NM_TO_CM;               // [cm^3] bulk spatial element volume
 
 //#define AVG_ION_EN 1.71e+6 // (from TRIM) Average ion energy (in eV) expended on damage from 5MeV Cu.
 #define AVG_NEUTRON_EN 40.6 // (from SPECTER) Total damage energy in keV produced by a neutron in ITER.

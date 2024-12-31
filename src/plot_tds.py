@@ -55,6 +55,7 @@ for i in range(len(times)-200):
 	desorbed_flux.append(dN/dt/DIVIDING_AREA)
 
 
+
 fs = 1 / (times[1] - times[0])  # Sampling frequency
 
 # Create a 5-pole low-pass filter with an 80 Hz cutoff

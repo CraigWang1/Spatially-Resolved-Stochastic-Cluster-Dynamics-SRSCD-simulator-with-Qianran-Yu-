@@ -13,9 +13,14 @@ from make_speciesfile import combine_species_files
 
 # Change data files list, times list, and flux for custom use case
 POINTS = 252                             # num spatial elements in the simulation (1 surface + 100 bulk)
-VOLUME = 1e-17                           # volume of a spatial element [cm^3]
+NM_TO_CM = 1e-7
+DIVIDING_AREA = 5e-12                    # [cm]
 SURFACE_THICKNESS = 0.544                # [nm]
-SURFACE_VOLUME = VOLUME / 20 * SURFACE_THICKNESS + VOLUME # [cm^3]
+FIRST_BULK_THICKNESS = 8                 # [nm]
+ELEMENT_THICKNESS = 20                   # [nm]
+VOLUME = DIVIDING_AREA * ELEMENT_THICKNESS * NM_TO_CM                           # volume of a spatial element [cm^3]
+SURFACE_VOLUME = DIVIDING_AREA * SURFACE_THICKNESS * NM_TO_CM # [cm^3]
+FIRST_BULK_VOLUME = DIVIDING_AREA * FIRST_BULK_THICKNESS * NM_TO_CM
 DENSITY = 6.30705e+22                      # [atoms/cm^3] Atomic density for W.
 HEAT_OF_SOLUTION = 1.04                    # [eV] Heat of solution of H in W.
 KB = 8.617e-05                             # [ev/K] Boltzmann's constant.
@@ -123,12 +128,12 @@ with open("sink0.txt") as f:
 	for line_hold in f:
 		line_hold = line_hold.split()
 		numH.append(int(line_hold[3]) + int(line_hold[7]))
-	# trapped_hydrogen_c += np.array(numH).astype(float)
+	trapped_hydrogen_c += np.array(numH).astype(float)
 	# print(sum(numH)/np.sum(trapped_hydrogen_c))
 
-trapped_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
-free_hydrogen_c[0] *= VOLUME / SURFACE_VOLUME
-vacancy_c[0] *= VOLUME / SURFACE_VOLUME
+trapped_hydrogen_c[2] *= VOLUME / FIRST_BULK_VOLUME
+free_hydrogen_c[2] *= VOLUME / FIRST_BULK_VOLUME
+vacancy_c[2] *= VOLUME / FIRST_BULK_VOLUME
 
 trapped_hydrogen_c /= VOLUME
 free_hydrogen_c /= VOLUME
@@ -137,7 +142,7 @@ vacancy_c /= VOLUME
 all_hydrogen_c = free_hydrogen_c + trapped_hydrogen_c
 
 for i in range(len(trapped_hydrogen_c)):
-	trapped_hydrogen_c[i] = trapped_hydrogen_c[i] / (DENSITY + trapped_hydrogen_c[i]) * 100
+	trapped_hydrogen_c[i] = trapped_hydrogen_c[i] / (DENSITY) * 100
 
 # Apply Butterworth filter with filtfilt for zero phase shift
 def lowpass(data: np.ndarray, cutoff: float, sample_rate: float, poles: int = 5):
@@ -169,8 +174,8 @@ print("Sim retained vs. experiment retained: "+str(retained_sim_fluence/retained
 
 if plot_h:
 	# plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
-	plt.plot(positions[1:], trapped_hydrogen_c[1:], label="Simulation")
-	# plt.plot(positions, avg_hydrogen_c, label="Simulation Filtered", color='blue', marker='^', linestyle='-', markersize=0)
+	plt.plot(positions[2:], trapped_hydrogen_c[2:], label="Simulation", alpha=0.3)
+	plt.plot(positions[2:], avg_hydrogen_c[2:], label="Simulation Filtered", color='blue', marker='^', linestyle='-', markersize=0)
 	# plt.plot(positions[:upto], all_hydrogen_c[:upto], label="Hydrogen Concentration")
 # if plot_v:
 	# indices_to_delete = [i for i in range(len(vacancy_c)) if vacancy_c[i] == 0]		
