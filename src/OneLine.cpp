@@ -663,7 +663,7 @@ void OneLine::computeSAVReaction(
 {
     /*
      * Allow overpressurized VH cluster to eject W atom to create another vacancy.
-     * And allow 2H clusters to eject W atom to create vacancy.
+     * And allow excess 1H to eject W atom when H is oversaturated.
      */
     SAVR = 0;
     double volume = VOLUME;
