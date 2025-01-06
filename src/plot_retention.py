@@ -95,7 +95,9 @@ for i in range(len(fluences)):
 # Plot Simulation
 # with open("/home/craig/Downloads/Spatially-Resolved-Stochastic-Cluster-Dynamics-SRSCD-simulator-with-Qianran-Yu-/src/species.txt") as f:
 with open("species.txt") as f:
-	positions = [0.000272 + i*.020 for i in range(POINTS)]
+	positions = [0, 0.000272, 0.008272]
+	for i in range(1, POINTS-2):
+		positions.append(positions[1] + i*0.020)
 	trapped_hydrogen_c = np.zeros(POINTS)
 	free_hydrogen_c = np.zeros(POINTS)
 	vacancy_c = np.zeros(POINTS)
@@ -170,7 +172,6 @@ for i in range(len(positions)-1):
 print()
 print("Sim retained vs. experiment retained: "+str(retained_sim_fluence/retained_experiment_fluence))
 # print(retained_sim_fluence)
-
 if plot_h:
 	# plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
 	plt.plot(positions[2:], trapped_hydrogen_c[2:], label="Simulation", alpha=0.3)
