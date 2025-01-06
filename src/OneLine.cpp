@@ -524,10 +524,9 @@ long double OneLine::computeBaseCombReaction(
     if (count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
         volume = SUBSURFACE_VOLUME; // shouldn't get here
     else if (count == FIRST_BULK_INDEX)
-        volume = FIRST_BULK_THICKNESS;
+        volume = FIRST_BULK_VOLUME;
     else
         volume = VOLUME;
-    
     
     if (hostObject->getKey() != mobileObject->getKey()) {
         concentration = hostObject->getNumber(count)*mobileObject->getNumber(count) / volume;

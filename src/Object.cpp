@@ -480,41 +480,9 @@ void Object::computeBindTerm()
                 // if happened form this, dissociate as soon as possible
             }
             energy_d[0] = energy_b + emv;
-            /*this part is for binding energy of mV-nH+1H from Ohsawa(2015)*/
-            if (ratio == 1 ) { // V-H.
-                energy_b = 1.223;
-            } else if (ratio==2 ) { // V-H2
-                energy_b = 1.192;
-            } else if (ratio==3 ) { // V-H3
-                energy_b = 1.077;
-            } else if (ratio==4 ) { // V-H4
-                energy_b = 0.958;
-            } else if (ratio==5 ) { // V-H5
-                energy_b = 0.862;
-            } else if (ratio==6 ) { // V-H6
-                energy_b = 0.645;
-            } else if (ratio==7 ) { // V-H7
-                energy_b = 0.243;
-            } else if(ratio == 8 ){ // V-H8
-                energy_b = 0.306;
-            } else if(ratio == 9 ){ // V-H9
-                energy_b = 0.191;
-            } else if(ratio == 10){ // V-H10
-                energy_b = 0.184;
-            } else if(ratio == 11){ // V-H11
-                energy_b = 0.004;
-            } else if(ratio == 12){ // V-H12
-                energy_b = 0.367;
-            } else if(ratio == 13){ // V-H13
-                energy_b = -0.889;
-            } else if(ratio == 14){ // V-H14
-                energy_b = 0.747;
-            } else if(ratio == 15){ // V-H15
-                energy_b = -1.242;
-            } else{
-                energy_b = 1.45 - 0.125*ratio-0.00159*ratio*ratio; //extrapolation
-               // energy_b = (numeric_limits<double>::min)(); // if happenedly get this large make it to disappear
-            }
+            /*this part is for binding energy of mV-nH+1H from Qianran Yu (2020)*/
+            double numVac = fabs(attributes[0]);
+            energy_b = 1.707 - 0.507/pow(numVac, 3) + 0.1677*ratio/pow(numVac, 2) - 0.1699*ratio - 8.58e-4*pow(ratio, 3) - 1.793e-3*numVac*pow(ratio, 2);
             energy_d[2] = energy_b + emh;
             bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
             bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);

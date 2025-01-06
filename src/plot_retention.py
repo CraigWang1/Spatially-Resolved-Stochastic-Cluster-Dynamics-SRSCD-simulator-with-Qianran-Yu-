@@ -128,7 +128,7 @@ with open("sink0.txt") as f:
 	for line_hold in f:
 		line_hold = line_hold.split()
 		numH.append(int(line_hold[3]) + int(line_hold[7]))
-	trapped_hydrogen_c += np.array(numH).astype(float)
+	# trapped_hydrogen_c += np.array(numH).astype(float)
 	# print(sum(numH)/np.sum(trapped_hydrogen_c))
 
 trapped_hydrogen_c[2] *= VOLUME / FIRST_BULK_VOLUME
@@ -160,7 +160,6 @@ b, a = scipy.signal.butter(5, 1.25/2, fs=fs)
 avg_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c, method="gust")
 
 concentrations = [c for c in concentrations]
-plt.plot(experiment_positions, concentrations, label="Experiment", color='r')
 
 retained_experiment_fluence = 0  # arbitrary units
 retained_sim_fluence = 0
@@ -175,7 +174,7 @@ print("Sim retained vs. experiment retained: "+str(retained_sim_fluence/retained
 if plot_h:
 	# plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
 	plt.plot(positions[2:], trapped_hydrogen_c[2:], label="Simulation", alpha=0.3)
-	plt.plot(positions[2:], avg_hydrogen_c[2:], label="Simulation Filtered", color='blue', marker='^', linestyle='-', markersize=0)
+	plt.plot(positions[2:], avg_hydrogen_c[2:], label="Simulation Filtered", color='blue', marker='^', markersize=0)
 	# plt.plot(positions[:upto], all_hydrogen_c[:upto], label="Hydrogen Concentration")
 # if plot_v:
 	# indices_to_delete = [i for i in range(len(vacancy_c)) if vacancy_c[i] == 0]		
@@ -186,7 +185,8 @@ if plot_h:
 # plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
 # plt.yscale('log')
 # plt.ylim(2*10**-3, 10**0)
-# plt.ylim(0, 0.1)
+plt.ylim(0, 0.03)
+plt.plot(experiment_positions, concentrations, label="Experiment", color='r')
 plt.legend()
 plt.title("Trapped Hydrogen Concentration Vs. Depth\n $T = 383K, Fluence = 1 \cdot 10^{24}$ $[m^{-2}]$")
 plt.xlabel("Depth $[\mu m]$")

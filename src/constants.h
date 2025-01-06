@@ -51,7 +51,7 @@
 #define HH_BIND_E 0.02          // [eV] Binding Energy of H-H
 // Run parameters:
 #define ION               // Irradiation type.
-#define TOTAL_TIME 1400   // [s] Total simulated time.
+#define TOTAL_TIME 10000   // [s] Total simulated time.
 #define TOTAL_DPA 2        // Total DPA damage to reach.
 #define DIVIDING_AREA 5.0e-12  // [cm^2] Area of the surface in between volume elements.
 //#define RATIO_HE 1.1       // [appm/dpa] He-to-dpa ratio.
@@ -92,14 +92,14 @@ const bool LOG_REACTIONS = false;
 
 /* Configure which features to run */
 const bool IRRADIATION_ON = false;
-const bool HYDROGEN_ON = false;
+const bool HYDROGEN_ON = true;
 const bool COMB_ON = true; // combination reaction
 const bool SINK_ON = true; // sink reaction
 const bool DISS_ON = true; // dissociation reaction
 const bool DIFF_ON = true; // diffusion reaction
 const bool SAV_ON = true;  // super abundant vacancy reaction
 const bool RECOMB_ON = true; // surface recombination (surface release) reaction
-const double TEMP_INCREASE_RATE = 0.5;   // K/s for when doing thermal desorption spectroscopy simulations. For now TDS is only supported in serial (1 processor max)
+const double TEMP_INCREASE_RATE = 0.;   // K/s for when doing thermal desorption spectroscopy simulations. For now TDS is only supported in serial (1 processor max)
 extern double TEMPERATURE;  // Temperature is set in main.cpp
 
 /* Unit conversion factors */
