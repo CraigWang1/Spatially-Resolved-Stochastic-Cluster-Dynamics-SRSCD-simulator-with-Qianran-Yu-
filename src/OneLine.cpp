@@ -261,8 +261,9 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         frontConcentration = objectN[1] / VOLUME;
         backConcentration = objectN[2] / VOLUME;
     }
+    const int64 SIAKey = 1000000;
 
-    // Account for special cases from 2020 Zhenhou Wang
+    // Account for special cases from 2020 Zhenhou Wang for hydrogen moving between surface and bulk
     if((count == SUBSURFACE_INDEX && hostObject->getKey() == 1) ||
         (count == SURFACE_INDEX && hostObject->getKey() == 1))
     {
@@ -278,7 +279,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         if (count == SUBSURFACE_INDEX)
         {
             double jumpingDist = maxSurfaceConc / 6 / DENSITY;
-            double freq = NU0 * exp(-(H_MIGRATION_ENERGY+0.02) / KB / TEMPERATURE);  // add 0.02 eV because of Tajuki Oda 2023
+            double freq = NU0 * exp(-H_MIGRATION_ENERGY / KB / TEMPERATURE);
         
             prefactor = freq * jumpingDist * (1 - surfaceSaturationFraction) * DIVIDING_AREA;
             diffRToF = prefactor * concentration;
@@ -286,7 +287,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
                 diffRToF = 0.0;
             diffRToB = 0.0;
 
-            // Normal Diffusion to the second bulk element
+            // Normal Diffusion to the first bulk element
             if (concentration > backConcentration) // allow 1H to diffuse into neigbouring volume element if both vol elems have 1H
             {
                 double lengthb = (SUBSURFACE_THICKNESS + FIRST_BULK_THICKNESS)/2.0 * NM_TO_CM; // first element to second element distance (20nm) 
@@ -315,6 +316,28 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
             diffRToF = 0.0;
             return;
         }
+    }
+    // SIA moving between surface and bulk (assume it has the same equations as hydrogen)
+    else if (count == SUBSURFACE_INDEX && hostObject->getKey() == SIAKey)
+    {
+        double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);
+        double jumpingDist = maxSurfaceConc / 6 / DENSITY;
+        double siaMigrationEnergy = 0.009; // [eV]
+        double freq = NU0 * exp(-siaMigrationEnergy / KB / TEMPERATURE);
+    
+        prefactor = freq * jumpingDist * DIVIDING_AREA;
+        diffRToF = prefactor * concentration;
+        diffRToB = 0.0;
+
+        // Normal Diffusion to the first bulk element
+        if (concentration > backConcentration)
+        {
+            double lengthb = (SUBSURFACE_THICKNESS + FIRST_BULK_THICKNESS)/2.0 * NM_TO_CM; // first element to second element distance (20nm) 
+            /* if diffusable */
+            prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthb;
+            diffRToB = prefactor*(concentration - backConcentration);
+        }
+        return;
     }
     else // avoid unnecessary calculation if we are processing special cases
     {
@@ -365,7 +388,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         /* 2. compute diffusion rate to the back element
         * Object are allowed to diffuse out through the back (assume infinite W sample)
         */
-        if (concentration > backConcentration) {
+        if (concentration > backConcentration && count != SURFACE_INDEX) {
             /* if diffusable */
             prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthb;
             diffRToB = prefactor*(concentration - backConcentration);
