@@ -480,9 +480,44 @@ void Object::computeBindTerm()
                 // if happened form this, dissociate as soon as possible
             }
             energy_d[0] = energy_b + emv;
-            /*this part is for binding energy of mV-nH+1H from Qianran Yu (2020)*/
-            double numVac = fabs(attributes[0]);
-            energy_b = 1.707 - 0.507/pow(numVac, 3) + 0.1677*ratio/pow(numVac, 2) - 0.1699*ratio - 8.58e-4*pow(ratio, 3) - 1.793e-3*numVac*pow(ratio, 2);
+
+            /*this part is for binding energy of mV-nH+1H based on Ogorodnikova (2015)*/
+            int numV = abs(attributes[0]);
+            int numH = attributes[2];
+            int monovacancyMaxH = 12;
+
+            double radius = pow(3.0*fabs((double)numV)*avol/4.0/PI, 1.0/3.0);
+            double surfArea = 4*PI*pow(radius, 2);
+            double surfHDensity = numH / surfArea;
+
+            double monovacancyRadius = pow(3.0*avol/4.0/PI, 1.0/3.0);
+            double monovacancySurfArea = 4*PI*pow(monovacancyRadius, 2);
+            double maxSurfHDensity = monovacancyMaxH / monovacancySurfArea;
+
+            double maxBindE;
+            if (numV == 1)  // Data from Mason 2023
+                maxBindE = 1.23;
+            else if (numV == 2)
+                maxBindE = 1.55;
+            else if (numV == 3)
+                maxBindE = 1.82;
+            else if (numV == 4)
+                maxBindE = 1.91;
+            else if (numV == 5)
+                maxBindE = 1.97;
+            else if (numV == 6)
+                maxBindE = 1.9;
+            else if (numV == 8)
+                maxBindE = 1.68;
+            else if (numV == 10)
+                maxBindE = 1.78;
+            else if (numV == 12)
+                maxBindE = 1.69;
+            else
+                maxBindE = 1.86;
+
+            // Linear regression so that when H = 1, energy_b = maxBindE and when we reach maxSurfHDensity, energy_b = 0
+            energy_b = maxBindE * surfArea / (1 - maxSurfHDensity*surfArea) * (surfHDensity - maxSurfHDensity);
             energy_d[2] = energy_b + emh;
             bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
             bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);

@@ -55,10 +55,10 @@ for i in range(len(times)-200):
 	dN = desorbed[i+200] - desorbed[i]
 	desorbed_flux.append(dN/dt/DIVIDING_AREA)
 
-temperatures.append(800)
-desorbed_flux.append(0)
-temperatures.append(1050)
-desorbed_flux.append(0)
+# temperatures.append(800)
+# desorbed_flux.append(0)
+# temperatures.append(1050)
+# desorbed_flux.append(0)
 
 weight = 0.01
 current = desorbed_flux[0]

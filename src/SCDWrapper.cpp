@@ -979,10 +979,10 @@ void SCDWrapper::processCombEvent(
         number = hostObject->getAttri(2);
         addToObjectMap(productKey, n, number);
     }
-    else if(hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && theOtherObject->getAttri(0)>0 && theOtherObject->getAttri(2)==0 && productAttr[0] < 0 && productAttr[2] > 4.75 + 4*abs(productAttr[0])){
+    else if(hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && theOtherObject->getAttri(0)>0 && theOtherObject->getAttri(2)==0 && productAttr[0] < 0 && productAttr[2] > 12*abs(productAttr[0])){
         /* Vn-Hm + SIAx -> V(n-x)-Hm (n, m, and x are not zero) */
         /* change above reaction to Vn-Hm + SIAx -> V(n-x)-H(max) + (excess)*H */
-        int maxH = abs(productAttr[0]) * 4;
+        int maxH = abs(productAttr[0]) * 12;  // 1 vacancy stores max 12 H
         int excessH = productAttr[2] - maxH;
         productAttr[2] = maxH;
         productKey = attrToKey(productAttr);

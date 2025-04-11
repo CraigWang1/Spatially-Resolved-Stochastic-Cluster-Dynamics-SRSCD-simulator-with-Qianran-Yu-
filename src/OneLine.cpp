@@ -579,8 +579,20 @@ long double OneLine::computeBaseCombReaction(
         mobileObject->getAttri(0) > 0 &&
         mobileObject->getAttri(2) == 0)
     {
-        double HVratio = (double)hostObject->getAttri(2) / abs(hostObject->getAttri(0));
-        adjustmentFactor = -HVratio/10. + 1; // linear regression so that when HVratio = 5, factor = 1/2
+        // Assume that when we reach the max H surface density inside vacancy cluster, SIA can't recombine with VH cluster
+        int numH = hostObject->getAttri(2);
+        int monovacancyMaxH = 12;
+
+        double radius = hostObject->getR1();
+        double surfArea = 4*PI*pow(radius, 2);
+        double surfHDensity = numH / surfArea;
+
+        double monovacancyRadius = pow(3.0*avol/4.0/PI, 1.0/3.0);
+        double monovacancySurfArea = 4*PI*pow(monovacancyRadius, 2);
+        double maxSurfHDensity = monovacancyMaxH / monovacancySurfArea;
+
+        adjustmentFactor = 1 - surfHDensity / maxSurfHDensity;
+
         if (adjustmentFactor < 0)
             adjustmentFactor = 0;
     }

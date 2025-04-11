@@ -185,7 +185,7 @@ if plot_h:
 # print("Summed retained concentration: "+str(np.sum(trapped_hydrogen_c)))
 # plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
 
-plt.yscale('log')
+# plt.yscale('log')
 plt.ylim(2*10**-3, 10**0)
 # plt.ylim(0, 0.03)
 plt.plot(experiment_positions, concentrations, label="Experiment", color='r')
