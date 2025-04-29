@@ -51,7 +51,7 @@
 #define HH_BIND_E 0.02          // [eV] Binding Energy of H-H
 // Run parameters:
 #define ION               // Irradiation type.
-#define TOTAL_TIME 10000   // [s] Total simulated time.
+#define TOTAL_TIME 10000 // [s] Total simulated time.
 #define TOTAL_DPA 2        // Total DPA damage to reach.
 #define DIVIDING_AREA 5.0e-12  // [cm^2] Area of the surface in between volume elements.
 //#define RATIO_HE 1.1       // [appm/dpa] He-to-dpa ratio.

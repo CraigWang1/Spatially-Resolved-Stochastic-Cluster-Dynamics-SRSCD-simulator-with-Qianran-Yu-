@@ -474,9 +474,9 @@ void Object::computeBindTerm()
                 energy_b = 9.80;
             } else if(ratio == 10){ // V-H10
                 energy_b = 11.25;
-            } else if(ratio>10){
+            } else{
                 
-                energy_d[0] = 1.91 + 0.0974 * ratio * ratio; //extrapolation
+                energy_b = 1.91 + 0.0974 * ratio * ratio; //extrapolation
                 // if happened form this, dissociate as soon as possible
             }
             energy_d[0] = energy_b + emv;
@@ -516,8 +516,8 @@ void Object::computeBindTerm()
             else
                 maxBindE = 1.86;
 
-            // Linear regression so that when H = 1, energy_b = maxBindE and when we reach maxSurfHDensity, energy_b = 0
-            energy_b = maxBindE * surfArea / (1 - maxSurfHDensity*surfArea) * (surfHDensity - maxSurfHDensity);
+            // Regression so that when H = 1, energy_b = maxBindE and when we reach maxSurfHDensity, energy_b = 0
+            energy_b = -maxBindE / pow(fabs(maxSurfHDensity - 1.0/surfArea), 1.1) * pow(fabs(surfHDensity - 1.0/surfArea), 1.1) + maxBindE;
             energy_d[2] = energy_b + emh;
             bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
             bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);

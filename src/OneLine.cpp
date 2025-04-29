@@ -435,7 +435,7 @@ long double OneLine::computeBaseDissReaction(
     {  
         elementNum += abs(hostObject->getAttri(i));
     }
-    
+
     if (hostObject->getAttri(index) != 0 && elementNum > 1) {
         return jumped / (jumped + hostObject->getR1e()) * 4.0 * PI * pow(hostObject->getR1e(), 2) / pow(ALATT, 2) * NU0 * hostObject->getBind(index) * hostObject->getNumber(count);
     }
