@@ -131,7 +131,7 @@ with open("sink0.txt") as f:
 		numH.append(int(line_hold[3]) + int(line_hold[7]))
 	trapped_hydrogen_c += np.array(numH).astype(float)
 	# print(sum(numH)/np.sum(trapped_hydrogen_c))
-
+print(np.sum(trapped_hydrogen_c/5e-12))
 trapped_hydrogen_c[2] *= VOLUME / FIRST_BULK_VOLUME
 free_hydrogen_c[2] *= VOLUME / FIRST_BULK_VOLUME
 vacancy_c[2] *= VOLUME / FIRST_BULK_VOLUME
@@ -171,7 +171,6 @@ for i in range(len(positions)-1):
 	retained_sim_fluence += trapped_hydrogen_c[i] * (positions[i+1]-positions[i])
 print()
 print("Sim retained vs. experiment retained: "+str(retained_sim_fluence/retained_experiment_fluence))
-# print(retained_sim_fluence)
 if plot_h:
 	# plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
 	plt.plot(positions[2:], trapped_hydrogen_c[2:], label="Simulation", alpha=0.3)
@@ -185,7 +184,7 @@ if plot_h:
 # print("Summed retained concentration: "+str(np.sum(trapped_hydrogen_c)))
 # plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
 
-# plt.yscale('log')
+plt.yscale('log')
 plt.ylim(2*10**-3, 10**0)
 # plt.ylim(0, 0.03)
 plt.plot(experiment_positions, concentrations, label="Experiment", color='r')

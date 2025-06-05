@@ -596,11 +596,7 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
 
     double vacMigrationEnergy = 1.29;  // [eV] Qianran Yu 2020
 
-    double volume = VOLUME;
-    if (point == SUBSURFACE_INDEX)
-        volume = SUBSURFACE_VOLUME;
-    else if (point == FIRST_BULK_INDEX)
-        volume = FIRST_BULK_VOLUME;
+    double volume = volumeAtIndex(point);
 
     // vacancy emission
     if(type == 0)
@@ -1297,13 +1293,7 @@ int SCDWrapper::countDefectNumber(const int count, string type){
     int tndef = 0; /*number of this kind of defect in total */
     unordered_map<int64, Object*>::iterator iter;
     for(int i=0; i<POINTS; i++){
-        double volume;
-        if(i==0 || i == 1)
-            volume = SUBSURFACE_VOLUME; /* volume at front is thin surface layer */
-        else if (i == FIRST_BULK_INDEX)
-            volume = FIRST_BULK_VOLUME;
-        else
-            volume = VOLUME;
+        double volume = volumeAtIndex(i);
         
         for (iter = allObjects.begin(); iter != allObjects.end(); ++iter){
             Object* thisObject = iter -> second;

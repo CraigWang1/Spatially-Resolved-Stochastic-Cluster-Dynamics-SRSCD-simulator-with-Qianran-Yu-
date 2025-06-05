@@ -6,6 +6,7 @@
 #include"Bundle.h"
 #include"cpdf.h"
 #include"rvgs.h"
+#include"util.h"
 #include"CascadeDamage.h"
 #include"BoundaryChange.h"
 #include"constants.h"

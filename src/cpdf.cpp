@@ -9,7 +9,7 @@ Cpdf::Cpdf()
     for(int i=0; i<POINTS; i++){
         maxPossibility[i] = 0;
     }
-    for(int fileNumber = 1; fileNumber < 101; fileNumber++){
+    for(int fileNumber = 1; fileNumber < 101 && fileNumber < POINTS; fileNumber++){
     	/* 0th point is surface */
         vector<double> tempEnergy, tempCumul;
         double energy= 0.0 , cumul = 0.0;

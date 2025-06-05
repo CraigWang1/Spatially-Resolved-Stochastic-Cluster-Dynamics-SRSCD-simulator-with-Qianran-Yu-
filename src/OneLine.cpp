@@ -255,11 +255,29 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         frontConcentration = objectN[1] / FIRST_BULK_VOLUME;
         backConcentration = objectN[2] / VOLUME;
     }
-    else
+    else if (count < FIRST_ELONGATED_INDEX - 1)
     {
         concentration = objectN[0] / VOLUME;
         frontConcentration = objectN[1] / VOLUME;
         backConcentration = objectN[2] / VOLUME;
+    }
+    else if (count == FIRST_ELONGATED_INDEX - 1)
+    {
+        concentration = objectN[0] / VOLUME;
+        frontConcentration = objectN[1] / VOLUME;
+        backConcentration = objectN[2] / ELONGATED_VOLUME;
+    }
+    else if (count == FIRST_ELONGATED_INDEX)
+    {
+        concentration = objectN[0] / ELONGATED_VOLUME;
+        frontConcentration = objectN[1] / VOLUME;
+        backConcentration = objectN[2] / ELONGATED_VOLUME;
+    }
+    else
+    {
+        concentration = objectN[0] / ELONGATED_VOLUME;
+        frontConcentration = objectN[1] / ELONGATED_VOLUME;
+        backConcentration = objectN[2] / ELONGATED_VOLUME;
     }
     const int64 SIAKey = 1000000;
 
@@ -364,9 +382,23 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
             lengthf = (FIRST_BULK_THICKNESS + ELEMENT_THICKNESS) / 2. * NM_TO_CM;
             lengthb = ELEMENT_THICKNESS * NM_TO_CM;
         }
-        else
+        else if (count < FIRST_ELONGATED_INDEX - 1)
         {
             lengthf = lengthb = ELEMENT_THICKNESS * NM_TO_CM; /* other element distances */
+        }
+        else if (count == FIRST_ELONGATED_INDEX - 1)
+        {
+            lengthf = ELEMENT_THICKNESS * NM_TO_CM;
+            lengthb = (ELEMENT_THICKNESS + ELONGATED_ELEMENT_THICKNESS) / 2. * NM_TO_CM;
+        }
+        else if (count == FIRST_ELONGATED_INDEX)
+        {
+            lengthf = (ELONGATED_ELEMENT_THICKNESS + ELEMENT_THICKNESS) / 2. * NM_TO_CM;
+            lengthb = ELONGATED_ELEMENT_THICKNESS * NM_TO_CM;
+        }
+        else
+        {
+            lengthf = lengthb = ELONGATED_ELEMENT_THICKNESS * NM_TO_CM;
         }
 
         /* 
@@ -542,14 +574,8 @@ long double OneLine::computeBaseCombReaction(
     double concentration;
     double r12;
     double dimensionTerm;
-    double volume;
+    double volume = volumeAtIndex(count);
     double adjustmentFactor = 1;
-    if (count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
-        volume = SUBSURFACE_VOLUME; // shouldn't get here
-    else if (count == FIRST_BULK_INDEX)
-        volume = FIRST_BULK_VOLUME;
-    else
-        volume = VOLUME;
     
     if (hostObject->getKey() != mobileObject->getKey()) {
         concentration = hostObject->getNumber(count)*mobileObject->getNumber(count) / volume;
@@ -678,11 +704,7 @@ void OneLine::computeSAVReaction(
      * And allow excess 1H to eject W atom when H is oversaturated.
      */
     SAVR = 0;
-    double volume = VOLUME;
-    if (count == SUBSURFACE_INDEX)
-        volume = SUBSURFACE_VOLUME;
-    else if (count == FIRST_BULK_INDEX)
-        volume = FIRST_BULK_VOLUME;
+    double volume = volumeAtIndex(count);
 
     if (!SAV_ON || count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
     {
@@ -700,9 +722,10 @@ void OneLine::computeSAVReaction(
             // 1H is SAV candidate only if dissolved H concentration is oversaturated
             if (hostObject->getKey() == 1) 
             {
-                double maxSolubilityConc = DENSITY * exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
+                double tetrahedralSiteConc = DENSITY * 6.0;
+                double maxSolubilityConc = tetrahedralSiteConc * exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
                 double maxNumH = maxSolubilityConc * volume;
-                int extraH = ceil(hostObject->getNumber(count) - maxNumH);
+                double extraH = hostObject->getNumber(count) - maxNumH;
                 if (extraH > 0)
                     SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * extraH;
             }
@@ -776,18 +799,19 @@ double OneLine::computeDimensionTerm(
     int hostDim = hostObject->getDim(), mobileDim = mobileObject->getDim();
     int hostN = hostObject->getNumber(count), mobileN = mobileObject->getNumber(count);
     // int dimsum = hostDim + mobileDim; 
+    double volume = volumeAtIndex(count);
     int dimsum = 6;
-    double alpha_a = -log(PI*PI*pow(r12, 3.0) / VOLUME / hostN);
-    double alpha_b = -log(PI*PI*pow(r12, 3.0) / VOLUME / mobileN);
+    double alpha_a = -log(PI*PI*pow(r12, 3.0) / volume / hostN);
+    double alpha_b = -log(PI*PI*pow(r12, 3.0) / volume / mobileN);
     switch (dimsum) {
         case 6: // 3D + 3D
             term = hostDiff + mobileDiff;
             break;
         case 4: // 3D + 1D
             if (hostDim == 1 && mobileDim == 3)
-                term = hostObject->getDiff()*(mobileN / VOLUME)*(2.0*PI*pow(r12, 3.0)) + mobileDiff;
+                term = hostObject->getDiff()*(mobileN / volume)*(2.0*PI*pow(r12, 3.0)) + mobileDiff;
             else
-                term = mobileDiff*(mobileN / VOLUME)*(2.0*PI*pow(r12, 3.0)) + hostDiff;
+                term = mobileDiff*(mobileN / volume)*(2.0*PI*pow(r12, 3.0)) + hostDiff;
             break;
         case 2: // 1D + 1D
             term = hostDiff / alpha_b + mobileDiff / alpha_a;
