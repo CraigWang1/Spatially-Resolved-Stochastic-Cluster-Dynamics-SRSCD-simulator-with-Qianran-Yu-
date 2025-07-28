@@ -11,15 +11,12 @@ from scipy.signal import butter, filtfilt
 from make_speciesfile import combine_species_files
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 252                             # num spatial elements in the simulation (1 surface + 100 bulk)
+POINTS = 39                            # num spatial elements in the simulation (1 surface + 100 bulk)
 NM_TO_CM = 1e-7
+NM_TO_UM = 1e-3
 DIVIDING_AREA = 5e-12                    # [cm]
-SURFACE_THICKNESS = 0.544                # [nm]
-FIRST_BULK_THICKNESS = 8                 # [nm]
-ELEMENT_THICKNESS = 20                   # [nm]
-VOLUME = DIVIDING_AREA * ELEMENT_THICKNESS * NM_TO_CM                           # volume of a spatial element [cm^3]
-SURFACE_VOLUME = DIVIDING_AREA * SURFACE_THICKNESS * NM_TO_CM # [cm^3]
-FIRST_BULK_VOLUME = DIVIDING_AREA * FIRST_BULK_THICKNESS * NM_TO_CM
+FIRST_BULK_THICKNESS = 1                 # [nm]
+THICKNESS_SCALING_FACTOR = 1.2
 DENSITY = 6.30705e+22                      # [atoms/cm^3] Atomic density for W.
 HEAT_OF_SOLUTION = 1.04                    # [eV] Heat of solution of H in W.
 KB = 8.617e-05                             # [ev/K] Boltzmann's constant.
@@ -64,6 +61,11 @@ def vacancies_per_cluster(obj_key):
 	else:
 		return 0
 
+def thickness_at_index(i):
+	if i == 0:
+		return 0
+	return FIRST_BULK_THICKNESS * NM_TO_UM * THICKNESS_SCALING_FACTOR ** (i - 1)
+
 # out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 40.0, (640,480))
 
 # plt.figure(figsize=(640/dpi, 480/dpi), dpi=dpi)
@@ -93,10 +95,11 @@ for i in range(len(fluences)):
 
 # Plot Simulation
 # with open("/home/craig/Downloads/Spatially-Resolved-Stochastic-Cluster-Dynamics-SRSCD-simulator-with-Qianran-Yu-/src/species.txt") as f:
+
+positions = [0]
+for i in range(1, POINTS):
+	positions.append(positions[-1] + thickness_at_index(i - 1) / 2 + thickness_at_index(i) / 2)
 with open("species.txt") as f:
-	positions = [0, 0.000272, 0.008272]
-	for i in range(1, POINTS-2):
-		positions.append(positions[1] + i*0.020)
 	trapped_hydrogen_c = np.zeros(POINTS)
 	free_hydrogen_c = np.zeros(POINTS)
 	vacancy_c = np.zeros(POINTS)
@@ -131,14 +134,12 @@ with open("sink0.txt") as f:
 		numH.append(int(line_hold[3]) + int(line_hold[7]))
 	trapped_hydrogen_c += np.array(numH).astype(float)
 	# print(sum(numH)/np.sum(trapped_hydrogen_c))
-print(np.sum(trapped_hydrogen_c/5e-12))
-trapped_hydrogen_c[2] *= VOLUME / FIRST_BULK_VOLUME
-free_hydrogen_c[2] *= VOLUME / FIRST_BULK_VOLUME
-vacancy_c[2] *= VOLUME / FIRST_BULK_VOLUME
 
-trapped_hydrogen_c /= VOLUME
-free_hydrogen_c /= VOLUME
-vacancy_c /= VOLUME
+print("Retained fluence [cm^-2]:", np.sum(trapped_hydrogen_c/5e-12))
+for i in range(1, len(trapped_hydrogen_c)):
+	thickness = FIRST_BULK_THICKNESS * THICKNESS_SCALING_FACTOR ** (i - 1) * NM_TO_CM
+	volume = DIVIDING_AREA * thickness
+	trapped_hydrogen_c[i] /= volume
 
 all_hydrogen_c = free_hydrogen_c + trapped_hydrogen_c
 
@@ -159,7 +160,7 @@ b, a = scipy.signal.butter(5, 2.5, fs=fs)
 
 # Apply the filter using Gustafsson's method
 # smoothed_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c[2:], method="gust")
-smoothed_hydrogen_c = scipy.signal.savgol_filter(trapped_hydrogen_c[2:], 125, 8)
+# smoothed_hydrogen_c = scipy.signal.savgol_filter(trapped_hydrogen_c[2:], 50, 8)
 
 concentrations = [c for c in concentrations]
 
@@ -173,8 +174,8 @@ print()
 print("Sim retained vs. experiment retained: "+str(retained_sim_fluence/retained_experiment_fluence))
 if plot_h:
 	# plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
-	plt.plot(positions[2:], trapped_hydrogen_c[2:], label="Simulation", alpha=0.3)
-	plt.plot(positions[2:], smoothed_hydrogen_c, label="Simulation Filtered", color='blue', marker='^', markersize=0)
+	plt.plot(positions[1:], trapped_hydrogen_c[1:], label="Simulation", alpha=0.3, marker='^')
+	# plt.plot(positions[2:], smoothed_hydrogen_c, label="Simulation Filtered", color='blue', marker='^', markersize=0)
 	# plt.plot(positions[:upto], all_hydrogen_c[:upto], label="Hydrogen Concentration")
 # if plot_v:
 	# indices_to_delete = [i for i in range(len(vacancy_c)) if vacancy_c[i] == 0]		
@@ -183,7 +184,6 @@ if plot_h:
 	# plt.plot(positions[:upto], vacancy_c[:upto], color='r', label="Vacancy Concentration")
 # print("Summed retained concentration: "+str(np.sum(trapped_hydrogen_c)))
 # plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
-
 plt.yscale('log')
 plt.ylim(2*10**-3, 10**0)
 # plt.ylim(0, 0.03)

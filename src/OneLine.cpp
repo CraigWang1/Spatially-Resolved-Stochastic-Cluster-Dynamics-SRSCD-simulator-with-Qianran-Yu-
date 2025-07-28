@@ -235,54 +235,25 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     {
         concentration = 0;  /* surface layer corresponds to adsorbed layer of hydrogen at surface */
         frontConcentration = H_SATURATION_CONCENTRATION;
-        backConcentration = objectN[2] / SUBSURFACE_VOLUME;
-    }
-    else if (count == SUBSURFACE_INDEX)
-    {
-        concentration = objectN[0] / SUBSURFACE_VOLUME;
-        frontConcentration = 0;
-        backConcentration = objectN[2] / FIRST_BULK_VOLUME;
+        backConcentration = objectN[2] / volumeAtIndex(count + 1);
     }
     else if (count == FIRST_BULK_INDEX)
     {
-        concentration = objectN[0] / FIRST_BULK_VOLUME;
-        frontConcentration = objectN[1] / SUBSURFACE_VOLUME;
-        backConcentration = objectN[2] / VOLUME;
-    }
-    else if (count == FIRST_BULK_INDEX + 1)
-    {
-        concentration = objectN[0] / VOLUME;
-        frontConcentration = objectN[1] / FIRST_BULK_VOLUME;
-        backConcentration = objectN[2] / VOLUME;
-    }
-    else if (count < FIRST_ELONGATED_INDEX - 1)
-    {
-        concentration = objectN[0] / VOLUME;
-        frontConcentration = objectN[1] / VOLUME;
-        backConcentration = objectN[2] / VOLUME;
-    }
-    else if (count == FIRST_ELONGATED_INDEX - 1)
-    {
-        concentration = objectN[0] / VOLUME;
-        frontConcentration = objectN[1] / VOLUME;
-        backConcentration = objectN[2] / ELONGATED_VOLUME;
-    }
-    else if (count == FIRST_ELONGATED_INDEX)
-    {
-        concentration = objectN[0] / ELONGATED_VOLUME;
-        frontConcentration = objectN[1] / VOLUME;
-        backConcentration = objectN[2] / ELONGATED_VOLUME;
+        concentration = objectN[0] / volumeAtIndex(count);
+        frontConcentration = 0;
+        backConcentration = objectN[2] / volumeAtIndex(count + 1);
     }
     else
     {
-        concentration = objectN[0] / ELONGATED_VOLUME;
-        frontConcentration = objectN[1] / ELONGATED_VOLUME;
-        backConcentration = objectN[2] / ELONGATED_VOLUME;
+        concentration = objectN[0] / volumeAtIndex(count);
+        frontConcentration = objectN[1] / volumeAtIndex(count - 1);
+        backConcentration = objectN[2] / volumeAtIndex(count + 1);
     }
+
     const int64 SIAKey = 1000000;
 
     // Account for special cases from 2020 Zhenhou Wang for hydrogen moving between surface and bulk
-    if((count == SUBSURFACE_INDEX && hostObject->getKey() == 1) ||
+    if((count == FIRST_BULK_INDEX && hostObject->getKey() == 1) ||
         (count == SURFACE_INDEX && hostObject->getKey() == 1))
     {
         double surfaceConc = 0.0; 
@@ -294,7 +265,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
 
         // special case for 1H diffusion from Subsurface to Surface 
-        if (count == SUBSURFACE_INDEX)
+        if (count == FIRST_BULK_INDEX)
         {
             double jumpingDist = maxSurfaceConc / 6 / DENSITY;
             double freq = NU0 * exp(-H_MIGRATION_ENERGY / KB / TEMPERATURE);
@@ -305,10 +276,10 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
                 diffRToF = 0.0;
             diffRToB = 0.0;
 
-            // Normal Diffusion to the first bulk element
+            // Normal Diffusion to the next bulk element
             if (concentration > backConcentration) // allow 1H to diffuse into neigbouring volume element if both vol elems have 1H
             {
-                double lengthb = (SUBSURFACE_THICKNESS + FIRST_BULK_THICKNESS)/2.0 * NM_TO_CM; // first element to second element distance (20nm) 
+                double lengthb = lengthBackAtIndex(count); // first element to second element distance (20nm) 
                 /* if diffusable */
                 prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthb;
                 diffRToB = prefactor*(concentration - backConcentration);
@@ -336,10 +307,10 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         }
     }
     // SIA moving between surface and bulk (assume it has the same equations as hydrogen)
-    else if (count == SUBSURFACE_INDEX && hostObject->getKey() == SIAKey)
+    else if (count == FIRST_BULK_INDEX && hostObject->getKey() == SIAKey)
     {
         double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);
-        double jumpingDist = maxSurfaceConc / 6 / DENSITY;
+        double jumpingDist = maxSurfaceConc / 6. / DENSITY;
         double siaMigrationEnergy = 0.009; // [eV]
         double freq = NU0 * exp(-siaMigrationEnergy / KB / TEMPERATURE);
     
@@ -350,7 +321,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         // Normal Diffusion to the first bulk element
         if (concentration > backConcentration)
         {
-            double lengthb = (SUBSURFACE_THICKNESS + FIRST_BULK_THICKNESS)/2.0 * NM_TO_CM; // first element to second element distance (20nm) 
+            double lengthb = lengthBackAtIndex(count); // first element to second element distance (20nm) 
             /* if diffusable */
             prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthb;
             diffRToB = prefactor*(concentration - backConcentration);
@@ -361,45 +332,8 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     {
         /* by having two diffusion rates, this rate will never be less than 0 */
         /* length measured in cm */
-        double lengthf = 0.0, lengthb = 0.0;
-        if (count == SURFACE_INDEX)
-        {   
-            lengthf = (ELEMENT_THICKNESS + SUBSURFACE_THICKNESS) / 2. * NM_TO_CM; // this value doesn't matter b/c can't diffuse out into vacuum 
-            lengthb = (SUBSURFACE_THICKNESS) / 2. * NM_TO_CM; /* surface to first element distance */
-        }
-        else if (count == SUBSURFACE_INDEX)
-        {
-            lengthf =  SUBSURFACE_THICKNESS / 2. * NM_TO_CM; /* surface to first element distance */
-            lengthb = (SUBSURFACE_THICKNESS + FIRST_BULK_THICKNESS) / 2. * NM_TO_CM;  
-        }
-        else if (count == FIRST_BULK_INDEX)
-        {
-            lengthf = (SUBSURFACE_THICKNESS + FIRST_BULK_THICKNESS) / 2. * NM_TO_CM;
-            lengthb = (FIRST_BULK_THICKNESS + ELEMENT_THICKNESS) / 2. * NM_TO_CM;
-        }
-        else if (count == FIRST_BULK_INDEX + 1)
-        {
-            lengthf = (FIRST_BULK_THICKNESS + ELEMENT_THICKNESS) / 2. * NM_TO_CM;
-            lengthb = ELEMENT_THICKNESS * NM_TO_CM;
-        }
-        else if (count < FIRST_ELONGATED_INDEX - 1)
-        {
-            lengthf = lengthb = ELEMENT_THICKNESS * NM_TO_CM; /* other element distances */
-        }
-        else if (count == FIRST_ELONGATED_INDEX - 1)
-        {
-            lengthf = ELEMENT_THICKNESS * NM_TO_CM;
-            lengthb = (ELEMENT_THICKNESS + ELONGATED_ELEMENT_THICKNESS) / 2. * NM_TO_CM;
-        }
-        else if (count == FIRST_ELONGATED_INDEX)
-        {
-            lengthf = (ELONGATED_ELEMENT_THICKNESS + ELEMENT_THICKNESS) / 2. * NM_TO_CM;
-            lengthb = ELONGATED_ELEMENT_THICKNESS * NM_TO_CM;
-        }
-        else
-        {
-            lengthf = lengthb = ELONGATED_ELEMENT_THICKNESS * NM_TO_CM;
-        }
+        double lengthf = lengthFrontAtIndex(count);
+        double lengthb = lengthBackAtIndex(count);
 
         /* 
         * 1. compute diffusion rate to the front element 
@@ -408,7 +342,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         * Allow neighbouring elements with 1H each to diffuse into each other like real life.
         */
         if ((concentration > frontConcentration)
-             && count != SURFACE_INDEX && count != SUBSURFACE_INDEX) 
+             && count != SURFACE_INDEX && count != FIRST_BULK_INDEX) 
         {
             /* if diffusable, surface objects diffusing into vacuum is considered */
             prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthf;
@@ -439,7 +373,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
 
 void OneLine::computeSinkReaction(const Object* const hostObject, const int count)
 {
-    if (!SINK_ON || count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
+    if (!SINK_ON || count == SURFACE_INDEX)
     {
         sinkRDislocation = 0.0;
         sinkRGrainBndry = 0.0;
@@ -455,7 +389,7 @@ long double OneLine::computeBaseDissReaction(
                                   const int index,
                                   const int count) const
 {
-    if (!DISS_ON || count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
+    if (!DISS_ON || count == SURFACE_INDEX)
     {
         return 0.0;
     }
@@ -566,7 +500,7 @@ long double OneLine::computeBaseCombReaction(
                                     const Object* const mobileObject,
                                     const int count) const
 {    
-    if (!COMB_ON || count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
+    if (!COMB_ON || count == SURFACE_INDEX)
     {
         return 0.0;
     }
@@ -706,7 +640,7 @@ void OneLine::computeSAVReaction(
     SAVR = 0;
     double volume = volumeAtIndex(count);
 
-    if (!SAV_ON || count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
+    if (!SAV_ON || count == SURFACE_INDEX)
     {
         return;
     }

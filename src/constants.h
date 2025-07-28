@@ -36,14 +36,15 @@
 #define ELEMENT_THICKNESS 20.0 // [nm] thickness of bulk spatial element
 #define ELONGATED_ELEMENT_THICKNESS 150.0 // [nm] thickness of an elongated spatial element designed to reduce the total number of mesh elements to reduce number of diffusion reactions to increase sim speed
 #define SUBSURFACE_THICKNESS 0.544 //[nm] thickness of surface (conrresponds to two monolayers of tungsten)
-#define FIRST_BULK_THICKNESS 6.71   //[nm] thickness of first bulk index (sized so that its centroid corresponds to mean projective range of incident H ions)
+#define FIRST_BULK_THICKNESS 1.0   //[nm] thickness of first bulk index (sized so that its centroid corresponds to mean projective range of incident H ions)
+#define THICKNESS_SCALING_FACTOR 1.2 // [unitless] each bulk index is 20% longer than the previous (high spatial resolution near surface, less needed at deeper depths, limit to 20% for numerical stability)
 #define NU0 1.0e+13           // [Hz] Attempt frequency.
 #define C_DENSITY 10        // [appm] C-atom density
 #define GAMMA 1.0           // Fraction of surface emission.
 #define TDE 90              // [eV] Threshold displacement energy for W.
 #define HEAT_OF_SOLUTION 0.95   // [eV] Heat of solution of H in W.
 #define SAV_ENERGY 1.05         // [eV] energy that controls SAV rate
-#define H_DEPOSITION_ENERGY 100.0 // [eV] energy of an H atom in the incident flux
+#define H_DEPOSITION_ENERGY 110.0 // [eV] energy of an H atom in the incident flux
 #define H_MIGRATION_ENERGY 0.25   // [eV] energy needed for an H to diffuse through lattice
 #define H_FORM_E 1.04           // [eV] Heat of solution of H in W (formation energy of H)
 #define V_FORM_E 3.23           // [eV] Formation Energy of V1
@@ -51,13 +52,13 @@
 #define HH_BIND_E 0.02          // [eV] Binding Energy of H-H
 // Run parameters:
 #define ION               // Irradiation type.
-#define TOTAL_TIME 7692.31 // [s] Total simulated time.
+#define TOTAL_TIME 10000 // [s] Total simulated time.
 #define TOTAL_DPA 2        // Total DPA damage to reach.
 #define DIVIDING_AREA 5.0e-12  // [cm^2] Area of the surface in between volume elements.
 //#define RATIO_HE 1.1       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_HE 0       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_H 0
-#define FLUX_H 6.5e17    // [1/(cm^2*s)]
+#define FLUX_H 1.0e16    // [1/(cm^2*s)]
 //#define DPA_RATE 0       //When only H exposure is available. no self-damage at all
 //#define DPA_RATE 3.55e-6   // [dpa/s] Damage rate.
 #define CHANNELS 3         // Irradiation channels used (1:W, 2:He, 3:H,...). the number of different particle insertion(irradiation) process.
@@ -65,11 +66,12 @@
 #define TSTEPS 50000 // Run these many steps.
 #define LEVELS 3
 #define EXP10 3 // number of 0s assigned to each group in object's key in hash table
-#define POINTS 90 // number of elements: one surface(Point 0), one subsurface (Point 1), one implantation bulk element (Point 2), other bulk elements, other elongated bulk elements
+#define POINTS 39 // number of elements: one surface(Point 0), one subsurface (Point 1), one implantation bulk element (Point 2), other bulk elements, other elongated bulk elements
 #define SURFACE_INDEX 0     // the surface layer corresponding of adsorbed layer on material surface (not inside material)
 #define SUBSURFACE_INDEX 1  // the small subsurface layer to facilitate transport from surface to bulk
-#define FIRST_BULK_INDEX 2  // the first bulk layer that all the H ions get implanted into
-#define FIRST_ELONGATED_INDEX 50  // the first volume element that is elongated lengthwise, reducing the number of mesh elements and diffusion reactions to speed of simulation
+#define FIRST_BULK_INDEX 1  // the first bulk layer that all the H ions get implanted into
+#define H_IMPLANTATION_INDEX 4 // set this index such that its centroid is at the mean projected range of H ions
+#define FIRST_ELONGATED_INDEX 25  // the first volume element that is elongated lengthwise, reducing the number of mesh elements and diffusion reactions to speed of simulation
 // Auxiliary definitions:
 enum Reaction { DIFFUSETOF, DIFFUSETOB, SINKDISLOCATION, SINKGRAINBNDRY, DISSOCIATION, COMBINATION, SAV, RECOMBER, RECOMBLH, NONE, PARTICLE, HE, H, DISSVDISLOCATION, DISSVGRAINBNDRY, DISSHDISLOCATION, DISSHGRAINBNDRY, ERROR};
 

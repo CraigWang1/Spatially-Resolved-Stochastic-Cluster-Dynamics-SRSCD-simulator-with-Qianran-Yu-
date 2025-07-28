@@ -130,7 +130,7 @@ void Damage::computeDamageTwo(const int n, unordered_map<int64, Object*>& allObj
     }
 
     double reflectionCoeff = -0.074 * log(H_DEPOSITION_ENERGY) + 0.96; // Data regression from Ogorodnikova 2015
-    if (n == FIRST_BULK_INDEX) // the first bulk layer 
+    if (n == H_IMPLANTATION_INDEX) 
     {
         damage[n][2] = FLUX_H * (1 - reflectionCoeff) * DIVIDING_AREA;
     }
