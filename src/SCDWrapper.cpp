@@ -232,8 +232,9 @@ Object* SCDWrapper::selectDomainReaction(
 
     // Select the reaction inside of our spatial element
     reaction = NONE;
-    unordered_map<int64, Object*>::iterator iter = allObjects.begin();
-    while (reaction == NONE && iter != allObjects.end()) {
+    unordered_map<int64, Object*>& objectsInThisElement = objectsInElement[pointIndex];
+    unordered_map<int64, Object*>::iterator iter = objectsInThisElement.begin();
+    while (reaction == NONE && iter != objectsInThisElement.end()) {
         tempObject = iter->second;
         tempBundle = linePool[tempObject];
         tempLine = tempBundle->lines[pointIndex];
