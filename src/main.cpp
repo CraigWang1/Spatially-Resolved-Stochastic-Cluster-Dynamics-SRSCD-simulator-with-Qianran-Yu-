@@ -8,7 +8,7 @@
 #include <cassert>
 #include"SCDWrapper.h"
 
-double TEMPERATURE = 823;  // [K], this is extern so all files have access to this
+double TEMPERATURE = 383;  // [K], this is extern so all files have access to this
 const double startingTemp = TEMPERATURE;
 
 int main(int argc, char** argv) 
@@ -123,9 +123,9 @@ int main(int argc, char** argv)
 
         /*
         string reactions[] = {"diffF", "diffB", "sinkDisloc", "sinkGrain", "diss", "comb", "sav", "recombER", "recombLH", "none", "particle", "HE", "H", "dissVDisloc", "dissVGrain", "dissHDisloc", "dissHGrain", "error"};        
-        cout << reactions[reaction] << " " << pointIndex << " " << theOtherKey;
         if (hostObject != nullptr)
-            cout << " " << hostObject->getKey();
+            cout << hostObject->getKey() << " ";
+        cout << reactions[reaction] << " at pt " << pointIndex << " with other obj " << theOtherKey;
         cout << endl;
         */
 

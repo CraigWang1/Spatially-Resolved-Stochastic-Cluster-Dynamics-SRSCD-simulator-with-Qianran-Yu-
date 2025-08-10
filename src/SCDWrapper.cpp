@@ -18,7 +18,7 @@ static int generationNumber = 0;
 static int dissV = 0; //this only counts number of events
 static int dissH = 0; //this only counts number of events
 /* public funciton */
-SCDWrapper::SCDWrapper():allObjects(), engine(rd()), distribution(0.0L, 1.0L), damage(allObjects), cpdf(), startIndex(0), endIndex(0), totalDpa(0)
+SCDWrapper::SCDWrapper():allObjects(), engine(rd()), distribution(0.0L, 1.0L), damage(allObjects), cpdf(), startIndex(0), endIndex(0), matrixRateTree(POINTS), totalDpa(0)
 {
     formationE[1] = V_FORM_E; 
 
@@ -138,6 +138,8 @@ void SCDWrapper::computeMatrixRate(const int n)
     matrixRate[n] += sinkDissRateDislocation[1][n];
     matrixRate[n] += sinkDissRateGrainBndry[0][n];
     matrixRate[n] += sinkDissRateGrainBndry[1][n];
+
+    matrixRateTree.set_val(n, matrixRate[n]);
 }
 
 void SCDWrapper::updateMatrixRate(const int n, const Reaction reaction)
@@ -161,19 +163,21 @@ void SCDWrapper::updateMatrixRate(const int n, const Reaction reaction)
 
 void SCDWrapper::computeBulkRate()
 {
-    bulkRate = 0.0;
-    for (int i = 0; i < POINTS; ++i) {
-        bulkRate += matrixRate[i];
-    }
+    // bulkRate = 0.0;
+    // for (int i = 0; i < POINTS; ++i) {
+    //     bulkRate += matrixRate[i];
+    // }
+    bulkRate = matrixRateTree.sum(0, POINTS - 1);
 }
 
 void SCDWrapper::computeDomainRate()
 {
-    domainRate = 0.0;
-    for (int i = startIndex; i <= endIndex; i++)
-    {
-        domainRate += matrixRate[i];
-    }
+    // domainRate = 0.0;
+    // for (int i = startIndex; i <= endIndex; i++)
+    // {
+    //     domainRate += matrixRate[i];
+    // }
+    domainRate = matrixRateTree.sum(startIndex, endIndex);
 }
 
 void SCDWrapper::examineDomainRate()
@@ -211,67 +215,68 @@ Object* SCDWrapper::selectDomainReaction(
     Bundle* tempBundle;
     OneLine* tempLine;
     //fs << "BulkRate = " << bulkRate << "RandRate = " << randRate << endl;
-    for (pointIndex = startIndex; pointIndex <= endIndex; ++pointIndex) {
-        if (matrixRate[pointIndex] < tempRandRate) {
-            tempRandRate -= matrixRate[pointIndex];
-            continue;
-        }/* if the event is not positioned in this element, move on to the next one */
-        else {
-            reaction = NONE;
-            unordered_map<int64, Object*>::iterator iter = allObjects.begin();
-            while (reaction == NONE && iter != allObjects.end()) {
-                tempObject = iter->second;
-                tempBundle = linePool[tempObject];
-                tempLine = tempBundle->lines[pointIndex];
-                if (tempLine != nullptr) {
-                    reaction = tempLine->selectReaction(tempObject, theOtherKey, tempRandRate);
-                }
-                ++iter;
-            }
-            if (reaction == NONE) {
-                reaction = damage.selectDamage(pointIndex, tempRandRate);
-            }
-            if (reaction == NONE){
-                if (sinkDissRateDislocation[0][pointIndex] >= tempRandRate){
-                    reaction = DISSVDISLOCATION;
-                }else{
-                    tempRandRate -= sinkDissRateDislocation[0][pointIndex];
-                }
-            }
-            if (reaction == NONE){
-                if (sinkDissRateDislocation[1][pointIndex] >= tempRandRate){
-                    reaction = DISSHDISLOCATION;
-                }else{
-                    tempRandRate -= sinkDissRateDislocation[1][pointIndex];
-                }
-            }
-            if (reaction == NONE){
-                if (sinkDissRateGrainBndry[0][pointIndex] >= tempRandRate){
-                    reaction = DISSVGRAINBNDRY;
-                }else{
-                    tempRandRate -= sinkDissRateGrainBndry[0][pointIndex];
-                }
-            }
-            if (reaction == NONE){
-                if (sinkDissRateGrainBndry[1][pointIndex] >= tempRandRate){
-                    reaction = DISSHGRAINBNDRY;
-                }else{
-                    tempRandRate -= sinkDissRateGrainBndry[1][pointIndex];
-                }
-            }
-            
-            count = pointIndex;
-            if (LOG_REACTIONS)
-                selectReactionFile << "Element = " << pointIndex + 1 <<", "<< "Reaction = " << reaction << endl << endl;
-            return tempObject;
+
+    // Select which spatial element our reaction is in
+    pointIndex = matrixRateTree.first_prefix_at_least_from(startIndex, tempRandRate);
+
+    // If the reaction isn't in our domain (if running in parallel)
+    if (pointIndex > endIndex)
+    {
+        reaction = NONE;
+        return tempObject;
+    }
+
+    // Remove rates of other spatial elements
+    if (pointIndex > startIndex)
+        tempRandRate -= matrixRateTree.sum(startIndex, pointIndex - 1);
+
+    // Select the reaction inside of our spatial element
+    reaction = NONE;
+    unordered_map<int64, Object*>::iterator iter = allObjects.begin();
+    while (reaction == NONE && iter != allObjects.end()) {
+        tempObject = iter->second;
+        tempBundle = linePool[tempObject];
+        tempLine = tempBundle->lines[pointIndex];
+        if (tempLine != nullptr) {
+            reaction = tempLine->selectReaction(tempObject, theOtherKey, tempRandRate);
+        }
+        ++iter;
+    }
+    if (reaction == NONE) {
+        reaction = damage.selectDamage(pointIndex, tempRandRate);
+    }
+    if (reaction == NONE){
+        if (sinkDissRateDislocation[0][pointIndex] >= tempRandRate){
+            reaction = DISSVDISLOCATION;
+        }else{
+            tempRandRate -= sinkDissRateDislocation[0][pointIndex];
         }
     }
-    // Sometimes there is a case where randRate == bulkRate, which might result in a 
-    // tiny bit of leftover number (eg. doing 9e14-9e14 gives 0.0001 when it should give 0)
-    // causing the program to think that no event was selected
-    reaction = NONE;
-    // cout << "returned nullptr" << endl;
-    // cout << randRate << " " << domainRate << " " << tempRandRate << endl;
+    if (reaction == NONE){
+        if (sinkDissRateDislocation[1][pointIndex] >= tempRandRate){
+            reaction = DISSHDISLOCATION;
+        }else{
+            tempRandRate -= sinkDissRateDislocation[1][pointIndex];
+        }
+    }
+    if (reaction == NONE){
+        if (sinkDissRateGrainBndry[0][pointIndex] >= tempRandRate){
+            reaction = DISSVGRAINBNDRY;
+        }else{
+            tempRandRate -= sinkDissRateGrainBndry[0][pointIndex];
+        }
+    }
+    if (reaction == NONE){
+        if (sinkDissRateGrainBndry[1][pointIndex] >= tempRandRate){
+            reaction = DISSHGRAINBNDRY;
+        }else{
+            tempRandRate -= sinkDissRateGrainBndry[1][pointIndex];
+        }
+    }
+    
+    count = pointIndex;
+    if (LOG_REACTIONS)
+        selectReactionFile << "Element = " << pointIndex + 1 <<", "<< "Reaction = " << reaction << endl << endl;
     return tempObject;
 }
 

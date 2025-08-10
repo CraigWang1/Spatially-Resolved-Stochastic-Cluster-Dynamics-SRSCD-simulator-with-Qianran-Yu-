@@ -45,6 +45,7 @@ private:
     long int numHDesorbed;
 
     /* hold reactions, 1st dimension is reaction type, second dimension is element, value is total number of this reaction */
+    SegmentTree<long double> matrixRateTree;
     long double matrixRate[POINTS];    // total rate in every element(point)
     long double bulkRate;  // total rate in the whole bulk;
     long double domainRate; // total rate in the volume elements that this processor is responsible for

@@ -11,13 +11,17 @@ from scipy.signal import butter, filtfilt
 from make_speciesfile import combine_species_files
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 252                             # num spatial elements in the simulation (1 surface + 100 bulk)
+POINTS = 627                            # num spatial elements in the simulation (1 surface + 100 bulk)
+FIRST_ELONGATED_INDEX = 8
 NM_TO_CM = 1e-7
-DIVIDING_AREA = 5e-12                    # [cm]
+NM_TO_UM = 1e-3
+DIVIDING_AREA = 0.64e-12                    # [cm]
 SURFACE_THICKNESS = 0.544                # [nm]
 FIRST_BULK_THICKNESS = 8                 # [nm]
-ELEMENT_THICKNESS = 20                   # [nm]
-VOLUME = DIVIDING_AREA * ELEMENT_THICKNESS * NM_TO_CM                           # volume of a spatial element [cm^3]
+ELEMENT_THICKNESS = 8                   # [nm]
+ELONGATED_ELEMENT_THICKNESS = 8        # [nm]
+VOLUME = DIVIDING_AREA * ELEMENT_THICKNESS * NM_TO_CM     
+ELONGATED_VOLUME = DIVIDING_AREA * ELONGATED_ELEMENT_THICKNESS * NM_TO_CM                      # volume of a spatial element [cm^3]
 SURFACE_VOLUME = DIVIDING_AREA * SURFACE_THICKNESS * NM_TO_CM # [cm^3]
 FIRST_BULK_VOLUME = DIVIDING_AREA * FIRST_BULK_THICKNESS * NM_TO_CM
 DENSITY = 6.30705e+22                      # [atoms/cm^3] Atomic density for W.
@@ -94,9 +98,15 @@ for i in range(len(fluences)):
 # Plot Simulation
 # with open("/home/craig/Downloads/Spatially-Resolved-Stochastic-Cluster-Dynamics-SRSCD-simulator-with-Qianran-Yu-/src/species.txt") as f:
 with open("species.txt") as f:
-	positions = [0, 0.000272, 0.008272]
-	for i in range(1, POINTS-2):
-		positions.append(positions[1] + i*0.020)
+	positions = [0] # surface element
+	positions.append(SURFACE_THICKNESS*NM_TO_UM/2) # subsurface element
+	positions.append((SURFACE_THICKNESS+FIRST_BULK_THICKNESS)*NM_TO_UM/2) # first bulk element (incident H element)
+	num_regular_bulk_elements = FIRST_ELONGATED_INDEX - 3
+	for i in range(num_regular_bulk_elements):
+		positions.append(positions[2] + (FIRST_BULK_THICKNESS/2 + (i+0.5)*ELEMENT_THICKNESS)*NM_TO_UM)
+	positions.append(positions[-1] + ELEMENT_THICKNESS*NM_TO_UM/2 + ELONGATED_ELEMENT_THICKNESS*NM_TO_UM/2)   # First elongated index
+	for i in range(FIRST_ELONGATED_INDEX+1, POINTS): 
+		positions.append(positions[-1] + ELONGATED_ELEMENT_THICKNESS*NM_TO_UM)
 	trapped_hydrogen_c = np.zeros(POINTS)
 	free_hydrogen_c = np.zeros(POINTS)
 	vacancy_c = np.zeros(POINTS)
@@ -129,16 +139,13 @@ with open("sink0.txt") as f:
 	for line_hold in f:
 		line_hold = line_hold.split()
 		numH.append(int(line_hold[3]) + int(line_hold[7]))
-	trapped_hydrogen_c += np.array(numH).astype(float)
+	# trapped_hydrogen_c += np.array(numH).astype(float)
 	# print(sum(numH)/np.sum(trapped_hydrogen_c))
-print(np.sum(trapped_hydrogen_c/5e-12))
-trapped_hydrogen_c[2] *= VOLUME / FIRST_BULK_VOLUME
-free_hydrogen_c[2] *= VOLUME / FIRST_BULK_VOLUME
-vacancy_c[2] *= VOLUME / FIRST_BULK_VOLUME
-
-trapped_hydrogen_c /= VOLUME
-free_hydrogen_c /= VOLUME
-vacancy_c /= VOLUME
+print("Retained fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4))
+print(trapped_hydrogen_c)
+trapped_hydrogen_c[2] /= FIRST_BULK_VOLUME
+trapped_hydrogen_c[3:FIRST_ELONGATED_INDEX] /= VOLUME
+trapped_hydrogen_c[FIRST_ELONGATED_INDEX:] /= ELONGATED_VOLUME
 
 all_hydrogen_c = free_hydrogen_c + trapped_hydrogen_c
 
@@ -158,8 +165,8 @@ fs = 1 / (positions[4] - positions[3])  # Sampling frequency
 b, a = scipy.signal.butter(5, 2.5, fs=fs)
 
 # Apply the filter using Gustafsson's method
-# smoothed_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c[2:], method="gust")
-smoothed_hydrogen_c = scipy.signal.savgol_filter(trapped_hydrogen_c[2:], 125, 8)
+smoothed_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c[2:], method="gust")
+smoothed_hydrogen_c = scipy.signal.savgol_filter(trapped_hydrogen_c[2:], 100, 8)
 
 concentrations = [c for c in concentrations]
 
@@ -173,7 +180,7 @@ print()
 print("Sim retained vs. experiment retained: "+str(retained_sim_fluence/retained_experiment_fluence))
 if plot_h:
 	# plt.plot(positions[:upto], free_hydrogen_c[:upto], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
-	plt.plot(positions[2:], trapped_hydrogen_c[2:], label="Simulation", alpha=0.3)
+	plt.plot(positions[2:], trapped_hydrogen_c[2:], label="Simulation", alpha=0.3, marker='^')
 	plt.plot(positions[2:], smoothed_hydrogen_c, label="Simulation Filtered", color='blue', marker='^', markersize=0)
 	# plt.plot(positions[:upto], all_hydrogen_c[:upto], label="Hydrogen Concentration")
 # if plot_v:
@@ -183,7 +190,6 @@ if plot_h:
 	# plt.plot(positions[:upto], vacancy_c[:upto], color='r', label="Vacancy Concentration")
 # print("Summed retained concentration: "+str(np.sum(trapped_hydrogen_c)))
 # plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
-
 plt.yscale('log')
 plt.ylim(2*10**-3, 10**0)
 # plt.ylim(0, 0.03)
