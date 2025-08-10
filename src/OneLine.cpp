@@ -583,6 +583,9 @@ long double OneLine::computeBaseCombReaction(
                                     const Object* const mobileObject,
                                     const int count) const
 {    
+    if (hostObject->getNumber(count) * mobileObject->getNumber(count) == 0)
+        return 0;
+
     if (!COMB_ON || count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
     {
         return 0.0;
