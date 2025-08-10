@@ -22,6 +22,7 @@ private:
     unordered_map<int64, Object*> allObjects;  // map that store all object
     unordered_map<int64, Object*> mobileObjects;  // map that store mobile object
     unordered_map<int64, Object*> HObjects;    // map that stores nH objects
+    unordered_map<int64, Object*> objectsInElement[POINTS];  // stores the objects in this spatial element
     unordered_map<Object*, Bundle*> linePool;
     unordered_map<int64, int> surface;
     unordered_map<int64, int> bottom;

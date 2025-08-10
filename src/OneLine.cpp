@@ -113,8 +113,15 @@ void OneLine::addReaction(
                           const int count)
 {
     double rate = computeCombReaction(hostObject, newObject, allObjects, linePool, count);
-    std::pair<int64, double> oneReaction(newObject->getKey(), rate);
-    secondR.insert(oneReaction);
+    if (rate > 0)
+    {
+        std::pair<int64, double> oneReaction(newObject->getKey(), rate);
+        secondR.insert(oneReaction);
+    }
+    else
+    {
+        secondR.erase(newObject->getKey());
+    }
 }
 
 void OneLine::removeReaction(const int64 deleteKey)
@@ -130,7 +137,10 @@ void OneLine::updateReaction(
                              const int n)
 {
     double rate = computeCombReaction(hostObject, mobileObject, allObjects, linePool, n);
-    secondR[mobileObject->getKey()] = rate;
+    if (rate > 0)
+        secondR[mobileObject->getKey()] = rate;
+    else
+        secondR.erase(mobileObject->getKey());
 }
 
 void OneLine::updateLine(
@@ -208,8 +218,15 @@ void OneLine::setOneLine(
     unordered_map<int64, Object*>::iterator iter;
     for (iter = mobileObjects.begin(); iter != mobileObjects.end(); ++iter) {
         double rate = computeCombReaction(hostObject, iter->second, allObjects, linePool, count);
-        std::pair<int64, double> oneReaction(iter->first, rate);
-        secondR.insert(oneReaction);
+        if (rate > 0)
+        {
+            std::pair<int64, double> oneReaction(iter->first, rate);
+            secondR.insert(oneReaction);
+        }
+        else
+        {
+            secondR.erase(iter->second->getKey());
+        }
     }
     computeSAVReaction(hostObject, count);
     computeRecombReaction(hostObject, count, allObjects);
@@ -827,5 +844,8 @@ void OneLine::setDissReaction(const int index, long double rate)
 
 void OneLine::setCombReaction(const int64 mobileObjectKey, long double rate)
 {
-    secondR[mobileObjectKey] = rate;
+    if (rate > 0)
+        secondR[mobileObjectKey] = rate;
+    else
+        secondR.erase(mobileObjectKey);
 }

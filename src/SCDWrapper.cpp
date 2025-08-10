@@ -688,6 +688,16 @@ void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
         return;
     }
 
+    // If this object exists in this spatial element, account for it
+    if (anObject->getNumber(n) > 0)
+    {
+        objectsInElement[n][anObject->getKey()] = anObject;
+    }
+    else
+    {
+        objectsInElement[n].erase(anObject->getKey());
+    }
+
     bool leftBoundary = (
         (n == startIndex || n == startIndex - 1) && n != 0
     );
@@ -751,11 +761,6 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
         }
     }
 
-    if (hostObject->getKey() == 1 && count == 0) // if is 1H object
-    {
-        damage.updateDamageTwo(count, allObjects);
-    }
-
     if (hostObject->getKey() == -1000000)
         computeSinkDissRate(0, count);
     else if (hostObject->getKey() == 1)
@@ -779,10 +784,13 @@ void SCDWrapper::addReactionToOther(Object const * const mobileObject)
 
 void SCDWrapper::updateRateToOther(Object const * const mobileObject, const int count)
 {
-    unordered_map<Object*, Bundle*>::iterator iter;
-    for (iter = linePool.begin(); iter != linePool.end(); ++iter) {
-        Object* hostObject = iter->first;
-        Bundle* tempBundle = iter->second;
+    unordered_map<int64, Object*>& objectsInThisElement = objectsInElement[count];
+    unordered_map<int64, Object*>::iterator iter;
+
+    for (iter = objectsInThisElement.begin(); iter != objectsInThisElement.end(); ++iter)
+    {
+        Object* hostObject = iter->second;
+        Bundle* tempBundle = linePool[hostObject];
         OneLine* tempLine = tempBundle->lines[count];
         if (tempLine != nullptr) {
             /* If both are mobile objects, mobileObject will have already recorded the combination rate, no need to record it again */
@@ -808,7 +816,6 @@ void SCDWrapper::removeObjectFromMap(const int64 deleteKey)
     allObjects.erase(deleteKey); /* delete this object from map allObjects */
     if (diffusivity > 0) {
         mobileObjects.erase(deleteKey); /* delete this object from map mobileObjects */
-        removeRateToOther(deleteKey);
     }
     if (is_nH) {
         HObjects.erase(deleteKey);
