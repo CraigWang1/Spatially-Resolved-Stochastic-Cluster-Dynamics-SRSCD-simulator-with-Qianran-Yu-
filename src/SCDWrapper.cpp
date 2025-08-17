@@ -790,20 +790,6 @@ void SCDWrapper::removeObjectFromMap(const int64 deleteKey)
     }
 }
 
-void SCDWrapper::removeRateToOther(const int64 deleteKey)
-{
-    unordered_map<int64, Object*>::iterator iter;
-    for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
-        Object* tempObject = iter->second;
-        for (int i = 0; i < POINTS; ++i) {
-            OneLine* tempLine = tempObject->lines[i];
-            if (tempLine != nullptr) {
-                tempLine->removeReaction(deleteKey);
-            }
-        }
-    }
-}
-
 void SCDWrapper::updateSinks(const int point, const int* number){
     for (int type = 0; type < 2; type++)
     {

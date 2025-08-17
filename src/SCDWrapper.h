@@ -85,10 +85,6 @@ private:
     /* remove one object from map */
     void updateRateToOther(const Object* const, const int);
     /* when number of this object changes, rates related to this object change also */
-    void removeRateToOther(const int64);
-    /* when one mobile object has been removed,
-     ** rates of this object with other extisting objects should also be removed
-     */
     void updateSinks(const int, const int*); /* only for restart use */
     /* process event functions */
     void processDiffEvent(Object*, const int, const char);     /* process diffusion reactionObject */
