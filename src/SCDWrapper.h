@@ -24,7 +24,6 @@ private:
     unordered_map<int64, Object*> mobileObjects;  // map that store mobile object
     unordered_map<int64, Object*> HObjects;    // map that stores nH objects
     unordered_map<int64, Object*> objectsInElement[POINTS];  // stores the objects in this spatial element
-    unordered_map<Object*, Bundle*> linePool;
     unordered_map<int64, int> surface;
     unordered_map<int64, int> bottom;
     unordered_map<int, double> formationE; 
@@ -84,8 +83,6 @@ private:
     /* Remove objects that have been reduced to a total number of 0 since the last event only */
     void removeObjectFromMap(const int64); 
     /* remove one object from map */
-    void addReactionToOther(const Object* const);
-    /* Impact of one new mobile object to other existing objects */
     void updateRateToOther(const Object* const, const int);
     /* when number of this object changes, rates related to this object change also */
     void removeRateToOther(const int64);
@@ -137,7 +134,6 @@ public:
     // get series functions that allow direct manipulation on private data member
     unordered_map<int64, Object*>* getAllObjects();
     unordered_map<int64, Object*>* getMobileObjects();
-    unordered_map<Object*, Bundle*>* getLinePool();
     void examineRate(); /* computes matrix rate in all points*/
     void examineDomainRate(); /* computes matrix rate in points that this processor is responsible for */
     /* output file functions */

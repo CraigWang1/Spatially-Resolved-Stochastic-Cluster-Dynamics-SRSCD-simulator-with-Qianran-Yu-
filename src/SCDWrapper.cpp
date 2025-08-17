@@ -110,8 +110,7 @@ void SCDWrapper::computeMatrixRate(const int n)
     unordered_map<int64, Object*>& objectsInThisElement = objectsInElement[n];
     for (iter = objectsInThisElement.begin(); iter != objectsInThisElement.end(); ++iter) {
         Object* tempObject = iter->second;
-        Bundle* tempBundle = linePool[tempObject];
-        OneLine* tempLine = tempBundle->lines[n];
+        OneLine* tempLine = tempObject->lines[n];
         if (tempLine != nullptr) {
             matrixRate[n] += tempLine->computeTotalRate();
             //tempLine->display(tempObject);/* Qianran 0925 */
@@ -196,7 +195,6 @@ Object* SCDWrapper::selectDomainReaction(
     long double randRate = randomNum * (domainRate+noneRate);
     long double tempRandRate = randRate;
     Object* tempObject = nullptr;
-    Bundle* tempBundle;
     OneLine* tempLine;
     //fs << "BulkRate = " << bulkRate << "RandRate = " << randRate << endl;
 
@@ -220,8 +218,7 @@ Object* SCDWrapper::selectDomainReaction(
     unordered_map<int64, Object*>::iterator iter = objectsInThisElement.begin();
     while (reaction == NONE && iter != objectsInThisElement.end()) {
         tempObject = iter->second;
-        tempBundle = linePool[tempObject];
-        tempLine = tempBundle->lines[pointIndex];
+        tempLine = tempObject->lines[pointIndex];
         if (tempLine != nullptr) {
             reaction = tempLine->selectReaction(tempObject, theOtherKey, tempRandRate);
         }
@@ -365,12 +362,7 @@ void SCDWrapper::processEvent(
 
 SCDWrapper::~SCDWrapper()
 {
-    /* clean linePool*/
-    unordered_map<Object*, Bundle*>::iterator iter;
     unordered_map<int64, Object*>::iterator iter1;
-    for (iter = linePool.begin(); iter != linePool.end(); ++iter) {
-        delete iter->second;
-    }
     /* clean contents of object* */
     for (iter1 = allObjects.begin(); iter1 != allObjects.end(); ++iter1) {
         delete iter1->second;
@@ -391,11 +383,6 @@ unordered_map<int64, Object*>* SCDWrapper::getAllObjects()
 unordered_map<int64, Object*>* SCDWrapper::getMobileObjects()
 {
     return &mobileObjects;
-}
-
-unordered_map<Object*, Bundle*>* SCDWrapper::getLinePool()
-{
-    return &linePool;
 }
 
 void SCDWrapper::examineRate()
@@ -643,9 +630,6 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
         if (newObject->getAttri(0) == 0 && newObject->getAttri(2) > 0) {
             HObjects.insert(newNode);
         } /* Keep track of nH objects */
-        Bundle* newBundle = new Bundle(newObject, mobileObjects, allObjects, linePool);
-        pair<Object*, Bundle*> bundle(newObject, newBundle);
-        linePool.insert(bundle); /* add to line pool */
         if (newObject->getKey() == 1 && newObject->getNumber(0) > 0)
             damage.updateDamageTwo(0, allObjects);
     }/* if this object is valid, add it to map */
@@ -712,22 +696,22 @@ void SCDWrapper::reduceFromObjectMap(const int64 key, const int n, const int num
 void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
 {
     // Update the OneLine associated with this object in this count
-    OneLine* tempLine = linePool[hostObject]->lines[count];
+    OneLine* tempLine = hostObject->lines[count];
     double diffusivity = hostObject->getDiff();
     int number = hostObject->getNumber(count);
     if (tempLine != nullptr) {
         if (number > 0) {
-            tempLine->updateLine(hostObject, count, mobileObjects, allObjects, linePool);
+            tempLine->updateLine(hostObject, count, mobileObjects, allObjects);
         }
         else {
             delete tempLine;
-            linePool[hostObject]->lines[count] = nullptr;
+            hostObject->lines[count] = nullptr;
         }
     }
     else {
         if (number > 0) {
-            tempLine = new OneLine(hostObject, count, mobileObjects, allObjects, linePool);
-            linePool[hostObject]->lines[count] = tempLine;
+            tempLine = new OneLine(hostObject, count, mobileObjects, allObjects);
+            hostObject->lines[count] = tempLine;
         }
     }
 
@@ -737,13 +721,13 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
 
         // Update diffusion rates of this object in neighbouring elements
         if((count-1) >= 0){
-            OneLine* tempLine = linePool[hostObject]->lines[count - 1];
+            OneLine* tempLine = hostObject->lines[count - 1];
             if(tempLine != nullptr){
                 tempLine->updateDiff(hostObject, count - 1, allObjects);
             }
         }
         if((count + 1) < POINTS){
-            OneLine* tempLine = linePool[hostObject]->lines[count + 1];
+            OneLine* tempLine = hostObject->lines[count + 1];
             if(tempLine != nullptr){
                 tempLine->updateDiff(hostObject, count + 1, allObjects);
             }
@@ -756,21 +740,6 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
         computeSinkDissRate(1, count);
 }
 
-void SCDWrapper::addReactionToOther(Object const * const mobileObject)
-{
-    unordered_map<Object*, Bundle*>::iterator iter;
-    for (iter = linePool.begin(); iter != linePool.end(); ++iter) {
-        Object* hostObject = iter->first;
-        Bundle* tempBundle = iter->second;
-        for (int i = 0; i < POINTS; ++i) {
-            OneLine* tempLine = tempBundle->lines[i];
-            if (tempLine != nullptr) {
-                tempLine->addReaction(hostObject, mobileObject, allObjects, linePool, i);
-            }
-        }
-    }
-}
-
 void SCDWrapper::updateRateToOther(Object const * const mobileObject, const int count)
 {
     unordered_map<int64, Object*>& objectsInThisElement = objectsInElement[count];
@@ -779,15 +748,14 @@ void SCDWrapper::updateRateToOther(Object const * const mobileObject, const int 
     for (iter = objectsInThisElement.begin(); iter != objectsInThisElement.end(); ++iter)
     {
         Object* hostObject = iter->second;
-        Bundle* tempBundle = linePool[hostObject];
-        OneLine* tempLine = tempBundle->lines[count];
+        OneLine* tempLine = hostObject->lines[count];
         if (tempLine != nullptr) {
             /* If both are mobile objects, mobileObject will have already recorded the combination rate, no need to record it again */
             if (hostObject->getDiff() > 0 && mobileObject->getKey() != hostObject->getKey()) {
                 tempLine->setCombReaction(mobileObject->getKey(), 0.0);
             }
             else {
-                tempLine->updateReaction(hostObject, mobileObject, allObjects, linePool, count);
+                tempLine->updateReaction(hostObject, mobileObject, allObjects, count);
             }
         }
     }
@@ -810,11 +778,8 @@ void SCDWrapper::removeDestroyedObjects()
 void SCDWrapper::removeObjectFromMap(const int64 deleteKey)
 {
     Object* deleteObject = allObjects[deleteKey];
-    Bundle* tempBundle = linePool[deleteObject];
     double diffusivity = deleteObject->getDiff();
     bool is_nH = deleteObject->getAttri(0) == 0 && deleteObject->getAttri(2) > 0;  // if it's an nH object
-    delete tempBundle; /* delete bundle */
-    linePool.erase(deleteObject); /* remove this object from map linePool */
     delete deleteObject;  /* delete the content of this object */
     allObjects.erase(deleteKey); /* delete this object from map allObjects */
     if (diffusivity > 0) {
@@ -830,9 +795,8 @@ void SCDWrapper::removeRateToOther(const int64 deleteKey)
     unordered_map<int64, Object*>::iterator iter;
     for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
         Object* tempObject = iter->second;
-        Bundle* tempBundle = linePool[tempObject];
         for (int i = 0; i < POINTS; ++i) {
-            OneLine* tempLine = tempBundle->lines[i];
+            OneLine* tempLine = tempObject->lines[i];
             if (tempLine != nullptr) {
                 tempLine->removeReaction(deleteKey);
             }

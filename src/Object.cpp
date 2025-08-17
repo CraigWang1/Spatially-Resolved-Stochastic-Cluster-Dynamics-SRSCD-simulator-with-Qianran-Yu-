@@ -1,4 +1,5 @@
 #include "Object.h"
+#include "OneLine.h"
 #include<cmath>
 // Object.cpp -- implementations of Object class
 
@@ -10,6 +11,7 @@ Object::Object(
 {
     setAttributes(key);
     setProperties(count, n);
+    setLines();
 }
 
 Object::Object(const int * attr,
@@ -22,6 +24,7 @@ Object::Object(const int * attr,
     oKey = 0;
     setKey();
     setProperties(count, n);
+    setLines();
 }
 
 Object::Object(const int64 key, const int *number):oKey(key), totalNumber(0)
@@ -35,9 +38,16 @@ Object::Object(const int64 key, const int *number):oKey(key), totalNumber(0)
     for (int i = 0; i < POINTS; i++) {
         addNumber(i, number[i]);
     }
-    
+    setLines();
 }
 
+void Object::setLines()
+{
+    for (int i = 0; i < POINTS; i++)
+    {
+        lines[i] = nullptr;
+    }
+}
 
 void Object::addNumber(const int count, const int n)
 {
@@ -684,4 +694,13 @@ int64 attrToKey(const int * const attr)
     }
     key *= sign;
     return key;
+}
+
+Object::~Object()
+{
+    for (int i = 0; i < POINTS; ++i) {
+        if (lines[i] != nullptr) {
+            delete lines[i];
+        }
+    }
 }

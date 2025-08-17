@@ -6,6 +6,7 @@
 #include<cmath>
 #include"constants.h"
 using namespace std;
+class OneLine;
 // some constant values
 const double avol = ALATT*ALATT*ALATT / 2;
 const double jumped = sqrt(3.0)* ALATT / 2.0;
@@ -37,9 +38,13 @@ private:
     void computeSinks();
     void setProperties(const int, const int);
 public:
+    OneLine* lines[POINTS]; // stores reaction rates at each volume element
+
     Object(const int64, const int, const int n=1);  /* constructor one, establishing object by key */
     Object(const int*, const int, const int n=1);/* constructor two, establishing object by arrtibutes */
     Object(const int64, const int*); /* designed for restart, add object by knowing numbers in every element*/
+    ~Object();
+    void setLines();  // initializes each OneLine to nullptr (these are updated in SCDWrapper.cpp)
     void addNumber(const int, const int n=1); /* default, add 1, but can add whatever n */
     void reduceNumber(const int);
     int signof(const int64) const;
