@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <cassert>
 #include <random>
+#include <unordered_set>
 
 class SCDWrapper {
 private:
@@ -29,6 +30,7 @@ private:
     unordered_map<int, double> formationE; 
     unordered_map<int, double> HSaturationLimit; // look up table for HSaturationLimit
     vector<BoundaryChange> leftBoundaryChangeQ, rightBoundaryChangeQ;
+    unordered_set<int64> affectedObjects;
 
     std::random_device rd; // Random device to seed the engine
     std::default_random_engine engine; // Random number engine
@@ -78,6 +80,8 @@ private:
     /* general-use function to add a number of instances to an object in the nth mesh element */
     void reduceFromObjectMap(const int64, const int, const int number=1);
     /* general-use function to remove one instance of an object in the nth mesh element */
+    void removeDestroyedObjects();
+    /* Remove objects that have been reduced to a total number of 0 since the last event only */
     void removeObjectFromMap(const int64); 
     /* remove one object from map */
     void addReactionToOther(const Object* const);

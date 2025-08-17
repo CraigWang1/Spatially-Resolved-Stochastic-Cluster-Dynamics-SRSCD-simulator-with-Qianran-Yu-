@@ -107,25 +107,9 @@ void SCDWrapper::computeMatrixRate(const int n)
     //cout << "Element " << n + 1 << endl;
     matrixRate[n] = 0.0;
     unordered_map<int64, Object*>::iterator iter;
-    for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
-        int64 tempKey = iter->first;
+    unordered_map<int64, Object*>& objectsInThisElement = objectsInElement[n];
+    for (iter = objectsInThisElement.begin(); iter != objectsInThisElement.end(); ++iter) {
         Object* tempObject = iter->second;
-        int totalNumber = tempObject->getTotalNumber();
-        while(totalNumber == 0) {
-            iter++;
-            removeObjectFromMap(tempKey);
-            if (iter != allObjects.end()) {
-                tempObject = iter->second;
-                tempKey = iter->first;
-                totalNumber = tempObject->getTotalNumber();
-            }
-            else {
-                break;
-            }
-        }
-        if (iter == allObjects.end()) {
-            break;
-        }
         Bundle* tempBundle = linePool[tempObject];
         OneLine* tempLine = tempBundle->lines[n];
         if (tempLine != nullptr) {
@@ -374,6 +358,7 @@ void SCDWrapper::processEvent(
     }
 
     // Keep track of affected reaction rates
+    removeDestroyedObjects();
     updateMatrixRate(n, reaction);
     computeDomainRate();
 }
@@ -654,7 +639,6 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
         allObjects.insert(newNode); /* add to all object */
         if (newObject->getDiff() > 0) {
             mobileObjects.insert(newNode);
-            addReactionToOther(newObject); /* add to other objects' lines */
         } /* add to mobile object if necessary */
         if (newObject->getAttri(0) == 0 && newObject->getAttri(2) > 0) {
             HObjects.insert(newNode);
@@ -683,9 +667,11 @@ void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
         /* object wasn't found! build new object and insert it into map */
         anObject = new Object(key, n, number);
         addNewObjectToMap(anObject);
+        updateObjectInMap(anObject, n);
     }
     else
     {
+        // Gets here if object doesn't exist, and negative change was inputted
         return;
     }
 
@@ -713,6 +699,8 @@ void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
     if (rightBoundary)  
         rightBoundaryChangeQ.push_back(
             BoundaryChange(key, n, number)); 
+
+    affectedObjects.insert(key);
 }
 
 void SCDWrapper::reduceFromObjectMap(const int64 key, const int n, const int number)
@@ -803,6 +791,20 @@ void SCDWrapper::updateRateToOther(Object const * const mobileObject, const int 
             }
         }
     }
+}
+
+void SCDWrapper::removeDestroyedObjects()
+{
+    unordered_set<int64>::iterator iter;
+    for (iter = affectedObjects.begin(); iter != affectedObjects.end(); ++iter)
+    {
+        int64 key = *iter;
+        if (allObjects[key]->getTotalNumber() <= 0)
+        {
+            removeObjectFromMap(key);
+        }
+    }
+    affectedObjects.clear();
 }
 
 void SCDWrapper::removeObjectFromMap(const int64 deleteKey)
