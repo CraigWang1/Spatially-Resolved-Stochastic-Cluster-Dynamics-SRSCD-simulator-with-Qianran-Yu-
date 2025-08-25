@@ -1,7 +1,7 @@
 #ifndef BOUNDARY_CHANGE_H
 #define BOUNDARY_CHANGE_H
 
-#include "Bundle.h"
+#include "Object.h"
 
 /* 
  * Stores information about changes near the processor domain boundaries 

@@ -8,7 +8,7 @@
 #include <cassert>
 #include"SCDWrapper.h"
 
-double TEMPERATURE = 383;  // [K], this is extern so all files have access to this
+double TEMPERATURE = 823;  // [K], this is extern so all files have access to this
 const double startingTemp = TEMPERATURE;
 
 int main(int argc, char** argv) 
@@ -79,7 +79,6 @@ int main(int argc, char** argv)
 
     double prev_time = MPI_Wtime();
     // cout << H_SATURATION_CONCENTRATION * VOLUME << endl;
-    
     while(!done)
     {
         if (TEMP_INCREASE_RATE > 0 && advTime - prevRecalculateTDSRatesTime > 1) // if doing thermal desorption, recalculate thermal properties once per second (not all the time) to reduce computational burden (stepwise temperature increase)

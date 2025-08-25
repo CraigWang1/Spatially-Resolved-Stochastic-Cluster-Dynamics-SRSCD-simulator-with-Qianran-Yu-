@@ -106,15 +106,10 @@ void SCDWrapper::computeMatrixRate(const int n)
     /* Qianran 0925 */
     //cout << "Element " << n + 1 << endl;
     matrixRate[n] = 0.0;
-    unordered_map<int64, Object*>::iterator iter;
-    unordered_map<int64, Object*>& objectsInThisElement = objectsInElement[n];
-    for (iter = objectsInThisElement.begin(); iter != objectsInThisElement.end(); ++iter) {
-        Object* tempObject = iter->second;
-        OneLine* tempLine = tempObject->lines[n];
-        if (tempLine != nullptr) {
-            matrixRate[n] += tempLine->computeTotalRate();
-            //tempLine->display(tempObject);/* Qianran 0925 */
-        }
+    matrixRate[n] += objectRateTree[n].sum(0, objectRateTree[n].size() - 1);
+    unordered_map<multiset<int64>, long double, MultisetHash>::iterator iter;
+    for (iter = combRates[n].begin(); iter != combRates[n].end(); ++iter) {
+        matrixRate[n] += iter->second;
     }
     matrixRate[n] += damage.getTotalDamage(n);
     matrixRate[n] += sinkDissRateDislocation[0][n];
@@ -208,21 +203,26 @@ Object* SCDWrapper::selectDomainReaction(
         return tempObject;
     }
 
-    // Remove rates of other spatial elements
+    // Remove rates of prior spatial elements
     if (pointIndex > startIndex)
         tempRandRate -= matrixRateTree.sum(startIndex, pointIndex - 1);
 
     // Select the reaction inside of our spatial element
     reaction = NONE;
-    unordered_map<int64, Object*>& objectsInThisElement = objectsInElement[pointIndex];
-    unordered_map<int64, Object*>::iterator iter = objectsInThisElement.begin();
-    while (reaction == NONE && iter != objectsInThisElement.end()) {
-        tempObject = iter->second;
+    int idx = objectRateTree[pointIndex].first_prefix_at_least(tempRandRate);
+    if (idx < objectRateTree[pointIndex].size())
+    {
+        tempRandRate -= objectRateTree[pointIndex].sum(0, idx - 1);
+        int64 objKey = segTreeIdx[pointIndex].at_backward(idx);
+        tempObject = allObjects[objKey];
         tempLine = tempObject->lines[pointIndex];
         if (tempLine != nullptr) {
             reaction = tempLine->selectReaction(tempObject, theOtherKey, tempRandRate);
         }
-        ++iter;
+    }
+    else
+    {
+        tempRandRate -= objectRateTree[pointIndex].sum(0, objectRateTree[pointIndex].size() - 1);
     }
     if (reaction == NONE) {
         reaction = damage.selectDamage(pointIndex, tempRandRate);
@@ -253,6 +253,21 @@ Object* SCDWrapper::selectDomainReaction(
             reaction = DISSHGRAINBNDRY;
         }else{
             tempRandRate -= sinkDissRateGrainBndry[1][pointIndex];
+        }
+    }
+    if (reaction == NONE){
+        unordered_map<multiset<int64>, long double, MultisetHash>::iterator iter = combRates[pointIndex].begin();
+        while (reaction == NONE && iter != combRates[pointIndex].end())
+        {
+            if (iter->second >= tempRandRate)
+            {
+                reaction = COMBINATION;
+                int64 objKey = *(iter->first.begin());
+                theOtherKey = *(iter->first.rbegin());
+                tempObject = allObjects[objKey];
+            }
+            tempRandRate -= iter->second;
+            ++iter;
         }
     }
     
@@ -637,6 +652,9 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
 
 void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
 {
+    if (number == 0)
+        return;
+
     /* If the object exists, add to it. Otherwise create the object. */
     Object* anObject;
     if (allObjects.find(key) != allObjects.end()) 
@@ -655,7 +673,7 @@ void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
     }
     else
     {
-        // Gets here if object doesn't exist, and negative change was inputted
+        // Gets here if object doesn't exist and negative change was inputted
         return;
     }
 
@@ -666,7 +684,24 @@ void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
     }
     else
     {
-        objectsInElement[n].erase(anObject->getKey());
+        objectsInElement[n].erase(anObject->getKey()); 
+        int idx = segTreeIdx[n].at_forward(anObject->getKey());
+        objectRateTree[n].set_val(idx, 0);
+        unusedSegTreeIndices[n].push(idx);
+        segTreeIdx[n].erase_by_key(anObject->getKey());
+        unordered_map<multiset<int64>, long double, MultisetHash>::iterator iter;
+        for (iter = combRates[n].begin(); iter != combRates[n].end(); )
+        {
+            const multiset<int64>& keys = iter->first;
+            if (keys.find(anObject->getKey()) != keys.end())
+            {
+                iter = combRates[n].erase(iter);
+            }
+            else
+            {
+                ++iter;
+            }
+        }
     }
 
     bool leftBoundary = (
@@ -701,7 +736,9 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
     int number = hostObject->getNumber(count);
     if (tempLine != nullptr) {
         if (number > 0) {
-            tempLine->updateLine(hostObject, count, mobileObjects, allObjects);
+            tempLine->updateLine(hostObject, count, mobileObjects, allObjects, objectsInElement[count], combRates[count]);
+            int idx = segTreeIdx[count].at_forward(hostObject->getKey());
+            objectRateTree[count].set_val(idx, tempLine->computeTotalRate());
         }
         else {
             delete tempLine;
@@ -710,26 +747,31 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
     }
     else {
         if (number > 0) {
-            tempLine = new OneLine(hostObject, count, mobileObjects, allObjects);
+            tempLine = new OneLine(hostObject, count, mobileObjects, allObjects, objectsInElement[count], combRates[count]);
             hostObject->lines[count] = tempLine;
+            int idx = assignSegTreeIdx(count);
+            segTreeIdx[count].insert(hostObject->getKey(), idx);
+            objectRateTree[count].set_val(idx, tempLine->computeTotalRate());
         }
     }
 
     // Update the OneLines of other objects impacted by this mobile object
     if (diffusivity > 0) {
-        updateRateToOther(hostObject, count);
-
         // Update diffusion rates of this object in neighbouring elements
         if((count-1) >= 0){
             OneLine* tempLine = hostObject->lines[count - 1];
             if(tempLine != nullptr){
                 tempLine->updateDiff(hostObject, count - 1, allObjects);
+                int idx = segTreeIdx[count - 1].at_forward(hostObject->getKey());
+                objectRateTree[count - 1].set_val(idx, tempLine->computeTotalRate());
             }
         }
         if((count + 1) < POINTS){
             OneLine* tempLine = hostObject->lines[count + 1];
             if(tempLine != nullptr){
                 tempLine->updateDiff(hostObject, count + 1, allObjects);
+                int idx = segTreeIdx[count + 1].at_forward(hostObject->getKey());
+                objectRateTree[count + 1].set_val(idx, tempLine->computeTotalRate());
             }
         }
     }
@@ -738,27 +780,6 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
         computeSinkDissRate(0, count);
     else if (hostObject->getKey() == 1)
         computeSinkDissRate(1, count);
-}
-
-void SCDWrapper::updateRateToOther(Object const * const mobileObject, const int count)
-{
-    unordered_map<int64, Object*>& objectsInThisElement = objectsInElement[count];
-    unordered_map<int64, Object*>::iterator iter;
-
-    for (iter = objectsInThisElement.begin(); iter != objectsInThisElement.end(); ++iter)
-    {
-        Object* hostObject = iter->second;
-        OneLine* tempLine = hostObject->lines[count];
-        if (tempLine != nullptr) {
-            /* If both are mobile objects, mobileObject will have already recorded the combination rate, no need to record it again */
-            if (hostObject->getDiff() > 0 && mobileObject->getKey() != hostObject->getKey()) {
-                tempLine->setCombReaction(mobileObject->getKey(), 0.0);
-            }
-            else {
-                tempLine->updateReaction(hostObject, mobileObject, allObjects, count);
-            }
-        }
-    }
 }
 
 void SCDWrapper::removeDestroyedObjects()
@@ -1740,4 +1761,24 @@ void SCDWrapper::recalculateAllRates()
 void SCDWrapper::writeDesorbedFile(double time)
 {
     desorbedFile << time << " " << numHDesorbed << endl;
+}
+
+int SCDWrapper::assignSegTreeIdx(int n)
+{
+    if (unusedSegTreeIndices[n].size() > 0)
+    {
+        int idx = unusedSegTreeIndices[n].front();
+        unusedSegTreeIndices[n].pop();
+        return idx;
+    }
+    if (objectRateTree[n].size() == 0)
+        unusedSegTreeIndices[n].push(0);
+    for (int i = objectRateTree[n].size(); i < objectRateTree[n].size() * 2; i++)
+    {
+        unusedSegTreeIndices[n].push(i);
+    }
+    int idx = unusedSegTreeIndices[n].front();
+    unusedSegTreeIndices[n].pop();
+    objectRateTree[n].double_size();
+    return idx;
 }

@@ -20,10 +20,9 @@ private:
     long double recombRLH;          // Langmuir-Hinshelwood recombination at the surface for H
     // dissociation reaction rate
     long double totalRate;             // totalRate of the line;
-    std::unordered_map<int64, long double> secondR;  // second reaction rate
     
     // private functions
-    void setOneLine(const Object* const, const int, unordered_map<int64, Object*>&, unordered_map<int64, Object*>&); // build one line
+    void setOneLine(const Object* const, const int, unordered_map<int64, Object*>&, unordered_map<int64, Object*>&, unordered_map<int64, Object*>&, unordered_map<multiset<int64>, long double, MultisetHash>&); // build one line
     void computeDiffReaction(const Object* const, const int, unordered_map<int64, Object*>&);  // compute diffusion rate
     void computeSinkReaction(const Object* const, const int);         // compute absorption reaction rate
     void computeSAVReaction(const Object* const, const int);   // compute super-abundant-vacancy rate
@@ -31,13 +30,10 @@ private:
     double computeDimensionTerm(const double, const Object* const, const Object* const, const int) const;
     
 public:
-    OneLine(const Object* const, const int, unordered_map<int64, Object*>&, unordered_map<int64, Object*>&);
+    OneLine(const Object* const, const int, unordered_map<int64, Object*>&, unordered_map<int64, Object*>&, unordered_map<int64, Object*>&, unordered_map<multiset<int64>, long double, MultisetHash>&);
     OneLine();  /* this constructor is used when the user only wants to calculate up to a couple rate and not all the rates for a temporary purpose */
     Reaction selectReaction(const Object* const,int64&, long double&);
-    void addReaction(const Object* const, const Object* const, unordered_map<int64, Object*>&, const int); /* add one reaction when a new object is been created */
-    void removeReaction(const int64); /* delete one reaction when an object is deleted */
-    void updateReaction(const Object* const, const Object* const, unordered_map<int64, Object*>&, const int);/* when the number of another object has changed, one rate in this line should be changed */
-    void updateLine(const Object* const, const int, unordered_map<int64, Object*>&, unordered_map<int64, Object*>&); /* when number of this object has changed, rates in this line should be updated */
+    void updateLine(const Object* const, const int, unordered_map<int64, Object*>&, unordered_map<int64, Object*>&, unordered_map<int64, Object*>&, unordered_map<multiset<int64>, long double, MultisetHash>&); /* when number of this object has changed, rates in this line should be updated */
     void updateDiff(const Object* const, const int, unordered_map<int64, Object*>&);
     const long double computeTotalRate();
     long double computeBaseDissReaction(const Object* const, const int, const int) const; // compute dissociation reaction rate

@@ -3,12 +3,12 @@
 #define SCDWRAPPER_H
 
 #include"Damage.h"
-#include"Bundle.h"
 #include"cpdf.h"
 #include"rvgs.h"
 #include"util.h"
 #include"CascadeDamage.h"
 #include"BoundaryChange.h"
+#include"OneLine.h"
 #include"constants.h"
 // #include"gnuplot_i.h"
 #include <string>
@@ -16,6 +16,7 @@
 #include <cassert>
 #include <random>
 #include <unordered_set>
+#include <queue>
 
 class SCDWrapper {
 private:
@@ -41,6 +42,10 @@ private:
     int sinksGrainBndry[LEVELS+1][POINTS];
     long double sinkDissRateDislocation[2][POINTS];
     long double sinkDissRateGrainBndry[2][POINTS]; // only vac and H allowed to emit from sinks, b/c SIA has high binding energy with sinks 
+    unordered_map<multiset<int64>, long double, MultisetHash> combRates[POINTS]; // stores combination rates between pairs of objects in each spatial element
+    SegmentTree<long double> objectRateTree[POINTS];  // stores total reaction rate for each object in spatial element for efficient prefix sum and selection
+    BiMap<int64, int> segTreeIdx[POINTS];  // maps object key to what index it stores its rate on for that spatial element's segment tree (and also does the reverse map)
+    queue<int> unusedSegTreeIndices[POINTS];   // stores which indices in the spatial element's segment tree are unused
     // dissociation rate of V/H from dislocations
     int reactions[8][POINTS];
     int startIndex, endIndex; // the indices of which points this processor is responsible for
@@ -83,8 +88,6 @@ private:
     /* Remove objects that have been reduced to a total number of 0 since the last event only */
     void removeObjectFromMap(const int64); 
     /* remove one object from map */
-    void updateRateToOther(const Object* const, const int);
-    /* when number of this object changes, rates related to this object change also */
     void updateSinks(const int, const int*); /* only for restart use */
     /* process event functions */
     void processDiffEvent(Object*, const int, const char);     /* process diffusion reactionObject */
@@ -114,6 +117,7 @@ private:
     void sizeDistribution(); /* get size distribution */
     void writeReaction(); /* take down reactions for drawing */
     double getHSaturationConcentration() const;
+    int assignSegTreeIdx(int); /* Assigns which index in the segment tree we should store the object's total rate */
 
 public:  
     SCDWrapper();  // constructor: for start ;

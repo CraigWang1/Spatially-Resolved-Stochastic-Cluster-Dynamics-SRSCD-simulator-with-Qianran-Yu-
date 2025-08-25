@@ -5,7 +5,6 @@
 #include<sstream>
 #include<string>
 #include "OneLine.h"
-#include "Bundle.h"
 using namespace std;
 
 /* public function implementations */
@@ -14,9 +13,11 @@ OneLine::OneLine(
                  const Object* const hostObject,
                  const int count,
                  unordered_map<int64, Object*>& mobileObjects,
-                 unordered_map<int64, Object*>& allObjects) :totalRate(0.0)
+                 unordered_map<int64, Object*>& allObjects,
+                 unordered_map<int64, Object*>& objectsInElement,
+                 unordered_map<multiset<int64>, long double, MultisetHash>& combRates) :totalRate(0.0)
 {
-    setOneLine(hostObject, count, mobileObjects, allObjects);
+    setOneLine(hostObject, count, mobileObjects, allObjects, objectsInElement, combRates);
 }
 
 OneLine::OneLine() : diffRToF(0.0), diffRToB(0.0), sinkRDislocation(0.0), sinkRGrainBndry(0.0), SAVR(0.0), recombRER(0.0), recombRLH(0.0), totalRate(0.0)
@@ -32,7 +33,6 @@ Reaction OneLine::selectReaction(
 {
     int index = 0;
     long double tempRate = randRate;
-    std::unordered_map<int64, long double>::iterator iter = secondR.begin();
     if (totalRate < tempRate) {
         randRate -= totalRate;
         return NONE;
@@ -91,63 +91,19 @@ Reaction OneLine::selectReaction(
             ++index;
         }
     }
-    while (iter != secondR.end()) {
-        if (iter->second >= tempRate) {
-            theOtherKey = iter->first;
-            return COMBINATION;
-        }
-        else {
-            tempRate -= iter->second;
-            ++iter;
-        }
-    }
     return ERROR;
-}
-
-void OneLine::addReaction(
-                          const Object* const hostObject,
-                          const Object* const newObject,
-                          unordered_map<int64, Object*>& allObjects,
-                          const int count)
-{
-    double rate = computeCombReaction(hostObject, newObject, allObjects, count);
-    if (rate > 0)
-    {
-        std::pair<int64, double> oneReaction(newObject->getKey(), rate);
-        secondR.insert(oneReaction);
-    }
-    else
-    {
-        secondR.erase(newObject->getKey());
-    }
-}
-
-void OneLine::removeReaction(const int64 deleteKey)
-{
-    secondR.erase(deleteKey);
-}
-
-void OneLine::updateReaction(
-                             Object const * const hostObject,
-                             Object const * const mobileObject,
-                             unordered_map<int64, Object*>& allObjects,
-                             const int n)
-{
-    double rate = computeCombReaction(hostObject, mobileObject, allObjects, n);
-    if (rate > 0)
-        secondR[mobileObject->getKey()] = rate;
-    else
-        secondR.erase(mobileObject->getKey());
 }
 
 void OneLine::updateLine(
                          const Object* const hostObject,
                          const int count,
                          unordered_map<int64, Object*>& mobileObjects,
-                         unordered_map<int64, Object*>& allObjects)
+                         unordered_map<int64, Object*>& allObjects,
+                         unordered_map<int64, Object*>& objectsInElement,
+                         unordered_map<multiset<int64>, long double, MultisetHash>& combRates
+                         )
 {
-    secondR.clear();
-    setOneLine(hostObject, count, mobileObjects, allObjects);
+    setOneLine(hostObject, count, mobileObjects, allObjects, objectsInElement, combRates);
 }
 
 void OneLine::updateDiff(
@@ -173,9 +129,7 @@ const long double OneLine::computeTotalRate()
     for (i = 0; i < LEVELS; i++) {
         totalRate += dissociationR[i];
     }
-    for (iter = secondR.begin(); iter != secondR.end(); ++iter) {
-        totalRate += iter->second;
-    }
+    // Don't count combRate, it's counted in SCDWrapper.cpp instead
     return totalRate;
 }
 
@@ -189,9 +143,6 @@ void OneLine::display(Object const * const hostObject)
         fs <<"(diss)"<< dissociationR[i] << "    ";
     }
     unordered_map<int64, long double>::iterator iter;
-    for (iter = secondR.begin(); iter != secondR.end(); ++iter) {
-        fs << "(" << iter->first << ")" << iter->second << "    ";
-    }
     fs << "(SAV)" << SAVR << "    ";
     fs << "(recomb)" << recombRER << ", " << recombRLH;
     fs << endl;
@@ -203,7 +154,9 @@ void OneLine::setOneLine(
                          const Object* const hostObject,
                          const int count,
                          unordered_map<int64, Object*>& mobileObjects,
-                         unordered_map<int64, Object*>& allObjects)
+                         unordered_map<int64, Object*>& allObjects,
+                         unordered_map<int64, Object*>& objectsInElement,
+                         unordered_map<multiset<int64>, long double, MultisetHash>& combRates)
 {
     computeDiffReaction(hostObject, count, allObjects);
     computeSinkReaction(hostObject, count);
@@ -211,17 +164,13 @@ void OneLine::setOneLine(
         dissociationR[index] = computeDissReaction(hostObject, allObjects, index, count);
     }
     unordered_map<int64, Object*>::iterator iter;
-    for (iter = mobileObjects.begin(); iter != mobileObjects.end(); ++iter) {
+    unordered_map<int64, Object*>& container = (hostObject->getDiff() > 0) ? objectsInElement : mobileObjects;
+    // Mobile objects can combine with both immobile and mobile objects, but immobile objects can only combine with mobile objects
+    for (iter = container.begin(); iter != container.end(); ++iter)
+    {
         double rate = computeCombReaction(hostObject, iter->second, allObjects, count);
-        if (rate > 0)
-        {
-            std::pair<int64, double> oneReaction(iter->first, rate);
-            secondR.insert(oneReaction);
-        }
-        else
-        {
-            secondR.erase(iter->second->getKey());
-        }
+        multiset<int64> pair = {hostObject->getKey(), iter->second->getKey()};
+        combRates[pair] = rate;
     }
     computeSAVReaction(hostObject, count);
     computeRecombReaction(hostObject, count, allObjects);
@@ -496,80 +445,6 @@ long double OneLine::computeDissReaction(
        For now it is only enabled for VH clusters, because chopping off a diss pathway for those doesn't seem to matter much */   
     long double baseDissRate = computeBaseDissReaction(hostObject, index, count);
     return baseDissRate;
-    long double netDissRate = baseDissRate;
-    int attrIndexH = 2;
-    int64 HKey = 1;
-    if (index == attrIndexH && 
-        ((hostObject->getAttri(0) <= -1 && hostObject->getAttri(2) >= 7) ||
-         (hostObject->getAttri(0) >= 20 && hostObject->getAttri(2) >= 41)) )
-    {
-        int predAttr[LEVELS]; // predecessor attributes
-        for (int level = 0; level < LEVELS; level++)
-        {
-            predAttr[level] = hostObject->getAttri(level);
-        }
-        predAttr[attrIndexH]--;  // for an H dissociation
-        int64 predKey = attrToKey(predAttr);
-
-        if (allObjects.find(predKey) != allObjects.end() && allObjects[predKey]->getNumber(count) > 0 &&
-            allObjects.find(HKey) != allObjects.end() && allObjects[HKey]->getNumber(count) > 0)
-        {
-            Object* predObj = allObjects[predKey];
-            Object* HObj = allObjects[HKey];
-            OneLine* predLine = predObj->lines[count];
-            long double baseCombRate = computeBaseCombReaction(predObj, HObj, count);
-            if (baseCombRate > baseDissRate)
-            {
-                if (predLine != nullptr)
-                    predLine->setCombReaction(HKey, baseCombRate - baseDissRate);
-                netDissRate = 0.0;
-            }
-            else if (baseDissRate > baseCombRate)
-            {
-                if (predLine != nullptr)
-                    predLine->setCombReaction(HKey, 0.0);
-                netDissRate = baseDissRate - baseCombRate;
-            }
-        }
-        else
-        {
-            Object* predObj;
-            Object* HObj;
-            if (allObjects.find(predKey) == allObjects.end() || allObjects[predKey]->getNumber(count) <= 0)
-            {
-                predObj = new Object(predKey, count);
-            }
-            else
-            {
-                predObj = allObjects[predKey];
-            }
-            if (allObjects.find(HKey) == allObjects.end() || allObjects[HKey]->getNumber(count) <= 0)
-            {
-                HObj = new Object(HKey, count);
-            }
-            else
-            {
-                HObj = allObjects[HKey];
-            }
-
-            long double baseCombRate = computeBaseCombReaction(predObj, HObj, count);
-            if (baseCombRate > baseDissRate)
-            {
-                netDissRate = 0.0;
-            }
-
-            if (allObjects.find(predKey) == allObjects.end() || allObjects[predKey]->getNumber(count) <= 0)
-            {
-                delete predObj;
-            }   
-            if (allObjects.find(HKey) == allObjects.end() || allObjects[HKey]->getNumber(count) <= 0)
-            {
-                delete HObj;
-            }
-        }
-    }
-
-    return netDissRate;
 }
 
 long double OneLine::computeBaseCombReaction(
@@ -661,51 +536,6 @@ long double OneLine::computeCombReaction(
        For now it is only enabled for VH clusters, because chopping off a diss pathway for those doesn't seem to matter much */
     long double baseCombRate = computeBaseCombReaction(hostObject, mobileObject, count);
     return baseCombRate;
-    long double netCombRate = baseCombRate;
-    int attrIndexH = 2;
-    if (((hostObject->getAttri(0) <= -1 && hostObject->getAttri(2) >= 6) ||
-        (hostObject->getAttri(0) >= 20 && hostObject->getAttri(2) >= 40)) && 
-        mobileObject->getAttri(0) == 0 && mobileObject->getAttri(2) == 1)
-    {
-        int prodAttr[LEVELS];
-        for (int level = 0; level < LEVELS; level++)
-        {
-            prodAttr[level] = hostObject->getAttri(level) + mobileObject->getAttri(level);
-        }
-        int64 prodKey = attrToKey(prodAttr);
-
-        if (allObjects.find(prodKey) != allObjects.end() && allObjects[prodKey]->getNumber(count) > 0)
-        {
-            Object* prodObj = allObjects[prodKey];
-            OneLine* prodLine = prodObj->lines[count];
-            long double baseDissRate = computeBaseDissReaction(prodObj, attrIndexH, count);
-            if (baseCombRate > baseDissRate)
-            {
-                if (prodLine != nullptr)
-                    prodLine->setDissReaction(attrIndexH, 0.0);
-                netCombRate = baseCombRate - baseDissRate;
-            }
-            else if (baseDissRate > baseCombRate)
-            {
-                if (prodLine != nullptr)
-                    prodLine->setDissReaction(attrIndexH, baseDissRate - baseCombRate);
-                netCombRate = 0.0;
-            }
-        }
-        else
-        {
-            /* Product doesn't exit */
-            Object* tempProdObj = new Object(prodKey, count);
-            long double baseDissRate = computeBaseDissReaction(tempProdObj, attrIndexH, count);
-            if (baseDissRate > baseCombRate)
-            {
-                netCombRate = 0.0;
-            }
-            delete tempProdObj;
-        }
-    }
-
-    return netCombRate;
 }
 
 void OneLine::computeSAVReaction(
@@ -831,17 +661,4 @@ double OneLine::computeDimensionTerm(
             break;
     }
     return term;
-}
-
-void OneLine::setDissReaction(const int index, long double rate)
-{
-    dissociationR[index] = rate;
-}
-
-void OneLine::setCombReaction(const int64 mobileObjectKey, long double rate)
-{
-    if (rate > 0)
-        secondR[mobileObjectKey] = rate;
-    else
-        secondR.erase(mobileObjectKey);
 }
