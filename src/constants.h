@@ -41,9 +41,9 @@
 #define C_DENSITY 10        // [appm] C-atom density
 #define GAMMA 1.0           // Fraction of surface emission.
 #define TDE 90              // [eV] Threshold displacement energy for W.
-#define HEAT_OF_SOLUTION 0.95   // [eV] Heat of solution of H in W.
-#define SAV_ENERGY 1.05         // [eV] energy that controls SAV rate
-#define H_DEPOSITION_ENERGY 113.0 // [eV] energy of an H atom in the incident flux
+#define HEAT_OF_SOLUTION 1.04   // [eV] Heat of solution of H in W.
+#define SAV_ENERGY 1.03         // [eV] energy that controls SAV rate
+#define H_DEPOSITION_ENERGY 110.0 // [eV] energy of an H atom in the incident flux
 #define H_MIGRATION_ENERGY 0.25   // [eV] energy needed for an H to diffuse through lattice
 #define H_FORM_E 1.04           // [eV] Heat of solution of H in W (formation energy of H)
 #define V_FORM_E 3.23           // [eV] Formation Energy of V1
@@ -51,7 +51,7 @@
 #define HH_BIND_E 0.02          // [eV] Binding Energy of H-H
 // Run parameters:
 #define ION               // Irradiation type.
-#define TOTAL_TIME 20000 // [s] Total simulated time.
+#define TOTAL_TIME 10000 // [s] Total simulated time.
 #define TOTAL_DPA 2        // Total DPA damage to reach.
 #define DIVIDING_AREA 0.64e-12  // [cm^2] Area of the surface in between volume elements.
 //#define RATIO_HE 1.1       // [appm/dpa] He-to-dpa ratio.
