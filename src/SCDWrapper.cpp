@@ -637,6 +637,12 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
 
 void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
 {
+    // If the object is nothing (eg. product of 1V + 1SIA comb), don't process it
+    if (key == 0)
+    {
+        return;
+    }
+
     /* If the object exists, add to it. Otherwise create the object. */
     Object* anObject;
     if (allObjects.find(key) != allObjects.end()) 
