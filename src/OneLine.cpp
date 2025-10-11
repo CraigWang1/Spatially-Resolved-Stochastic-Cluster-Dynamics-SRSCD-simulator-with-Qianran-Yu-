@@ -291,7 +291,6 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         frontConcentration = objectN[1] / ELONGATED_VOLUME;
         backConcentration = objectN[2] / ELONGATED_VOLUME;
     }
-    const int64 SIAKey = 1000000;
 
     // Account for special cases from 2020 Zhenhou Wang for hydrogen moving between surface and bulk
     if((count == SUBSURFACE_INDEX && hostObject->getKey() == 1) ||
@@ -347,28 +346,6 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
             return;
         }
     }
-    // SIA moving between surface and bulk (assume it has the same equations as hydrogen)
-    else if (count == SUBSURFACE_INDEX && hostObject->getKey() == SIAKey)
-    {
-        double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);
-        double jumpingDist = maxSurfaceConc / 6 / DENSITY;
-        double siaMigrationEnergy = 0.009; // [eV]
-        double freq = NU0 * exp(-siaMigrationEnergy / KB / TEMPERATURE);
-    
-        prefactor = freq * jumpingDist * DIVIDING_AREA;
-        diffRToF = prefactor * concentration;
-        diffRToB = 0.0;
-
-        // Normal Diffusion to the first bulk element
-        if (concentration > backConcentration)
-        {
-            double lengthb = (SUBSURFACE_THICKNESS + FIRST_BULK_THICKNESS)/2.0 * NM_TO_CM; // first element to second element distance (20nm) 
-            /* if diffusable */
-            prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthb;
-            diffRToB = prefactor*(concentration - backConcentration);
-        }
-        return;
-    }
     else // avoid unnecessary calculation if we are processing special cases
     {
         /* by having two diffusion rates, this rate will never be less than 0 */
@@ -419,8 +396,8 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         * Object not allowed to diffuse out through the front
         * Allow neighbouring elements with 1H each to diffuse into each other like real life.
         */
-        if ((concentration > frontConcentration)
-             && count != SURFACE_INDEX && count != SUBSURFACE_INDEX) 
+        if (concentration > frontConcentration && count != SURFACE_INDEX  
+             && (count != SUBSURFACE_INDEX || (hostObject->getAttri(0) > 0 && hostObject->getAttri(2) == 0))) 
         {
             /* if diffusable, surface objects diffusing into vacuum is considered */
             prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthf;

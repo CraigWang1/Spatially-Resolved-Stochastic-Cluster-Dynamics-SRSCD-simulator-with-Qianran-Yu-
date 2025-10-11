@@ -166,7 +166,7 @@ b, a = scipy.signal.butter(5, 2.5, fs=fs)
 
 # Apply the filter using Gustafsson's method
 smoothed_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c[2:], method="gust")
-smoothed_hydrogen_c = scipy.signal.savgol_filter(trapped_hydrogen_c[2:], 100, 8)
+smoothed_hydrogen_c = scipy.signal.savgol_filter(trapped_hydrogen_c[2:], 175, 5)
 
 concentrations = [c for c in concentrations]
 

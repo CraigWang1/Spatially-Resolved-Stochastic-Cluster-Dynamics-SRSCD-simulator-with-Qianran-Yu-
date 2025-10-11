@@ -10,7 +10,7 @@ from math import floor, ceil
 from scipy.signal import butter, filtfilt
 from make_speciesfile import combine_species_files
 
-DIVIDING_AREA = 5.0e-16 # m^2
+DIVIDING_AREA = 0.64e-16 # m^2
 
 times = []
 desorbed = []
@@ -49,10 +49,10 @@ print(total_fluence)
 
 temperatures = [350, 360, 370, 380, 390, 400, 410]
 desorbed_flux = [0, 0, 0, 0, 0, 0, 0]
-for i in range(len(times)-200):
+for i in range(len(times)-10):
 	temperatures.append(350 + times[i] * 0.5) # 0.5 K/s heating
-	dt = times[i+200] - times[i]
-	dN = desorbed[i+200] - desorbed[i]
+	dt = times[i+10] - times[i]
+	dN = desorbed[i+10] - desorbed[i]
 	desorbed_flux.append(dN/dt/DIVIDING_AREA)
 
 # temperatures.append(800)
