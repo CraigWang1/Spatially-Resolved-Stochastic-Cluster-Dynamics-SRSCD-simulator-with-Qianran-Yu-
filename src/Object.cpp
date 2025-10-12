@@ -382,8 +382,10 @@ void Object::computeBindTerm()
             else if (abs(attributes[0]) == 7) { // 7I
                 energy_b = 5.39;
             }
-            else if (abs(attributes[0])>7) // > 7I
+            else if (abs(attributes[0])>7) { // > 7I
                 energy_b = efi + (eb2i - efi)*(pow(fabs((double)attributes[0]), 0.6666667) - pow((fabs((double)attributes[0]) - 1.0), 0.6666667)) / 0.5847;
+            }
+            energy_d[0] = energy_b + emi;
         }
         else if (attributes[0]<0) { // Vacancies.
             if (abs(attributes[0]) == 1) { // 1V
@@ -410,10 +412,11 @@ void Object::computeBindTerm()
             else if (abs(attributes[0]) == 8) { // 8V
                 energy_b = 0.88;
             }
-            else if (abs(attributes[0])>8) // > 8V
+            else if (abs(attributes[0])>8) { // > 8V
                 energy_b = efv + (eb2v - efv)*(pow(fabs((double)attributes[0]), 0.6666667) - pow((fabs((double)attributes[0]) - 1.0), 0.6666667)) / 0.5874;
+            }
+            energy_d[0] = energy_b + emv;
         }
-        energy_d[0] = energy_b;
         bind[0] = attfreq*exp(-energy_d[0] / KB / TEMPERATURE);
     }
     // He-defect clusters:

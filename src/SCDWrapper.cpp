@@ -580,12 +580,12 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
     if(type == 0)
     {
         excessTerm = 1.0-numV/(DENSITY*volume*exp(-efV/KB/TEMPERATURE));
-        if (sinksDislocation[0][point] > 0 && excessTerm > 0)
+        if (excessTerm > 0)  // Dislocations and grain boundaries are always a source of vacancy emission
             sinkDissRateDislocation[type][point] = 2.0*PI*volume*DISLOCATION/b*NU0*exp(-(ebVDislocation+vacMigrationEnergy)/KB/TEMPERATURE)*excessTerm;
         else
             sinkDissRateDislocation[type][point] = 0;
 
-        if (sinksGrainBndry[0][point] > 0 && excessTerm > 0)
+        if (excessTerm > 0)
             sinkDissRateGrainBndry[type][point] = 6.0*volume/GRAIN_SIZE/b/b*NU0*exp(-(ebVGrainBndry+vacMigrationEnergy)/KB/TEMPERATURE)*excessTerm;
         else
             sinkDissRateGrainBndry[type][point] = 0;
