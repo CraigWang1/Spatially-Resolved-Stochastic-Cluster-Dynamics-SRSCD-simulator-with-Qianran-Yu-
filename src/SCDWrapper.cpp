@@ -630,8 +630,6 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
         if (newObject->getAttri(0) == 0 && newObject->getAttri(2) > 0) {
             HObjects.insert(newNode);
         } /* Keep track of nH objects */
-        if (newObject->getKey() == 1 && newObject->getNumber(0) > 0)
-            damage.updateDamageTwo(0, allObjects);
     }/* if this object is valid, add it to map */
 }
 
