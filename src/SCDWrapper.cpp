@@ -717,6 +717,7 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
         if (number > 0) {
             tempLine = new OneLine(hostObject, count, mobileObjects, allObjects);
             hostObject->lines[count] = tempLine;
+            objectRateTree[count].batch_update_rate(hostObject->getKey(), tempLine->computeTotalRate());
         }
     }
 
@@ -764,6 +765,7 @@ void SCDWrapper::updateRateToOther(Object const * const mobileObject, const int 
             else {
                 tempLine->updateReaction(hostObject, mobileObject, allObjects, count);
             }
+            objectRateTree[count].batch_update_rate(hostObject->getKey(), tempLine->computeTotalRate());
         }
     }
 }
