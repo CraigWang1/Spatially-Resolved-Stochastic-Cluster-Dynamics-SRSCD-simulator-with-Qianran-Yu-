@@ -560,7 +560,7 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
     double b = jumped; //burger's vector 2.8e-8 cm
     double ebHDislocation = 0.55, ebHGrainBndry = 0.91; //binding and migration energy of hydrogen
     double ebVDislocation = 1.0, ebVGrainBndry = 1.53; //binding and migration energy of vacancy
-    double efH = H_FORM_E;  // [eV] energy of formation for hydrogen
+    double efH = HEAT_OF_SOLUTION;  // [eV] energy of formation for hydrogen
     double efV = 3.23;      // [eV] energy of formation for vacancies
     double excessTerm = 1;
     int numH = 0;
@@ -1554,13 +1554,13 @@ double SCDWrapper::getHSaturationConcentration() const
 
         if (tempObj->getKey() == 2 && !dimer)
         {
-            concentration += DENSITY * 8 * exp(-(2 * H_FORM_E - HH_BIND_E) / KB / TEMPERATURE);
+            concentration += DENSITY * 8 * exp(-(2 * HEAT_OF_SOLUTION - HH_BIND_E) / KB / TEMPERATURE);
             dimer = true;
         }
         // if mV-nH objects are present
         if (tempObj->getAttri(0) <= -1 && tempObj->getAttri(2) >= 1 && !vhpair)
         {
-            concentration += DENSITY * 8 * exp(-(H_FORM_E + V_FORM_E - VH_BIND_E) / KB / TEMPERATURE);
+            concentration += DENSITY * 8 * exp(-(HEAT_OF_SOLUTION + V_FORM_E - VH_BIND_E) / KB / TEMPERATURE);
             vhpair = true;
         }
     }

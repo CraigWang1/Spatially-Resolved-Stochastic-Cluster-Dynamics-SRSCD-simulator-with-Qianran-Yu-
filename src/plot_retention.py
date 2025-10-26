@@ -11,15 +11,15 @@ from scipy.signal import butter, filtfilt
 from make_speciesfile import combine_species_files
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 627                            # num spatial elements in the simulation (1 surface + 100 bulk)
+POINTS = 739                            # num spatial elements in the simulation (1 surface + 100 bulk)
 FIRST_ELONGATED_INDEX = 8
 NM_TO_CM = 1e-7
 NM_TO_UM = 1e-3
 DIVIDING_AREA = 0.64e-12                    # [cm]
 SURFACE_THICKNESS = 0.544                # [nm]
-FIRST_BULK_THICKNESS = 8                 # [nm]
-ELEMENT_THICKNESS = 8                   # [nm]
-ELONGATED_ELEMENT_THICKNESS = 8        # [nm]
+FIRST_BULK_THICKNESS = 6.77                 # [nm]
+ELEMENT_THICKNESS = 6.77                   # [nm]
+ELONGATED_ELEMENT_THICKNESS = 6.77        # [nm]
 VOLUME = DIVIDING_AREA * ELEMENT_THICKNESS * NM_TO_CM     
 ELONGATED_VOLUME = DIVIDING_AREA * ELONGATED_ELEMENT_THICKNESS * NM_TO_CM                      # volume of a spatial element [cm^3]
 SURFACE_VOLUME = DIVIDING_AREA * SURFACE_THICKNESS * NM_TO_CM # [cm^3]
@@ -140,9 +140,9 @@ with open("sink0.txt") as f:
 		line_hold = line_hold.split()
 		numH.append(int(line_hold[3]) + int(line_hold[7]))
 	trapped_hydrogen_c += np.array(numH).astype(float)
-	# print(sum(numH)/np.sum(trapped_hydrogen_c))
+	print(sum(numH)/np.sum(trapped_hydrogen_c))
 print("Retained fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4))
-print(trapped_hydrogen_c)
+# print(trapped_hydrogen_c)
 trapped_hydrogen_c[2] /= FIRST_BULK_VOLUME
 trapped_hydrogen_c[3:FIRST_ELONGATED_INDEX] /= VOLUME
 trapped_hydrogen_c[FIRST_ELONGATED_INDEX:] /= ELONGATED_VOLUME
