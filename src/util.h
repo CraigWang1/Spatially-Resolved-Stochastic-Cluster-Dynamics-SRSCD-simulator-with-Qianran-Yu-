@@ -207,6 +207,19 @@ public:
             recompute_all(root);
             dirty = false;
         }
+
+        // Apply any pending inserts or erases before inserting
+        for (auto& e : pending_erases) {
+            bool erased = false;
+            root = erase(root, e, erased);
+        }
+        pending_erases.clear();
+
+        for (auto& p : pending_inserts) {
+            root = insert(root, p.first, p.second);
+        }
+        pending_inserts.clear();
+
         root = insert(root, id, rate);
     }
 
