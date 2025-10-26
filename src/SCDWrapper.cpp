@@ -22,6 +22,9 @@ SCDWrapper::SCDWrapper():allObjects(), engine(rd()), distribution(0.0L, 1.0L), d
 {
     formationE[1] = V_FORM_E; 
 
+    /* initialize sink numbers */
+    setSinks();
+
     for (int i = 0; i < POINTS; ++i) {
         computeMatrixRate(i);
     } /* initialized matrix rate in every element */
@@ -33,8 +36,6 @@ SCDWrapper::SCDWrapper():allObjects(), engine(rd()), distribution(0.0L, 1.0L), d
             reactions[i][j] = 0;
         }
     }
-    /* initialize sink numbers */
-    setSinks();
 
     lastElemSaturated = false;
     numHDesorbed = 0;
@@ -552,6 +553,10 @@ void SCDWrapper::setSinks()
             sinkDissRateDislocation[i][j] = 0;
             sinkDissRateGrainBndry[i][j] = 0;
         }
+    }
+    for (i = 0; i < POINTS; ++i){
+        computeSinkDissRate(0, i);    // vacancy diss
+        computeSinkDissRate(1, i);    // H diss
     }
 }
 
