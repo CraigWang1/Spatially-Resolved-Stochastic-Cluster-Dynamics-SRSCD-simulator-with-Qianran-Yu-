@@ -30,6 +30,7 @@ private:
     unordered_map<int, double> HSaturationLimit; // look up table for HSaturationLimit
     vector<BoundaryChange> leftBoundaryChangeQ, rightBoundaryChangeQ;
     unordered_set<int64> affectedObjects;
+    unordered_set<int> affectedIndices;
 
     std::random_device rd; // Random device to seed the engine
     std::default_random_engine engine; // Random number engine

@@ -349,7 +349,10 @@ void SCDWrapper::processEvent(
     }
 
     // Keep track of affected reaction rates
-    objectRateTree[n].finalize_batch();
+    for (int n : affectedIndices) {
+        objectRateTree[n].finalize_batch();
+    }
+    affectedIndices.clear();
     removeDestroyedObjects();
     updateMatrixRate(n, reaction);
     computeDomainRate();
@@ -688,6 +691,7 @@ void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
             BoundaryChange(key, n, number)); 
 
     affectedObjects.insert(key);
+    affectedIndices.insert(n);
 }
 
 void SCDWrapper::reduceFromObjectMap(const int64 key, const int n, const int number)
