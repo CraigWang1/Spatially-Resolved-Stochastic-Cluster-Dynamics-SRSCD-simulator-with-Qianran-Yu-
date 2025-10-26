@@ -7,6 +7,7 @@ int Equilikely(int a, int b);
 int Geometric(double p);
 int Pascal(int n, double p);
 int Poisson(double m);
+int Factorial(int n);
 
 double Uniform(double a, double b);
 double Exponential(double m);
@@ -15,5 +16,7 @@ double Normal(double m, double s);
 double Lognormal(double a, double b);
 double Chisquare(int n);
 double Student(int n);
+double PoissonProbability(double mean, int num);
+double PoissonCDF(double mean, int num);
 
 #endif

@@ -6,6 +6,7 @@
 #include<string>
 #include "OneLine.h"
 #include "Bundle.h"
+#include "rvgs.h"
 using namespace std;
 
 /* public function implementations */
@@ -715,9 +716,19 @@ void OneLine::computeSAVReaction(
                 double tetrahedralSiteConc = DENSITY * 6.0;
                 double maxSolubilityConc = tetrahedralSiteConc * exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
                 double maxNumH = maxSolubilityConc * volume;
-                double extraH = hostObject->getNumber(count) - maxNumH;
-                if (extraH > 0)
-                    SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * extraH;
+                int numH = hostObject->getNumber(count);
+
+                if (numH > maxNumH)
+                {
+                    // Critical p-value to become oversaturated
+                    double pCrit = 0.01;
+                    double pValue = 1 - PoissonCDF(maxNumH, numH - 1);
+                    if (pValue < pCrit)
+                    {
+                        int extraH = ceil(numH - maxNumH);
+                        SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * extraH;
+                    }
+                }
             }
             // Overpressurized VH cluster is always SAV candidate
             else

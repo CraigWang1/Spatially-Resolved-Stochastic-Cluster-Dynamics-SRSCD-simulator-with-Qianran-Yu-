@@ -64,6 +64,21 @@ int Pascal(int n, double p)
     return (x);
 }
 
+int Factorial(int n)
+/* =================================================
+ * Computes the factorial of a given nonnegative integer.
+ * NOTE: use n >= 0
+ * =================================================
+ */
+{
+    int ans = 1;
+    for (int i = 2; i < n + 1; i++)
+    {
+        ans *= i;
+    }
+    return ans;
+}
+
 int Poisson(double m)
 /* ==================================================
  * Returns a Poisson distributed non-negative integer.
@@ -79,6 +94,33 @@ int Poisson(double m)
         x++;
     }
     return (x - 1);
+}
+
+double PoissonProbability(double mean, int num)
+/* ==================================================
+ * Returns the probability of the event happening num
+ * amount of times.
+ * NOTE: use mean > 0, num > 0
+ * ==================================================
+ */
+{
+    return pow(mean, num)*exp(-mean)/Factorial(num);
+}
+
+double PoissonCDF(double mean, int num)
+/* ==================================================
+ * Returns the probability of the event happening num
+ * times or less.
+ * NOTE: use mean > 0, num > 0
+ * ==================================================
+ */
+{
+    double total = 0;
+    for (int i = 0; i <= num; i++)
+    {
+        total += PoissonProbability(mean, i);
+    }
+    return total;
 }
 
 double Uniform(double a, double b)
