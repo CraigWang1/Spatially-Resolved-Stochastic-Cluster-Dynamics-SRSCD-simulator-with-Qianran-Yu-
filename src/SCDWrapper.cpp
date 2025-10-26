@@ -107,16 +107,7 @@ void SCDWrapper::computeMatrixRate(const int n)
     /* Qianran 0925 */
     //cout << "Element " << n + 1 << endl;
     matrixRate[n] = 0.0;
-    unordered_map<int64, Object*>::iterator iter;
-    unordered_map<int64, Object*>& objectsInThisElement = objectsInElement[n];
-    for (iter = objectsInThisElement.begin(); iter != objectsInThisElement.end(); ++iter) {
-        Object* tempObject = iter->second;
-        OneLine* tempLine = tempObject->lines[n];
-        if (tempLine != nullptr) {
-            matrixRate[n] += tempLine->computeTotalRate();
-            //tempLine->display(tempObject);/* Qianran 0925 */
-        }
-    }
+    matrixRate[n] += objectRateTree[n].get_total_rate();
     matrixRate[n] += damage.getTotalDamage(n);
     matrixRate[n] += sinkDissRateDislocation[0][n];
     matrixRate[n] += sinkDissRateDislocation[1][n];
@@ -213,18 +204,20 @@ Object* SCDWrapper::selectDomainReaction(
     if (pointIndex > startIndex)
         tempRandRate -= matrixRateTree.sum(startIndex, pointIndex - 1);
 
-    // Select the reaction inside of our spatial element
+    // See if the reaction is in an object in our spatial element
     reaction = NONE;
-    unordered_map<int64, Object*>& objectsInThisElement = objectsInElement[pointIndex];
-    unordered_map<int64, Object*>::iterator iter = objectsInThisElement.begin();
-    while (reaction == NONE && iter != objectsInThisElement.end()) {
-        tempObject = iter->second;
+    int64 objKey = objectRateTree[pointIndex].find_prefix_ge(tempRandRate);
+    if (objKey != 0) {
+        tempObject = allObjects[objKey];
         tempLine = tempObject->lines[pointIndex];
         if (tempLine != nullptr) {
             reaction = tempLine->selectReaction(tempObject, theOtherKey, tempRandRate);
+            if (reaction == NONE)
+                cout << "bre" << endl;
         }
-        ++iter;
     }
+
+    // See if the reaction is a non-object event
     if (reaction == NONE) {
         reaction = damage.selectDamage(pointIndex, tempRandRate);
     }
@@ -356,6 +349,7 @@ void SCDWrapper::processEvent(
     }
 
     // Keep track of affected reaction rates
+    objectRateTree[n].finalize_batch();
     removeDestroyedObjects();
     updateMatrixRate(n, reaction);
     computeDomainRate();
@@ -711,10 +705,12 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
     if (tempLine != nullptr) {
         if (number > 0) {
             tempLine->updateLine(hostObject, count, mobileObjects, allObjects);
+            objectRateTree[count].batch_update_rate(hostObject->getKey(), tempLine->computeTotalRate());
         }
         else {
             delete tempLine;
             hostObject->lines[count] = nullptr;
+            objectRateTree[count].batch_erase(hostObject->getKey());
         }
     }
     else {
@@ -733,12 +729,14 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
             OneLine* tempLine = hostObject->lines[count - 1];
             if(tempLine != nullptr){
                 tempLine->updateDiff(hostObject, count - 1, allObjects);
+                objectRateTree[count - 1].insert_safe(hostObject->getKey(), tempLine->computeTotalRate());
             }
         }
         if((count + 1) < POINTS){
             OneLine* tempLine = hostObject->lines[count + 1];
             if(tempLine != nullptr){
                 tempLine->updateDiff(hostObject, count + 1, allObjects);
+                objectRateTree[count + 1].insert_safe(hostObject->getKey(), tempLine->computeTotalRate());
             }
         }
     }
@@ -1217,6 +1215,11 @@ void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
         }
     }
     ofile.close();
+
+    // Finish initializing object rate tree to account for above changes
+    for (int i = 0; i < POINTS; i++) {
+        srscd->objectRateTree[i].finalize_batch();
+    }
 
     /* update sink numbers */
     ifstream file("sink.txt");
