@@ -82,7 +82,7 @@ int main(int argc, char** argv)
     
     while(!done)
     {
-        if (TEMP_INCREASE_RATE > 0 && advTime - prevRecalculateTDSRatesTime > 1) // if doing thermal desorption, recalculate thermal properties once per second (not all the time) to reduce computational burden (stepwise temperature increase)
+        if (abs(TEMP_INCREASE_RATE) > 0 && advTime - prevRecalculateTDSRatesTime > 1) // if doing thermal desorption, recalculate thermal properties once per second (not all the time) to reduce computational burden (stepwise temperature increase)
         {
             TEMPERATURE = startingTemp + advTime * TEMP_INCREASE_RATE;
             srscd->recalculateAllRates();

@@ -1018,7 +1018,7 @@ void SCDWrapper::processRecombEvent(Object* hostObject, const int n, bool ER, do
     {
         reduceFromObjectMap(hostObject->getKey(), n, 2);
         numHDesorbed += 2;
-        if (TEMP_INCREASE_RATE > 0) // when doing thermal desorption
+        if (abs(TEMP_INCREASE_RATE) > 0) // when doing thermal desorption
             writeDesorbedFile(time);
     }
 }

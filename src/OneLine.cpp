@@ -418,7 +418,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         else {
             diffRToB = 0.0;
         }
-        if (TEMP_INCREASE_RATE > 0 && count == POINTS - 1) { // if doing TDS, don't let stuff escape thru the back, so we can count it as it emerges from surface
+        if (abs(TEMP_INCREASE_RATE) > 0 && count == POINTS - 1) { // if doing TDS, don't let stuff escape thru the back, so we can count it as it emerges from surface
             diffRToB = 0.0;
         }
         if (hostObject->getAttri(0) > 0 && hostObject->getAttri(2) == 0 && count == POINTS - 1) {
