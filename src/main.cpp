@@ -113,8 +113,7 @@ int main(int argc, char** argv)
             }
             if (done)
             {
-                cout << "Finished. Bye" << endl;
-                MPI_Abort(MPI_COMM_WORLD, 0);
+                MPI_Bcast(&done, 1, MPI_C_BOOL, 0, MPI_COMM_WORLD);
             }
         }
 
@@ -228,7 +227,7 @@ int main(int argc, char** argv)
         }
 
         ++iStep;
-        if(iStep%PSTEPS == 0)
+        if(iStep%PSTEPS == 0 || done)
         {
             srscd->writeFile(advTime, iStep, threadID);
 
@@ -283,6 +282,10 @@ int main(int argc, char** argv)
                 prev_eta_min = eta_min;
                 prev_progress = progress;
                 st.close();
+            }
+            if (done)
+            {
+                cout << "\n" << endl;
             }
 
             // Transfer spatial elements between processors to increase parallel efficiency
@@ -536,11 +539,18 @@ int main(int argc, char** argv)
             }
         }
     }
+    srscd->writeFile(advTime, iStep, threadID);
     srscd->drawSpeciesAndReactions(advTime);
     srscd->drawDamage(advTime);
     srscd->writeVacancy();
-    srscd->writeSinkFile(advTime, iStep, threadID);
-    cout<<"dpa = "<<dpa<<endl;
-    cout << "Finished, Bye" << endl;
+
+    MPI_Barrier(MPI_COMM_WORLD);  // Make sure all other threads are done printing if applicable
+    if (threadID == rootThreadID)
+    {
+        cout << "dpa = " << dpa << endl;
+        cout << "Finished, Bye" << endl;
+    }
+    MPI_Finalize();
+
     return 0;
 }
