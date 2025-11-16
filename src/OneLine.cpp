@@ -725,7 +725,7 @@ void OneLine::computeSAVReaction(
                     double pValue = 1 - PoissonCDF(maxNumH, numH - 1);
                     if (pValue < pCrit)
                     {
-                        int extraH = ceil(numH - maxNumH);
+                        double extraH = numH - maxNumH;
                         SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * extraH;
                     }
                 }
