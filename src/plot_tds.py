@@ -47,25 +47,20 @@ for i in range(len(experiment_temperatures)-1):
 print(total_fluence)
 
 
-temperatures = [350, 360, 370, 380, 390, 400, 410]
-desorbed_flux = [0, 0, 0, 0, 0, 0, 0]
-for i in range(len(times)-10):
+temperatures = [350]
+desorbed_flux = [0]
+window_size = 20
+for i in range(window_size, len(times)-window_size):
 	temperatures.append(350 + times[i] * 0.5) # 0.5 K/s heating
-	dt = times[i+10] - times[i]
-	dN = desorbed[i+10] - desorbed[i]
+	dt = times[i+window_size] - times[i-window_size]
+	dN = desorbed[i+window_size] - desorbed[i-window_size]
 	desorbed_flux.append(dN/dt/DIVIDING_AREA)
 
-# temperatures.append(800)
-# desorbed_flux.append(0)
-# temperatures.append(1050)
-# desorbed_flux.append(0)
+temperatures.insert(1, temperatures[0]+(temperatures[1]-temperatures[0])*0.7)
+desorbed_flux.insert(1, 0)
 
-weight = 0.01
-current = desorbed_flux[0]
-avg = [current]
-for i in range(1, len(temperatures)):
-	current = weight * desorbed_flux[i] + (1-weight) * current
-	avg.append(current)
+temperatures.pop(0)
+desorbed_flux.pop(0)
 
 plt.plot(temperatures, desorbed_flux, label="Simulation", color='b')
 plt.plot(experiment_temperatures, experiment_desorbed_flux, color='r', label="Experiment")
