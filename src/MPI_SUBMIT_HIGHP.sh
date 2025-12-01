@@ -13,6 +13,21 @@
 # Notify when
 #$ -m bea
 
+# get the folder name the script is run from
+FOLDER_NAME=$(basename "$PWD")
+
+# create a timestamp: eg. 2025-01-13_14-52-30
+TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+
+# combined destination folder
+DEST="${HOME}/${FOLDER_NAME}_${TIMESTAMP}"
+
+# make the folder
+mkdir -p "$DEST"
+
+# Copy setup configuration for logging
+cp restart.txt sink.txt constants.h "$DEST"/
+
 # echo job info on joblog:
 echo "Job $JOB_ID started on:   " `hostname -s`
 echo "Job $JOB_ID started on:   " `date `
@@ -36,5 +51,9 @@ echo " "
 echo "Job $JOB_ID ended on:   " `hostname -s`
 echo "Job $JOB_ID ended on:   " `date `
 echo " "
+
+# log output files
+cp species*.txt sink*.txt Desorbed.txt "$DEST"/
+
 ###### MPI_SUBMIT.sh STOP ######################
 
