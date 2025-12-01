@@ -277,18 +277,16 @@ void Object::computeDiffCoeff()
         }
         else if (attributes[0] < 0) { // Vacancies.
             if (abs(attributes[0]) == 1) { // 1V
-                
-                prefactor = 1.77e-2;
-                energy_m = 1.29;
+                prefactor = 0.04;  // https://scipub.euro-fusion.org/wp-content/uploads/eurofusion/WPPFCPR17_18984_submitted-1.pdf
+                energy_m = 1.78;
             }
-            else if (abs(attributes[0]) == 2) { // >1V
-                
-                prefactor = 2.91e-5;
-                energy_m = 1.66;
-            }else if (abs(attributes[0]) > 2) { // >1V
-                
+            else if (abs(attributes[0]) == 2) {
+                prefactor = 0.04;
+                energy_m = 1.65;
+            }
+            else if (abs(attributes[0]) > 2) { // 2V
                 prefactor = gv*jumped*jumped*fv*NU0*pow(0.001, fabs(attributes[0]) - 1.0);
-                energy_m = 1.66;
+                energy_m = 1.78;
             }
         }
     }
@@ -527,10 +525,10 @@ void Object::computeBindTerm()
             else if (numV == 12)
                 maxBindE = 1.69;
             else
-                maxBindE = 1.86;
+                maxBindE = 2.07965 - 1.46934 * exp(-0.538964 * numV);
 
             // Regression so that when H = 1, energy_b = maxBindE and when we reach maxSurfHDensity, energy_b = 0
-            energy_b = -maxBindE / pow(fabs(maxSurfHDensity - 1.0/surfArea), 1.1) * pow(fabs(surfHDensity - 1.0/surfArea), 1.1) + maxBindE;
+            energy_b = -maxBindE / pow(fabs(maxSurfHDensity - 1.0/surfArea), 1.05) * pow(fabs(surfHDensity - 1.0/surfArea), 1.05) + maxBindE;
             energy_d[2] = energy_b + emh;
             bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
             bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);

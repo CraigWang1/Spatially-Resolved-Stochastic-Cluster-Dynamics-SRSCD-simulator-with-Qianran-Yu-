@@ -41,7 +41,7 @@
 #define C_DENSITY 10        // [appm] C-atom density
 #define GAMMA 1.0           // Fraction of surface emission.
 #define TDE 90              // [eV] Threshold displacement energy for W.
-#define HEAT_OF_SOLUTION 1.04   // [eV] Heat of solution of H in W.
+#define HEAT_OF_SOLUTION 0.90   // [eV] Heat of solution of H in W.
 #define SAV_ENERGY 1.03         // [eV] energy that controls SAV rate
 #define H_DEPOSITION_ENERGY 100.0 // [eV] energy of an H atom in the incident flux
 #define H_MIGRATION_ENERGY 0.25   // [eV] energy needed for an H to diffuse through lattice

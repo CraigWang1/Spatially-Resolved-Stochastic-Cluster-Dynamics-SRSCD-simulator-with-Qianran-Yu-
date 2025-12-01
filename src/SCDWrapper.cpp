@@ -564,7 +564,7 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
 {
     double b = jumped; //burger's vector 2.8e-8 cm
     double ebHDislocation = 0.55, ebHGrainBndry = 0.91; //binding and migration energy of hydrogen
-    double ebVDislocation = 1.0, ebVGrainBndry = 1.53; //binding and migration energy of vacancy
+    double ebVDislocation = 0.667, ebVGrainBndry = 1.53; //binding and migration energy of vacancy (https://www.sciencedirect.com/science/article/pii/S0168583X16305262?casa_token=b7rAhMVZrUoAAAAA:ROZdduwd16jNwvDPV9a43_7_6x-mR2UiwsFgnlrRBQesPhvw56c50_VtweFpqaQsXHbH4Zfp8cw)
     double efH = HEAT_OF_SOLUTION;  // [eV] energy of formation for hydrogen
     double efV = 3.23;      // [eV] energy of formation for vacancies
     double excessTerm = 1;
@@ -577,7 +577,7 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
     if (allObjects.find(VKey) != allObjects.end())
         numV = allObjects[VKey]->getNumber(point);
 
-    double vacMigrationEnergy = 1.29;  // [eV] Qianran Yu 2020
+    double vacMigrationEnergy = 1.78;  // https://scipub.euro-fusion.org/wp-content/uploads/eurofusion/WPPFCPR17_18984_submitted-1.pdf 
 
     double volume = volumeAtIndex(point);
 
