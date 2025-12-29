@@ -20,7 +20,7 @@ FOLDER_NAME=$(basename "$PWD")
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
 
 # combined destination folder
-DEST="${HOME}/${FOLDER_NAME}_${TIMESTAMP}"
+DEST="${HOME}/simulation_results/${FOLDER_NAME}_${TIMESTAMP}"
 
 # make the folder
 mkdir -p "$DEST"

@@ -2,7 +2,7 @@
 CXX= mpicxx
 
 # Use CXXFLAGS to specify additional compiler options to use:
-CXXFLAGS = -Wall -std=c++0x -O3 -flto
+CXXFLAGS = -Wall -std=c++17 -O3 -flto
 
 # Define variables:
 EXE_FILE= scdexe 

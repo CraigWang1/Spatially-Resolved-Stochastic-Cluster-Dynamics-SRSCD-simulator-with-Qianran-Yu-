@@ -280,11 +280,11 @@ void Object::computeDiffCoeff()
                 prefactor = 0.04;  // https://scipub.euro-fusion.org/wp-content/uploads/eurofusion/WPPFCPR17_18984_submitted-1.pdf
                 energy_m = 1.78;
             }
-            else if (abs(attributes[0]) == 2) {
+            else if (abs(attributes[0]) == 2) {  // 2V
                 prefactor = 0.04;
                 energy_m = 1.65;
             }
-            else if (abs(attributes[0]) > 2) { // 2V
+            else if (abs(attributes[0]) > 2) {
                 prefactor = gv*jumped*jumped*fv*NU0*pow(0.001, fabs(attributes[0]) - 1.0);
                 energy_m = 1.78;
             }
