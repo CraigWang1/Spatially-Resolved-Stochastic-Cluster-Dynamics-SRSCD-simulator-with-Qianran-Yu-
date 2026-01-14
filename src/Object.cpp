@@ -276,18 +276,23 @@ void Object::computeDiffCoeff()
             }
         }
         else if (attributes[0] < 0) { // Vacancies.
-            if (abs(attributes[0]) == 1) { // 1V
+            int numV = abs(attributes[0]);
+            if (numV == 1) { // 1V
                 prefactor = 0.04;  // https://scipub.euro-fusion.org/wp-content/uploads/eurofusion/WPPFCPR17_18984_submitted-1.pdf
                 energy_m = 1.78;
             }
-            else if (abs(attributes[0]) == 2) {  // 2V
+            else if (numV == 2) {  // 2V
                 prefactor = 0.04;
                 energy_m = 1.65;
             }
-            else if (abs(attributes[0]) > 2) {
+            else if (numV > 2 && numV < 10) {
                 prefactor = gv*jumped*jumped*fv*NU0*pow(0.001, fabs(attributes[0]) - 1.0);
                 energy_m = 1.78;
             }
+            else {
+                prefactor = 0;  // assume >= V10 is immmobile
+            }
+
         }
     }
     else if (!check_He) {
@@ -339,8 +344,8 @@ void Object::computeBindTerm()
     long double energy_b = 0.0;
     double attfreq = 1.0;
     double efi = 9.96, emi = 0.013; // Ab initio migration and formation energies of V and SIA in pure W.
-    double efv = 3.23, emv = 1.66;
-    double eb2v = -0.1, eb2i = 2.12, eb2he = 1.03;
+    double emv = 1.78;
+    double eb2i = 2.12, eb2he = 1.03;
     double efhe = 4.0, emhe = 0.01;
     double emh = H_MIGRATION_ENERGY;
     int check_all = 0, check_He = 0, check_H = 0;
@@ -385,33 +390,20 @@ void Object::computeBindTerm()
             }
             energy_d[0] = energy_b + emi;
         }
-        else if (attributes[0]<0) { // Vacancies.
-            if (abs(attributes[0]) == 1) { // 1V
+        else if (attributes[0]<0) { // Vacancies (Vn cluster).
+            // https://www.sciencedirect.com/science/article/pii/S1359645425008158#fig0002
+            vector<double> vacClusterBindE = { // Treat V0 and V1 as 0 eV (not meant to be used, just say array index equals number vacancies in cluster)
+                0, 0, -0.28, 0.07, 0.49, 0.66, 0.80, 0.73, 1.27, 0.84, 0.77, 1.52, 0.97, 1.66, 2.02, 2.48, 0.89, 0.85, 1.41, 0.96, 1.36, 2.23, 2.53, 0.96, 1.38, 1.05, 1.74, 1.80, 2.65, 1.08, 1.52, 1.90, 2.63, 0.96, 1.73, 1.81, 2.69, 1.01, 0.92, 2.46, 2.64, 1.07, 1.53, 2.02, 2.64, 2.09, 2.58, 1.10
+            };
+            int numV = abs(attributes[0]);
+            if (numV == 1) {
                 attfreq = 0.0;
             }
-            else if (abs(attributes[0]) == 2) { // 2V
-                energy_b = eb2v;
+            else if (numV < static_cast<int>(vacClusterBindE.size())) {
+                energy_b = vacClusterBindE[numV];
             }
-            else if (abs(attributes[0]) == 3) { // 3V
-                energy_b = 0.04;
-            }
-            else if (abs(attributes[0]) == 4) { // 4V
-                energy_b = 0.64;
-            }
-            else if (abs(attributes[0]) == 5) { // 5V
-                energy_b = 0.72;
-            }
-            else if (abs(attributes[0]) == 6) { // 6V
-                energy_b = 0.89;
-            }
-            else if (abs(attributes[0]) == 7) { // 7V
-                energy_b = 0.72;
-            }
-            else if (abs(attributes[0]) == 8) { // 8V
-                energy_b = 0.88;
-            }
-            else if (abs(attributes[0])>8) { // > 8V
-                energy_b = efv + (eb2v - efv)*(pow(fabs((double)attributes[0]), 0.6666667) - pow((fabs((double)attributes[0]) - 1.0), 0.6666667)) / 0.5874;
+            else {
+                energy_b = 2.84 - 4.13*pow(numV, -0.39); // Custom extrapolation fit to DFT data points linked above
             }
             energy_d[0] = energy_b + emv;
         }

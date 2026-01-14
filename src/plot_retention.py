@@ -11,15 +11,15 @@ from scipy.signal import butter, filtfilt
 from make_speciesfile import combine_species_files
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 739                            # num spatial elements in the simulation (1 surface + 100 bulk)
+POINTS = 627                            # num spatial elements in the simulation (1 surface + 100 bulk)
 FIRST_ELONGATED_INDEX = 8
 NM_TO_CM = 1e-7
 NM_TO_UM = 1e-3
-DIVIDING_AREA = 0.458e-12                    # [cm]
+DIVIDING_AREA = 0.64e-12                    # [cm]
 SURFACE_THICKNESS = 0.544                # [nm]
-FIRST_BULK_THICKNESS = 6.77                 # [nm]
-ELEMENT_THICKNESS = 6.77                   # [nm]
-ELONGATED_ELEMENT_THICKNESS = 6.77        # [nm]
+FIRST_BULK_THICKNESS = 8                 # [nm]
+ELEMENT_THICKNESS = 8                   # [nm]
+ELONGATED_ELEMENT_THICKNESS = 8        # [nm]
 VOLUME = DIVIDING_AREA * ELEMENT_THICKNESS * NM_TO_CM     
 ELONGATED_VOLUME = DIVIDING_AREA * ELONGATED_ELEMENT_THICKNESS * NM_TO_CM                      # volume of a spatial element [cm^3]
 SURFACE_VOLUME = DIVIDING_AREA * SURFACE_THICKNESS * NM_TO_CM # [cm^3]

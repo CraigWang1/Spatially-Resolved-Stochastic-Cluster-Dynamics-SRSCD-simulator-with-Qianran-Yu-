@@ -27,6 +27,7 @@ SCDWrapper::SCDWrapper():allObjects(), engine(rd()), distribution(0.0L, 1.0L), d
 
     for (int i = 0; i < POINTS; ++i) {
         computeMatrixRate(i);
+        totalVacInElement[i] = 0;
     } /* initialized matrix rate in every element */
     computeBulkRate();  /* initialized total rate in the bulk */
     
@@ -564,18 +565,19 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
 {
     double b = jumped; //burger's vector 2.8e-8 cm
     double ebHDislocation = 0.55, ebHGrainBndry = 0.91; //binding and migration energy of hydrogen
-    double ebVDislocation = 0.667, ebVGrainBndry = 1.53; //binding and migration energy of vacancy (https://www.sciencedirect.com/science/article/pii/S0168583X16305262?casa_token=b7rAhMVZrUoAAAAA:ROZdduwd16jNwvDPV9a43_7_6x-mR2UiwsFgnlrRBQesPhvw56c50_VtweFpqaQsXHbH4Zfp8cw)
+    double ebVDislocation = 0.50, ebVGrainBndry = 1.53; //binding and migration energy of vacancy (https://www.sciencedirect.com/science/article/pii/S0168583X16305262?casa_token=b7rAhMVZrUoAAAAA:ROZdduwd16jNwvDPV9a43_7_6x-mR2UiwsFgnlrRBQesPhvw56c50_VtweFpqaQsXHbH4Zfp8cw)
     double efH = HEAT_OF_SOLUTION;  // [eV] energy of formation for hydrogen
     double efV = 3.23;      // [eV] energy of formation for vacancies
     double excessTerm = 1;
+    double vacVolTerm = 1;
     int numH = 0;
-    int numV = 0;
+    int numMonoV = 0;
     int64 HKey = 1;
     int64 VKey = -1000000;
     if (allObjects.find(HKey) != allObjects.end())
         numH = allObjects[HKey]->getNumber(point);
     if (allObjects.find(VKey) != allObjects.end())
-        numV = allObjects[VKey]->getNumber(point);
+        numMonoV = allObjects[VKey]->getNumber(point);
 
     double vacMigrationEnergy = 1.78;  // https://scipub.euro-fusion.org/wp-content/uploads/eurofusion/WPPFCPR17_18984_submitted-1.pdf 
 
@@ -584,16 +586,11 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
     // vacancy emission
     if(type == 0)
     {
-        excessTerm = 1.0-numV/(DENSITY*volume*exp(-efV/KB/TEMPERATURE));
-        if (excessTerm > 0)  // Dislocations and grain boundaries are always a source of vacancy emission
-            sinkDissRateDislocation[type][point] = 2.0*PI*volume*DISLOCATION/b*NU0*exp(-(ebVDislocation+vacMigrationEnergy)/KB/TEMPERATURE)*excessTerm;
-        else
-            sinkDissRateDislocation[type][point] = 0;
-
-        if (excessTerm > 0)
-            sinkDissRateGrainBndry[type][point] = 6.0*volume/GRAIN_SIZE/b/b*NU0*exp(-(ebVGrainBndry+vacMigrationEnergy)/KB/TEMPERATURE)*excessTerm;
-        else
-            sinkDissRateGrainBndry[type][point] = 0;
+        // Dislocations and grain boundaries are always a source of vacancy emission
+        excessTerm = max(1.0-numMonoV/(DENSITY*volume*exp(-efV/KB/TEMPERATURE)), 0.);  // sinks maintain vacancy thermal equilibrium concentration
+        vacVolTerm = max(1.0-totalVacInElement[point]*avol/volume, 0.);                // so that the mesh element doesn't become 100% vac
+        sinkDissRateDislocation[type][point] = 2.0*PI*volume*DISLOCATION/b*NU0*exp(-(ebVDislocation+vacMigrationEnergy)/KB/TEMPERATURE)*excessTerm*vacVolTerm;
+        sinkDissRateGrainBndry[type][point] = 6.0*volume/GRAIN_SIZE/b/b*NU0*exp(-(ebVGrainBndry+vacMigrationEnergy)/KB/TEMPERATURE)*excessTerm*vacVolTerm;
     }
     // hydrogen emission
     else if(type == 1){
@@ -646,27 +643,33 @@ void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
         return;
     }
 
+    bool objExists = allObjects.find(key) != allObjects.end();
+    if ( (objExists && allObjects[key]->getNumber(n) <= 0 && number < 0) 
+        || (!objExists && number <= 0) )
+    {
+        return;
+    }
+
     /* If the object exists, add to it. Otherwise create the object. */
     Object* anObject;
-    if (allObjects.find(key) != allObjects.end()) 
+    if (objExists) 
     {
         /* object found! then number of instances in this element increases by number*/
         anObject = allObjects[key];
         anObject->addNumber(n, number);
-        updateObjectInMap(anObject, n);
     }
-    else if (number > 0)
+    else
     {
         /* object wasn't found! build new object and insert it into map */
         anObject = new Object(key, n, number);
         addNewObjectToMap(anObject);
-        updateObjectInMap(anObject, n);
     }
-    else
+    if (anObject->getAttri(0) < 0)
     {
-        // Gets here if object doesn't exist, and negative change was inputted
-        return;
+        int VPerCluster = abs(anObject->getAttri(0));
+        totalVacInElement[n] += VPerCluster * number;
     }
+    updateObjectInMap(anObject, n);
 
     // If this object exists in this spatial element, account for it
     if (anObject->getNumber(n) > 0)

@@ -398,7 +398,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         * Allow neighbouring elements with 1H each to diffuse into each other like real life.
         */
         if (concentration > frontConcentration && count != SURFACE_INDEX  
-             && (count != SUBSURFACE_INDEX || (hostObject->getAttri(0) > 0 && hostObject->getAttri(2) == 0))) 
+             && (count != SUBSURFACE_INDEX || (hostObject->getAttri(0) != 0 && hostObject->getAttri(2) == 0))) 
         {
             /* if diffusable, surface objects diffusing into vacuum is considered */
             prefactor = hostObject->getDiff() * DIVIDING_AREA / lengthf;

@@ -37,6 +37,7 @@ private:
     
     Damage damage;
     Cpdf cpdf;
+    int totalVacInElement[POINTS];
     int sinksDislocation[LEVELS+1][POINTS];
     int sinksGrainBndry[LEVELS+1][POINTS];
     long double sinkDissRateDislocation[2][POINTS];
