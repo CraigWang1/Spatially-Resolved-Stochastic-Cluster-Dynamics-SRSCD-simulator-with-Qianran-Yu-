@@ -10,26 +10,26 @@
 #include"CascadeDamage.h"
 #include"BoundaryChange.h"
 #include"constants.h"
+#include"robin_hood.h"
 // #include"gnuplot_i.h"
 #include <string>
 #include <iomanip>
 #include <cassert>
 #include <random>
-#include <unordered_set>
 
 class SCDWrapper {
 private:
     /* private data member */
-    unordered_map<int64, Object*> allObjects;  // map that store all object
-    unordered_map<int64, Object*> mobileObjects;  // map that store mobile object
-    unordered_map<int64, Object*> HObjects;    // map that stores nH objects
-    unordered_map<int64, Object*> objectsInElement[POINTS];  // stores the objects in this spatial element
-    unordered_map<int64, int> surface;
-    unordered_map<int64, int> bottom;
-    unordered_map<int, double> formationE; 
-    unordered_map<int, double> HSaturationLimit; // look up table for HSaturationLimit
+    robin_hood::unordered_flat_map<int64, Object*> allObjects;  // map that store all object
+    robin_hood::unordered_flat_map<int64, Object*> mobileObjects;  // map that store mobile object
+    robin_hood::unordered_flat_map<int64, Object*> HObjects;    // map that stores nH objects
+    robin_hood::unordered_flat_map<int64, Object*> objectsInElement[POINTS];  // stores the objects in this spatial element
+    robin_hood::unordered_flat_map<int64, int> surface;
+    robin_hood::unordered_flat_map<int64, int> bottom;
+    robin_hood::unordered_flat_map<int, double> formationE; 
+    robin_hood::unordered_flat_map<int, double> HSaturationLimit; // look up table for HSaturationLimit
     vector<BoundaryChange> leftBoundaryChangeQ, rightBoundaryChangeQ;
-    unordered_set<int64> affectedObjects;
+    robin_hood::unordered_set<int64> affectedObjects;
 
     std::random_device rd; // Random device to seed the engine
     std::default_random_engine engine; // Random number engine
@@ -129,8 +129,8 @@ public:
     void processEvent(const Reaction, Object*, const int, const int64, const double, const double);    // deal with reactions
     ~SCDWrapper();          /* destructor to delete everything newed */
     // get series functions that allow direct manipulation on private data member
-    unordered_map<int64, Object*>* getAllObjects();
-    unordered_map<int64, Object*>* getMobileObjects();
+    robin_hood::unordered_flat_map<int64, Object*>* getAllObjects();
+    robin_hood::unordered_flat_map<int64, Object*>* getMobileObjects();
     void examineRate(); /* computes matrix rate in all points*/
     void examineDomainRate(); /* computes matrix rate in points that this processor is responsible for */
     /* output file functions */

@@ -1,7 +1,7 @@
 #include "Damage.h"
 // Damage.cpp --  implementations of the damage class
 
-Damage::Damage(unordered_map<int64, Object*>& allObjects)
+Damage::Damage(robin_hood::unordered_flat_map<int64, Object*>& allObjects)
 {
     int index;
     readFile();
@@ -121,7 +121,7 @@ void Damage::computeDamageOne(const int n)
     // damage[n][1]= RATIO_HE*1.0e-06*DPA_RATE[n]*DENSITY*VOLUME;
 }
 
-void Damage::computeDamageTwo(const int n, unordered_map<int64, Object*>& allObjects)
+void Damage::computeDamageTwo(const int n, robin_hood::unordered_flat_map<int64, Object*>& allObjects)
 {
     if (!HYDROGEN_ON)
     {
@@ -154,7 +154,7 @@ double Damage::getDamageTwo(const int n)
     return damage[n][2];
 }
 
-void Damage::updateDamageTwo(const int n, unordered_map<int64, Object*>& allObjects)
+void Damage::updateDamageTwo(const int n, robin_hood::unordered_flat_map<int64, Object*>& allObjects)
 {
     computeDamageTwo(n, allObjects);
 }

@@ -7,7 +7,7 @@ CXXFLAGS = -Wall -std=c++0x -O3 -flto
 # Define variables:
 EXE_FILE= scdexe 
 OBJ_FILES= main.o SCDWrapper.o Bundle.o CascadeDamage.o Damage.o Object.o OneLine.o rvgs.o cpdf.o BoundaryChange.o util.o
-HEADER_FILES= SCDWrapper.h Bundle.h CascadeDamage.h Damage.h Object.h OneLine.h rvgs.h constants.h cpdf.h gnuplot-iostream.h gnuplot_i.h BoundaryChange.h util.h
+HEADER_FILES= SCDWrapper.h Bundle.h CascadeDamage.h Damage.h Object.h OneLine.h rvgs.h constants.h cpdf.h gnuplot-iostream.h gnuplot_i.h BoundaryChange.h util.h robin_hood.h
 
 
 # Build executable:

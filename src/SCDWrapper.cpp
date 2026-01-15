@@ -108,8 +108,8 @@ void SCDWrapper::computeMatrixRate(const int n)
     /* Qianran 0925 */
     //cout << "Element " << n + 1 << endl;
     matrixRate[n] = 0.0;
-    unordered_map<int64, Object*>::iterator iter;
-    unordered_map<int64, Object*>& objectsInThisElement = objectsInElement[n];
+    robin_hood::unordered_flat_map<int64, Object*>::iterator iter;
+    robin_hood::unordered_flat_map<int64, Object*>& objectsInThisElement = objectsInElement[n];
     for (iter = objectsInThisElement.begin(); iter != objectsInThisElement.end(); ++iter) {
         Object* tempObject = iter->second;
         OneLine* tempLine = tempObject->lines[n];
@@ -216,8 +216,8 @@ Object* SCDWrapper::selectDomainReaction(
 
     // Select the reaction inside of our spatial element
     reaction = NONE;
-    unordered_map<int64, Object*>& objectsInThisElement = objectsInElement[pointIndex];
-    unordered_map<int64, Object*>::iterator iter = objectsInThisElement.begin();
+    robin_hood::unordered_flat_map<int64, Object*>& objectsInThisElement = objectsInElement[pointIndex];
+    robin_hood::unordered_flat_map<int64, Object*>::iterator iter = objectsInThisElement.begin();
     while (reaction == NONE && iter != objectsInThisElement.end()) {
         tempObject = iter->second;
         tempLine = tempObject->lines[pointIndex];
@@ -364,7 +364,7 @@ void SCDWrapper::processEvent(
 
 SCDWrapper::~SCDWrapper()
 {
-    unordered_map<int64, Object*>::iterator iter1;
+    robin_hood::unordered_flat_map<int64, Object*>::iterator iter1;
     /* clean contents of object* */
     for (iter1 = allObjects.begin(); iter1 != allObjects.end(); ++iter1) {
         delete iter1->second;
@@ -377,12 +377,12 @@ SCDWrapper::~SCDWrapper()
     processEventFile.close();
 }
 
-unordered_map<int64, Object*>* SCDWrapper::getAllObjects()
+robin_hood::unordered_flat_map<int64, Object*>* SCDWrapper::getAllObjects()
 {
     return &allObjects;
 }
 
-unordered_map<int64, Object*>* SCDWrapper::getMobileObjects()
+robin_hood::unordered_flat_map<int64, Object*>* SCDWrapper::getMobileObjects()
 {
     return &mobileObjects;
 }
@@ -429,7 +429,7 @@ void SCDWrapper::writeSpeciesFile(const double time, const long int n, const int
     }
 
     ofstream fo;
-    unordered_map<int64, Object*>::iterator iter;
+    robin_hood::unordered_flat_map<int64, Object*>::iterator iter;
     fo.open(std::string("species") + std::to_string(threadID) + std::string(".txt"), ios::out);
     fo << "step = " << n << endl;
     fo << "time = " << time << endl;
@@ -455,7 +455,7 @@ void SCDWrapper::writeClusterFile(const double time, const long int n)
     int i;
     ofstream fc;
     fc.open("clusters.out", ios::app);
-    unordered_map<int64, Object*>::iterator iter;
+    robin_hood::unordered_flat_map<int64, Object*>::iterator iter;
     int sia[POINTS] = { 0 }, siac[POINTS] = { 0 }, siah[POINTS] = { 0 }, v[POINTS] = { 0 }, vc[POINTS] = { 0 }, vh[POINTS] = { 0 };
     for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
         int attr0 = iter->second->getAttri(0);
@@ -523,7 +523,7 @@ void SCDWrapper::displayDamage(){
 }
 
 void SCDWrapper::displayAllObject(){
-    unordered_map<int64, Object*>::iterator iter;
+    robin_hood::unordered_flat_map<int64, Object*>::iterator iter;
     for (iter = allObjects.begin(); iter != allObjects.end(); ++iter) {
         std::cout << iter->second->getKey() << "    ";
         for(int i = 0; i < POINTS; i++){
@@ -625,12 +625,12 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
     }/* if this object is invalid, just delete this object */
     else {
         pair<int64, Object*> newNode(newObject->getKey(), newObject);
-        allObjects.insert(newNode); /* add to all object */
+        allObjects.emplace(newObject->getKey(), newObject); /* add to all object */
         if (newObject->getDiff() > 0) {
-            mobileObjects.insert(newNode);
+            mobileObjects.emplace(newObject->getKey(), newObject);
         } /* add to mobile object if necessary */
         if (newObject->getAttri(0) == 0 && newObject->getAttri(2) > 0) {
-            HObjects.insert(newNode);
+            HObjects.emplace(newObject->getKey(), newObject);
         } /* Keep track of nH objects */
     }/* if this object is valid, add it to map */
 }
@@ -754,8 +754,8 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
 
 void SCDWrapper::updateRateToOther(Object const * const mobileObject, const int count)
 {
-    unordered_map<int64, Object*>& objectsInThisElement = objectsInElement[count];
-    unordered_map<int64, Object*>::iterator iter;
+    robin_hood::unordered_flat_map<int64, Object*>& objectsInThisElement = objectsInElement[count];
+    robin_hood::unordered_flat_map<int64, Object*>::iterator iter;
 
     for (iter = objectsInThisElement.begin(); iter != objectsInThisElement.end(); ++iter)
     {
@@ -775,7 +775,7 @@ void SCDWrapper::updateRateToOther(Object const * const mobileObject, const int 
 
 void SCDWrapper::removeDestroyedObjects()
 {
-    unordered_set<int64>::iterator iter;
+    robin_hood::unordered_set<int64>::iterator iter;
     for (iter = affectedObjects.begin(); iter != affectedObjects.end(); ++iter)
     {
         int64 key = *iter;
@@ -837,8 +837,7 @@ void SCDWrapper::processDiffEvent(Object* hostObject, const int n, const char si
                 ++surface[key];
                 
             }else{
-                pair<int64, int> newNode(key, 1);
-                surface.insert(newNode); /* add to all object */
+                surface.emplace(key, 1); /* add to all object */
             } 
         }
     }
@@ -852,8 +851,7 @@ void SCDWrapper::processDiffEvent(Object* hostObject, const int n, const char si
             if(bottom.find(key) != bottom.end()){
                 ++bottom[key];
             }else{
-                pair<int64, int> newNode(key, 1);
-                bottom.insert(newNode); /* add to all object */
+                bottom.emplace(key, 1); /* add to all object */
             }
         }
     }
@@ -1268,7 +1266,7 @@ int SCDWrapper::countDefectNumber(const int count, string type){
     
     int ndef[POINTS] = {0}; /* number of this object in every element*/
     int tndef = 0; /*number of this kind of defect in total */
-    unordered_map<int64, Object*>::iterator iter;
+    robin_hood::unordered_flat_map<int64, Object*>::iterator iter;
     for(int i=0; i<POINTS; i++){
         double volume = volumeAtIndex(i);
         
@@ -1322,7 +1320,7 @@ void SCDWrapper::sizeDistribution(){
         std::pair<int, int> oneSize(preSize, 0);
         sizeD.insert(oneSize);
     }
-    unordered_map<int64, Object*>::iterator iter;
+    robin_hood::unordered_flat_map<int64, Object*>::iterator iter;
     for (iter = allObjects.begin(); iter != allObjects.end(); ++iter){
         Object* thisObject = iter -> second;
         int totalNumber  = thisObject -> getTotalNumber();
@@ -1370,7 +1368,7 @@ void SCDWrapper::countRatioDistribution(double& t){
     // double sW = DENSITY * (VOLUME / 20) * SURFACE_THICKNESS;
     /*number of surface tungsten */
     int sH = 0; /* number of surface hydrogen*/
-    unordered_map<int64, Object*>::iterator iter;
+    robin_hood::unordered_flat_map<int64, Object*>::iterator iter;
     fstream fo;
     fstream vha; // vacancy hydrogen number of all objects
     fstream vhc; // vacancy hydrogen number of only (V-H)clusters
@@ -1555,7 +1553,7 @@ double SCDWrapper::getHSaturationConcentration() const
     bool dimer = false;
     bool vhpair = false;
 
-    for (unordered_map<int64, Object*>::const_iterator iter = allObjects.begin(); iter != allObjects.end() && !dimer && !vhpair; iter ++)
+    for (robin_hood::unordered_flat_map<int64, Object*>::const_iterator iter = allObjects.begin(); iter != allObjects.end() && !dimer && !vhpair; iter ++)
     {
         Object* tempObj = iter->second;
         // if HH objects is present
@@ -1658,7 +1656,7 @@ vector<BoundaryChange> SCDWrapper::getSpatialElement(int n)
 {
     /* Return all of the object counts (not including sinks) at this spatial element */
     vector<BoundaryChange> objects;
-    unordered_map<int64, Object*>::iterator iter;
+    robin_hood::unordered_flat_map<int64, Object*>::iterator iter;
     for (iter = allObjects.begin(); iter != allObjects.end(); ++iter)
     {
         Object* obj = iter->second;
@@ -1687,7 +1685,7 @@ void SCDWrapper::getSink(int n, int* output)
 void SCDWrapper::addSpatialElement(int newGhostIndex, vector<BoundaryChange> newGhostObjects, int newBoundaryIndex, int* newBoundarySinks)
 {
     /* Clear out spatial element to use as our new ghost index */
-    unordered_map<int64, Object*>::iterator iter;
+    robin_hood::unordered_flat_map<int64, Object*>::iterator iter;
     for (iter = allObjects.begin(); iter != allObjects.end(); ++iter)
     {
         Object* obj = iter->second;
@@ -1724,7 +1722,7 @@ void SCDWrapper::addSpatialElement(int newGhostIndex, vector<BoundaryChange> new
 
 void SCDWrapper::recalculateAllRates()
 {
-    unordered_map<int64, Object*>::iterator iter;
+    robin_hood::unordered_flat_map<int64, Object*>::iterator iter;
     for (iter = allObjects.begin(); iter != allObjects.end(); ++iter)
     {
         Object* object = iter->second;

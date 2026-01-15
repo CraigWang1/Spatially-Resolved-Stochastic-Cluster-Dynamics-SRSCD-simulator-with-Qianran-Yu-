@@ -14,8 +14,8 @@ using namespace std;
 OneLine::OneLine(
                  const Object* const hostObject,
                  const int count,
-                 unordered_map<int64, Object*>& mobileObjects,
-                 unordered_map<int64, Object*>& allObjects) :totalRate(0.0)
+                 robin_hood::unordered_flat_map<int64, Object*>& mobileObjects,
+                 robin_hood::unordered_flat_map<int64, Object*>& allObjects) :totalRate(0.0)
 {
     setOneLine(hostObject, count, mobileObjects, allObjects);
 }
@@ -33,7 +33,7 @@ Reaction OneLine::selectReaction(
 {
     int index = 0;
     long double tempRate = randRate;
-    std::unordered_map<int64, long double>::iterator iter = secondR.begin();
+    robin_hood::unordered_flat_map<int64, long double>::iterator iter = secondR.begin();
     if (totalRate < tempRate) {
         randRate -= totalRate;
         return NONE;
@@ -108,14 +108,13 @@ Reaction OneLine::selectReaction(
 void OneLine::addReaction(
                           const Object* const hostObject,
                           const Object* const newObject,
-                          unordered_map<int64, Object*>& allObjects,
+                          robin_hood::unordered_flat_map<int64, Object*>& allObjects,
                           const int count)
 {
     double rate = computeCombReaction(hostObject, newObject, allObjects, count);
     if (rate > 0)
     {
-        std::pair<int64, double> oneReaction(newObject->getKey(), rate);
-        secondR.insert(oneReaction);
+        secondR.emplace(newObject->getKey(), rate);
     }
     else
     {
@@ -131,7 +130,7 @@ void OneLine::removeReaction(const int64 deleteKey)
 void OneLine::updateReaction(
                              Object const * const hostObject,
                              Object const * const mobileObject,
-                             unordered_map<int64, Object*>& allObjects,
+                             robin_hood::unordered_flat_map<int64, Object*>& allObjects,
                              const int n)
 {
     double rate = computeCombReaction(hostObject, mobileObject, allObjects, n);
@@ -144,8 +143,8 @@ void OneLine::updateReaction(
 void OneLine::updateLine(
                          const Object* const hostObject,
                          const int count,
-                         unordered_map<int64, Object*>& mobileObjects,
-                         unordered_map<int64, Object*>& allObjects)
+                         robin_hood::unordered_flat_map<int64, Object*>& mobileObjects,
+                         robin_hood::unordered_flat_map<int64, Object*>& allObjects)
 {
     secondR.clear();
     setOneLine(hostObject, count, mobileObjects, allObjects);
@@ -154,7 +153,7 @@ void OneLine::updateLine(
 void OneLine::updateDiff(
                         const Object* const hostObject, 
                         const int count,
-                        unordered_map<int64, Object*>& allObjects)
+                        robin_hood::unordered_flat_map<int64, Object*>& allObjects)
 {
     computeDiffReaction(hostObject, count, allObjects);
 }
@@ -162,7 +161,7 @@ void OneLine::updateDiff(
 const long double OneLine::computeTotalRate()
 {
     int i;
-    unordered_map<int64,long double>::iterator iter;
+    robin_hood::unordered_flat_map<int64,long double>::iterator iter;
     totalRate = 0.0;
     totalRate += diffRToF; /* add one diffusion rate */
     totalRate += diffRToB; /* add another diffusion rate*/
@@ -189,7 +188,7 @@ void OneLine::display(Object const * const hostObject)
     for (int i = 0; i < LEVELS; ++i) {
         fs <<"(diss)"<< dissociationR[i] << "    ";
     }
-    unordered_map<int64, long double>::iterator iter;
+    robin_hood::unordered_flat_map<int64, long double>::iterator iter;
     for (iter = secondR.begin(); iter != secondR.end(); ++iter) {
         fs << "(" << iter->first << ")" << iter->second << "    ";
     }
@@ -203,21 +202,20 @@ void OneLine::display(Object const * const hostObject)
 void OneLine::setOneLine(
                          const Object* const hostObject,
                          const int count,
-                         unordered_map<int64, Object*>& mobileObjects,
-                         unordered_map<int64, Object*>& allObjects)
+                         robin_hood::unordered_flat_map<int64, Object*>& mobileObjects,
+                         robin_hood::unordered_flat_map<int64, Object*>& allObjects)
 {
     computeDiffReaction(hostObject, count, allObjects);
     computeSinkReaction(hostObject, count);
     for (int index = 0; index < LEVELS; index++) {
         dissociationR[index] = computeDissReaction(hostObject, allObjects, index, count);
     }
-    unordered_map<int64, Object*>::iterator iter;
+    robin_hood::unordered_flat_map<int64, Object*>::iterator iter;
     for (iter = mobileObjects.begin(); iter != mobileObjects.end(); ++iter) {
         double rate = computeCombReaction(hostObject, iter->second, allObjects, count);
         if (rate > 0)
         {
-            std::pair<int64, double> oneReaction(iter->first, rate);
-            secondR.insert(oneReaction);
+            secondR.emplace(iter->first, rate);
         }
         else
         {
@@ -229,7 +227,7 @@ void OneLine::setOneLine(
     computeTotalRate();
 }
 
-void OneLine::computeDiffReaction(const Object* const hostObject, const int count, unordered_map<int64, Object*>& allObjects)
+void OneLine::computeDiffReaction(const Object* const hostObject, const int count, robin_hood::unordered_flat_map<int64, Object*>& allObjects)
 {
     if (!DIFF_ON)
     {
@@ -466,7 +464,7 @@ long double OneLine::computeBaseDissReaction(
 
 long double OneLine::computeDissReaction(
                                   const Object* const hostObject,
-                                  unordered_map<int64, Object*>& allObjects,
+                                  robin_hood::unordered_flat_map<int64, Object*>& allObjects,
                                   const int index,
                                   const int count) const
 {
@@ -632,7 +630,7 @@ long double OneLine::computeBaseCombReaction(
 long double OneLine::computeCombReaction(
                                     const Object* const hostObject,
                                     const Object* const mobileObject,
-                                    unordered_map<int64, Object*>& allObjects,
+                                    robin_hood::unordered_flat_map<int64, Object*>& allObjects,
                                     const int count) const
 {
     /* Compute the net comb/diss reaction rate for approximation speedup, this updates the product's diss rate as well 
@@ -740,7 +738,7 @@ void OneLine::computeSAVReaction(
 void OneLine::computeRecombReaction(
                                     const Object* const hostObject,
                                     const int count,
-                                    unordered_map<int64, Object*>& allObjects)
+                                    robin_hood::unordered_flat_map<int64, Object*>& allObjects)
 {
     recombRER = 0.0;
     recombRLH = 0.0;

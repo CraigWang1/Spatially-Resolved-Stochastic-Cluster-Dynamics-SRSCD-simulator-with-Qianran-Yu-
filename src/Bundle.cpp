@@ -2,8 +2,8 @@
 
 Bundle::Bundle(
                const Object* const hostObject,
-               unordered_map<int64, Object*>& mobileObjects,
-               unordered_map<int64, Object*>& allObjects)
+               robin_hood::unordered_flat_map<int64, Object*>& mobileObjects,
+               robin_hood::unordered_flat_map<int64, Object*>& allObjects)
 {
     for (int i = 0; i < POINTS; ++i) {
         if (hostObject->getNumber(i) != 0) {
