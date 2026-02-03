@@ -37,9 +37,9 @@ private:
     
     Damage damage;
     Cpdf cpdf;
-    int totalVacInElement[POINTS];
-    int sinksDislocation[LEVELS+1][POINTS];
-    int sinksGrainBndry[LEVELS+1][POINTS];
+    int64 totalVacInElement[POINTS];
+    int64 sinksDislocation[LEVELS+1][POINTS];
+    int64 sinksGrainBndry[LEVELS+1][POINTS];
     long double sinkDissRateDislocation[2][POINTS];
     long double sinkDissRateGrainBndry[2][POINTS]; // only vac and H allowed to emit from sinks, b/c SIA has high binding energy with sinks 
     // dissociation rate of V/H from dislocations

@@ -66,17 +66,36 @@ struct SegmentTree {
         return first_prefix_at_least_from_zero_rec(target, 1, 0, n-1);
     }
 
-    // --- corrected: search starting from arbitrary ql ---
-    // returns n when not found (you can change to -1 if you prefer)
-    int first_prefix_at_least_from(int ql, T target) {
-        if (ql < 0 || ql >= n) return n;
-        if (target <= T()) { // if target <= 0, the first index is ql
-            return ql;
+    // Returns the smallest index i >= ql such that the sum in range [ql, i] >= target
+    int find_first(int node, int l, int r, int ql, T &target) {
+        if (r < ql || target <= 0) return -1;
+
+        // If this entire node is within our search range [ql, end]
+        if (l >= ql) {
+            if (tree[node] < target) {
+                target -= tree[node]; // Subtract and move on
+                return -1;
+            }
+            if (l == r) return l; // Found it!
+            
+            int mid = (l + r) / 2;
+            int res = find_first(node * 2, l, mid, ql, target);
+            if (res == -1) res = find_first(node * 2 + 1, mid + 1, r, ql, target);
+            return res;
         }
-        T base = (ql == 0 ? T() : sum(0, ql-1));    // prefix sum up to ql-1
-        T needed = base + target;                   // we need prefix >= needed
-        if (tree[1] < needed) return n;             // overall total too small
-        return first_prefix_at_least(needed);       // reuse the from-zero search
+
+        // Otherwise, we are still descending to find the start index 'ql'
+        int mid = (l + r) / 2;
+        int res = find_first(node * 2, l, mid, ql, target);
+        if (res == -1) res = find_first(node * 2 + 1, mid + 1, r, ql, target);
+        return res;
+    }
+
+    // Public Wrapper
+    int first_prefix_at_least_from(int ql, T target) {
+        T temp_target = target;
+        int res = find_first(1, 0, n - 1, ql, temp_target);
+        return (res == -1) ? n : res;
     }
 };
 
