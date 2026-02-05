@@ -5,15 +5,38 @@ double volumeAtIndex(int i)
 	// Returns the volume (cm^3) of volume element i
 	if (i >= 0 && i < POINTS)
 	{
-		if (i == 0 || i == 1)
-			return SUBSURFACE_VOLUME; // index 0 should have 0 volume, but make it a nonzero volume to not break anything
+		if (i == SURFACE_INDEX)
+			return 0;
+		if (i == SUBSURFACE_INDEX)
+			return SUBSURFACE_VOLUME;
 		if (i == FIRST_BULK_INDEX)
 			return FIRST_BULK_VOLUME;
-		if (i < FIRST_ELONGATED_INDEX)
-			return VOLUME;
-		return ELONGATED_VOLUME;
-
+		return VOLUME;
 	}
 
 	return VOLUME; // shouldn't get here
+}
+
+/* Returns the length (cm) of volume element i */
+double length(int i)
+{
+	if (i == SURFACE_INDEX)
+		return 0;
+	if (i == SUBSURFACE_INDEX)
+		return SUBSURFACE_THICKNESS * NM_TO_CM;
+	if (i == FIRST_BULK_INDEX)
+		return FIRST_BULK_THICKNESS * NM_TO_CM;
+	return ELEMENT_THICKNESS * NM_TO_CM;
+}
+
+/* Returns the length (cm) between centers of indices i and i-1 */
+double lengthf(int i)
+{
+	return (length(i) + length(i - 1))/2.;
+}
+
+/* Returns the length (cm) between centers of indices i and i+1 */
+double lengthb(int i)
+{
+	return (length(i) + length(i + 1))/2.;
 }

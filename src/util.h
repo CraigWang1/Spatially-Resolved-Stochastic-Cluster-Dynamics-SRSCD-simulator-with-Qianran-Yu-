@@ -7,6 +7,9 @@
 using namespace std;
 
 double volumeAtIndex(int);
+double length(int);
+double lengthf(int);
+double lengthb(int);
 
 template<typename T>
 struct SegmentTree {

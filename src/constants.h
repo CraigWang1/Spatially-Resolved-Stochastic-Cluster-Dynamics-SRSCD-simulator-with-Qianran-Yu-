@@ -36,7 +36,6 @@
 #define SUBSURFACE_THICKNESS 0.544 //[nm] thickness of surface (conrresponds to two monolayers of tungsten)
 #define FIRST_BULK_THICKNESS 6.77   //[nm] thickness of first bulk index (sized so that its centroid corresponds to mean projective range of incident H ions)
 #define ELEMENT_THICKNESS 6.77 // [nm] thickness of bulk spatial element
-#define ELONGATED_ELEMENT_THICKNESS 6.77 // [nm] thickness of an elongated spatial element designed to reduce the total number of mesh elements to reduce number of diffusion reactions to increase sim speed
 #define NU0 1.0e+13           // [Hz] Attempt frequency.
 #define C_DENSITY 10        // [appm] C-atom density
 #define GAMMA 1.0           // Fraction of surface emission.
@@ -68,7 +67,6 @@
 #define SURFACE_INDEX 0     // the surface layer corresponding of adsorbed layer on material surface (not inside material)
 #define SUBSURFACE_INDEX 1  // the small subsurface layer to facilitate transport from surface to bulk
 #define FIRST_BULK_INDEX 2  // the first bulk layer that all the H ions get implanted into
-#define FIRST_ELONGATED_INDEX 5 // the first volume element that is elongated lengthwise, reducing the number of mesh elements and diffusion reactions to speed of simulation
 // Auxiliary definitions:
 enum Reaction { DIFFUSETOF, DIFFUSETOB, SINKDISLOCATION, SINKGRAINBNDRY, DISSOCIATION, COMBINATION, SAV, RECOMBER, RECOMBLH, NONE, PARTICLE, HE, H, DISSVDISLOCATION, DISSVGRAINBNDRY, DISSHDISLOCATION, DISSHGRAINBNDRY, ERROR};
 
@@ -111,7 +109,6 @@ const double H_SATURATION_CONCENTRATION = DENSITY * exp(-HEAT_OF_SOLUTION/KB/TEM
 const double SUBSURFACE_VOLUME = DIVIDING_AREA * SUBSURFACE_THICKNESS * NM_TO_CM; // [cm^3] subsurface element is the thin surface layer
 const double FIRST_BULK_VOLUME = DIVIDING_AREA * FIRST_BULK_THICKNESS * NM_TO_CM; // [cm^3] first bulk element is the element just past the subsurface where all H ions get implanted into
 const double VOLUME = DIVIDING_AREA * ELEMENT_THICKNESS * NM_TO_CM;               // [cm^3] bulk spatial element volume
-const double ELONGATED_VOLUME = DIVIDING_AREA * ELONGATED_ELEMENT_THICKNESS * NM_TO_CM;
 
 //#define AVG_ION_EN 1.71e+6 // (from TRIM) Average ion energy (in eV) expended on damage from 5MeV Cu.
 #define AVG_NEUTRON_EN 40.6 // (from SPECTER) Total damage energy in keV produced by a neutron in ITER.
