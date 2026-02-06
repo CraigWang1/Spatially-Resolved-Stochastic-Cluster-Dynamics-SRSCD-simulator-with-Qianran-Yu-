@@ -104,7 +104,7 @@ void Damage::computeDamageZero(const int n)
             
             damage[n][0] = 0.0;
         }else{
-            damage[n][0] = (DPA_RATE[n] * DENSITY*VOLUME / NRT[n]);
+            damage[n][0] = (DPA_RATE[n] * DENSITY*volumeAtIndex(n) / NRT[n]);
         }
         
     }else{
@@ -112,13 +112,13 @@ void Damage::computeDamageZero(const int n)
     }
 
     totalIonRate += damage[n][0];
-    //damage[n][0] = DPA_RATE[n] * DENSITY*VOLUME / NRT[n];
+    //damage[n][0] = DPA_RATE[n] * DENSITY*volumeAtIndex(n) / NRT[n];
 }
 
 void Damage::computeDamageOne(const int n)
 {
     damage[n][1]= 0.;
-    // damage[n][1]= RATIO_HE*1.0e-06*DPA_RATE[n]*DENSITY*VOLUME;
+    // damage[n][1]= RATIO_HE*1.0e-06*DPA_RATE[n]*DENSITY*volumeAtIndex(n);
 }
 
 void Damage::computeDamageTwo(const int n, unordered_map<int64, Object*>& allObjects)

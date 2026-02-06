@@ -8,7 +8,7 @@
 #include <cassert>
 #include"SCDWrapper.h"
 
-double TEMPERATURE = 823;  // [K], this is extern so all files have access to this
+double TEMPERATURE = 383;  // [K], this is extern so all files have access to this
 const double startingTemp = TEMPERATURE;
 
 int main(int argc, char** argv) 
@@ -78,7 +78,6 @@ int main(int argc, char** argv)
     srscd->examineDomainRate();
 
     double prev_time = MPI_Wtime();
-    // cout << H_SATURATION_CONCENTRATION * VOLUME << endl;
     
     while(!done)
     {

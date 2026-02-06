@@ -244,23 +244,23 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     double concentration = 0;
     double frontConcentration = 0;
     double backConcentration = 0;
+    double vol = volumeAtIndex(count);
+    double volf = volumeAtIndex(count-1);
+    double volb = volumeAtIndex(count+1);
+    if (vol != 0)
+        concentration = objectN[0] / vol;
+    if (volf != 0)
+        frontConcentration = objectN[1] / volf;
+    if (volb != 0)
+        backConcentration = objectN[2] / volb;
     if (count == SURFACE_INDEX)
     {
         concentration = 0;  /* surface layer corresponds to adsorbed layer of hydrogen at surface, which doesn't follow standard diffusion (see below) */
         frontConcentration = 0;
-        backConcentration = objectN[2] / volumeAtIndex(count+1);
     }
     else if (count == SUBSURFACE_INDEX)
     {
-        concentration = objectN[0] / volumeAtIndex(count);
         frontConcentration = 0;
-        backConcentration = objectN[2] / volumeAtIndex(count+1);
-    }
-    else
-    {
-        concentration = objectN[0] / volumeAtIndex(count);
-        frontConcentration = objectN[1] / volumeAtIndex(count-1);
-        backConcentration = objectN[2] / volumeAtIndex(count+1);
     }
 
     /* length measured in cm */
@@ -322,39 +322,29 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     }
     else // avoid unnecessary calculation if we are processing special cases
     {
-        /* by having two diffusion rates, this rate will never be less than 0 */
+        diffRToF = diffRToB = 0;
 
         /* 
         * 1. compute diffusion rate to the front element 
         * Diffusion goes from area of higher concentration to lower concentration
         * Object not allowed to diffuse out through the front
         */
-        if (concentration > frontConcentration && count != SURFACE_INDEX  
-             && (count != SUBSURFACE_INDEX || (hostObject->getAttri(0) != 0 && hostObject->getAttri(2) == 0))) 
+        if (concentration > frontConcentration 
+            && count != SURFACE_INDEX  
+            && (count != SUBSURFACE_INDEX || (hostObject->getAttri(0) != 0 && hostObject->getAttri(2) == 0))) 
         {
-            /* if diffusable, surface objects diffusing into vacuum is considered */
             prefactor = hostObject->getDiff() * DIVIDING_AREA / distf;
             diffRToF = prefactor*(concentration - frontConcentration);
         }
-        else {
-            diffRToF = 0.0;
-        }
+
         /* 2. compute diffusion rate to the back element
-        * Object are allowed to diffuse out through the back (assume infinite W sample)
         */
-        if (concentration > backConcentration && count != SURFACE_INDEX) {
-            /* if diffusable */
+        if (concentration > backConcentration 
+            && count != SURFACE_INDEX 
+            && count != POINTS - 1) 
+        {
             prefactor = hostObject->getDiff() * DIVIDING_AREA / distb;
             diffRToB = prefactor*(concentration - backConcentration);
-        }
-        else {
-            diffRToB = 0.0;
-        }
-        if (abs(TEMP_INCREASE_RATE) > 0 && count == POINTS - 1) { // if doing TDS, don't let stuff escape thru the back, so we can count it as it emerges from surface
-            diffRToB = 0.0;
-        }
-        if (hostObject->getAttri(0) > 0 && hostObject->getAttri(2) == 0 && count == POINTS - 1) {
-            diffRToB = 0.0; // Don't let SIA diffuse out of box so it can recombine with vacancies at the edge
         }
     }
 }
