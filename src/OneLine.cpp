@@ -238,7 +238,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         return;
     }
 
-    double prefactor = 0.0;
+    long double prefactor = 0.0;
     int objectN[3];   
     hostObject->getThreeNumber(count, objectN);
     double concentration = 0;
@@ -262,47 +262,80 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     {
         frontConcentration = 0;
     }
+    else if (count == BACK_SUBSURFACE_INDEX)
+    {
+        backConcentration = 0;
+    }
+    else if (count == BACK_SURFACE_INDEX)
+    {
+        concentration = 0;
+        backConcentration = 0;
+    }
 
     /* length measured in cm */
     double distf = lengthf(count);
     double distb = lengthb(count);
 
     // Account for special cases from 2020 Zhenhou Wang for hydrogen moving between surface and bulk
-    if((count == SUBSURFACE_INDEX && hostObject->getKey() == 1) ||
-        (count == SURFACE_INDEX && hostObject->getKey() == 1))
+    if ((
+        count == SURFACE_INDEX
+        || count == SUBSURFACE_INDEX
+        || count == BACK_SUBSURFACE_INDEX
+        || count == BACK_SURFACE_INDEX
+        ) 
+        && hostObject->getKey() == 1)
     {
         double surfaceConc = 0.0; 
         int64 HKey = 1;
         if (allObjects.find(HKey) != allObjects.end())
-            surfaceConc = allObjects[HKey]->getNumber(0) / DIVIDING_AREA;  // [cm^-2] concentration
+        {
+            if (count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
+                surfaceConc = allObjects[HKey]->getNumber(SURFACE_INDEX) / DIVIDING_AREA;  // [cm^-2] concentration
+            else
+                surfaceConc = allObjects[HKey]->getNumber(BACK_SURFACE_INDEX) / DIVIDING_AREA;  // [cm^-2] concentration
+        }
 
         double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);
         double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
 
         // special case for 1H diffusion from Subsurface to Surface 
-        if (count == SUBSURFACE_INDEX)
+        if (count == SUBSURFACE_INDEX || count == BACK_SUBSURFACE_INDEX)
         {
             double jumpingDist = maxSurfaceConc / 6 / DENSITY;
             double freq = NU0 * exp(-H_MIGRATION_ENERGY / KB / TEMPERATURE);
+            long double diffRToSurf = 0;
+            diffRToF = diffRToB = 0;
         
             prefactor = freq * jumpingDist * (1 - surfaceSaturationFraction) * DIVIDING_AREA;
-            diffRToF = prefactor * concentration;
+            diffRToSurf = prefactor * concentration;
             if (surfaceConc >= maxSurfaceConc)
-                diffRToF = 0.0;
-            diffRToB = 0.0;
+                diffRToSurf = 0.0;
 
-            // Normal Diffusion to the first bulk element
-            if (concentration > backConcentration) // allow 1H to diffuse into neigbouring volume element if both vol elems have 1H
+            if (count == SUBSURFACE_INDEX)
             {
-                /* if diffusable */
-                prefactor = hostObject->getDiff() * DIVIDING_AREA / distb;
-                diffRToB = prefactor*(concentration - backConcentration);
+                diffRToF = diffRToSurf;
+                if (concentration > backConcentration)
+                {
+                    /* if diffusable */
+                    prefactor = hostObject->getDiff() * DIVIDING_AREA / distb;
+                    diffRToB = prefactor*(concentration - backConcentration);
+                }
+            }
+            else if (count == BACK_SUBSURFACE_INDEX)
+            {
+                diffRToB = diffRToSurf;
+                if (concentration > frontConcentration)
+                {
+                    prefactor = hostObject->getDiff() * DIVIDING_AREA / distf;
+                    diffRToF = prefactor*(concentration - frontConcentration);
+                }
             }
             return;
         }
         // special case for 1H diffusion from Surface to Subsurface
-        else if (count == 0)
+        else if (count == SURFACE_INDEX || count == BACK_SURFACE_INDEX)
         {
+            diffRToF = diffRToB = 0;
             double absorbE;
             // double desorbE = -0.00195416 * exp(5.87242*surfaceSaturationFraction) + 1.48996;            // Ajmalghan 2019
             // double desorbE = 2.0*(0.9 - 0.2*surfaceSaturationFraction - 0.7*pow(surfaceSaturationFraction, 12));
@@ -315,8 +348,12 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
                 // absorbE = desorbE/2. + HEAT_OF_SOLUTION + H_MIGRATION_ENERGY + 0.02;   // Add 0.02 from Tajuki Oda 2023
             double freq = NU0 * exp(-absorbE / KB / TEMPERATURE);            
             prefactor = freq * surfaceConc * DIVIDING_AREA;
-            diffRToB = prefactor;
-            diffRToF = 0.0;
+
+            if (count == SURFACE_INDEX)
+                diffRToB = prefactor;
+            else if (count == BACK_SURFACE_INDEX)
+                diffRToF = prefactor;
+
             return;
         }
     }
@@ -330,7 +367,8 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         * Object not allowed to diffuse out through the front
         */
         if (concentration > frontConcentration 
-            && count != SURFACE_INDEX  
+            && count != SURFACE_INDEX
+            && count != BACK_SURFACE_INDEX  
             && (count != SUBSURFACE_INDEX || (hostObject->getAttri(0) != 0 && hostObject->getAttri(2) == 0))) 
         {
             prefactor = hostObject->getDiff() * DIVIDING_AREA / distf;
@@ -341,7 +379,8 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         */
         if (concentration > backConcentration 
             && count != SURFACE_INDEX 
-            && count != POINTS - 1) 
+            && count != BACK_SURFACE_INDEX
+            && (count != BACK_SUBSURFACE_INDEX || (hostObject->getAttri(0) != 0 && hostObject->getAttri(2) == 0))) 
         {
             prefactor = hostObject->getDiff() * DIVIDING_AREA / distb;
             diffRToB = prefactor*(concentration - backConcentration);
@@ -351,7 +390,11 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
 
 void OneLine::computeSinkReaction(const Object* const hostObject, const int count)
 {
-    if (!SINK_ON || count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
+    if (!SINK_ON 
+        || count == SURFACE_INDEX 
+        || count == SUBSURFACE_INDEX
+        || count == BACK_SUBSURFACE_INDEX
+        || count == BACK_SURFACE_INDEX)
     {
         sinkRDislocation = 0.0;
         sinkRGrainBndry = 0.0;
@@ -367,7 +410,11 @@ long double OneLine::computeBaseDissReaction(
                                   const int index,
                                   const int count) const
 {
-    if (!DISS_ON || count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
+    if (!DISS_ON 
+        || count == SURFACE_INDEX 
+        || count == SUBSURFACE_INDEX
+        || count == BACK_SUBSURFACE_INDEX
+        || count == BACK_SURFACE_INDEX)
     {
         return 0.0;
     }
@@ -480,7 +527,11 @@ long double OneLine::computeBaseCombReaction(
     if (hostObject->getNumber(count) * mobileObject->getNumber(count) == 0)
         return 0;
 
-    if (!COMB_ON || count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
+    if (!COMB_ON 
+        || count == SURFACE_INDEX 
+        || count == SUBSURFACE_INDEX
+        || count == BACK_SUBSURFACE_INDEX
+        || count == BACK_SURFACE_INDEX)
     {
         return 0.0;
     }
@@ -619,7 +670,11 @@ void OneLine::computeSAVReaction(
     SAVR = 0;
     double volume = volumeAtIndex(count);
 
-    if (!SAV_ON || count == SURFACE_INDEX || count == SUBSURFACE_INDEX)
+    if (!SAV_ON 
+        || count == SURFACE_INDEX 
+        || count == SUBSURFACE_INDEX
+        || count == BACK_SUBSURFACE_INDEX
+        || count == BACK_SURFACE_INDEX)
     {
         return;
     }
@@ -666,24 +721,26 @@ void OneLine::computeRecombReaction(
 {
     recombRER = 0.0;
     recombRLH = 0.0;
+    int64 HKey = 1;
 
     // only H can recombine at surface and leave surface
-    if (!RECOMB_ON || count != SURFACE_INDEX || hostObject->getKey() != 1)
+    if (!RECOMB_ON 
+        || (count != SURFACE_INDEX && count != BACK_SURFACE_INDEX) 
+        || hostObject->getKey() != HKey
+        || allObjects.find(HKey) == allObjects.end())
     {
         return;
     }
 
     double surfaceConc = 0.0;
-    int64 HKey = 1;
-    int numH = allObjects[HKey]->getNumber(0);
-    if (allObjects.find(HKey) != allObjects.end())
-        surfaceConc = numH / DIVIDING_AREA;  // [cm^-2] concentration
+    int numH = allObjects[HKey]->getNumber(count);  
+    surfaceConc = numH / DIVIDING_AREA;  // [cm^-2] concentration
 
     double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);
     double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
 
-    // Calculate ER recomb rate
-    if (numH >= 1 && HYDROGEN_ON)   // incident atom collides with adsorbed atom, so hydrogen must be on for this to work
+    // Calculate ER recomb rate, only on plasma facing surface
+    if (numH >= 1 && HYDROGEN_ON && count == SURFACE_INDEX)   // incident atom collides with adsorbed atom, so hydrogen must be on for this to work
     {
         double crossSectionERRecomb = 1.7e-17; // [cm^2] cross-section of ER recombination from Zhenhou Wang 2020
         recombRER = FLUX_H * crossSectionERRecomb * surfaceConc * DIVIDING_AREA; 

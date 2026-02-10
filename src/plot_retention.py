@@ -13,7 +13,7 @@ from make_speciesfile import combine_species_files
 combine_species_files()
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 730                            # num spatial elements in the simulation (1 surface + 100 bulk)
+POINTS = 732                            # num spatial elements in the simulation (1 surface + 100 bulk)
 NM_TO_CM = 1e-7
 NM_TO_UM = 1e-3
 CM_TO_UM = 1e4
@@ -213,7 +213,7 @@ if plot_h:
 # plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
 plt.yscale('log')
 # plt.ylim(2*10**-3, 10**0)
-plt.xlim(0, 75)
+# plt.xlim(0, 2)
 plt.plot(experiment_positions, concentrations, label="Experiment", color='r')
 plt.legend()
 plt.title("Trapped Hydrogen Concentration Vs. Depth\n $T = 383K, Fluence = 1 \cdot 10^{24}$ $[m^{-2}]$")

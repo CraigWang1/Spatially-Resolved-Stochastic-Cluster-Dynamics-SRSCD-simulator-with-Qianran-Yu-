@@ -60,15 +60,16 @@
 //#define DPA_RATE 3.55e-6   // [dpa/s] Damage rate.
 #define CHANNELS 3         // Irradiation channels used (1:W, 2:He, 3:H,...). the number of different particle insertion(irradiation) process.
 #define PSTEPS 5000000 // Print data every so many.
-#define TSTEPS 50000 // Run these many steps.
 #define LEVELS 3
 #define EXP10 3 // number of 0s assigned to each group in object's key in hash table
-#define POINTS 730 // number of elements: one surface(Point 0), one subsurface (Point 1), one implantation bulk element (Point 2), other bulk elements, other elongated bulk elements
+#define POINTS 732 // number of elements: one surface(Point 0), one subsurface (Point 1), one implantation bulk element (Point 2), other bulk elements, other elongated bulk elements
 #define SURFACE_INDEX 0     // the surface layer corresponding of adsorbed layer on material surface (not inside material)
 #define SUBSURFACE_INDEX 1  // the small subsurface layer to facilitate transport from surface to bulk
 #define FIRST_BULK_INDEX 2  // the first bulk layer that all the H ions get implanted into
 #define FIRST_EXP_INDEX 627 // the first mesh element where the length starts to increase exponentially (to reach experiment lengths)
 #define EXP_LENGTH_MULT 1.1 // for the mesh elements that exponentially increase in length
+#define BACK_SUBSURFACE_INDEX (POINTS - 2)
+#define BACK_SURFACE_INDEX (POINTS - 1)
 
 // Auxiliary definitions:
 enum Reaction { DIFFUSETOF, DIFFUSETOB, SINKDISLOCATION, SINKGRAINBNDRY, DISSOCIATION, COMBINATION, SAV, RECOMBER, RECOMBLH, NONE, PARTICLE, HE, H, DISSVDISLOCATION, DISSVGRAINBNDRY, DISSHDISLOCATION, DISSHGRAINBNDRY, ERROR};

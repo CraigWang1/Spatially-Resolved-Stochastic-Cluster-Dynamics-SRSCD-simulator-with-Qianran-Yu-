@@ -9,9 +9,9 @@ double volumeAtIndex(int i)
 /* Returns the length (cm) of volume element i */
 double length(int i)
 {
-	if (i == SURFACE_INDEX)
+	if (i == SURFACE_INDEX || i == BACK_SURFACE_INDEX)
 		return 0;
-	if (i == SUBSURFACE_INDEX)
+	if (i == SUBSURFACE_INDEX || i == BACK_SUBSURFACE_INDEX)
 		return SUBSURFACE_THICKNESS * NM_TO_CM;
 	if (i == FIRST_BULK_INDEX)
 		return FIRST_BULK_THICKNESS * NM_TO_CM;
