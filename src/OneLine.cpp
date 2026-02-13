@@ -752,9 +752,7 @@ void OneLine::computeRecombReaction(
     if (numH >= 2)                  // two atoms combine at the surface to form H2 and desorb
     {
         double desorbE;
-        // if (TEMP_INCREASE_RATE == 0)  // assume atmospheric environment, use experiment desorption energy barrier
             // desorbE = 2.0*(0.525 + 0.591*(1.0/(1.0+exp( (surfaceSaturationFraction-0.247)/0.0692 )))); // from Hodille 2020
-        // else                          // doing thermal desorption, assume vacuum environment, use DFT desorption energy barrier
             // desorbE = -0.00195416 * exp(5.87242*surfaceSaturationFraction) + 1.48996;            // Ajmalghan 2019
             // desorbE = 1.40259 - 0.00881176*exp(5.45029*surfaceSaturationFraction - 1.22515);
             // desorbE = 0.019+1.453/(1.0+exp((surfaceSaturationFraction-1.000)/0.111));

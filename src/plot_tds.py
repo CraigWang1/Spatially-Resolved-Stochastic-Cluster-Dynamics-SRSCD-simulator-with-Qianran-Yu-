@@ -46,12 +46,12 @@ for i in range(len(experiment_temperatures)-1):
 
 print(total_fluence)
 
-
-temperatures = [300]
+starting_temp = 300
+temperatures = [starting_temp]
 desorbed_flux = [0]
 window_size = 20
 for i in range(window_size, len(times)-window_size):
-	temperatures.append(300 + times[i] * 0.5) # 0.5 K/s heating
+	temperatures.append(starting_temp + times[i] * 0.5) # 0.5 K/s heating
 	dt = times[i+window_size] - times[i-window_size]
 	dN = desorbed[i+window_size] - desorbed[i-window_size]
 	desorbed_flux.append(dN/dt/DIVIDING_AREA)

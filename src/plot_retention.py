@@ -187,7 +187,7 @@ fs = 1 / (positions[5] - positions[4])  # Sampling frequency
 
 # Apply the filter using Gustafsson's method
 # smoothed_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c[2:], method="gust")
-smoothed_hydrogen_c = scipy.signal.savgol_filter(trapped_hydrogen_c[2:], 175, 5)
+smoothed_hydrogen_c = scipy.signal.savgol_filter(trapped_hydrogen_c[2:627], 50, 1)
 
 concentrations = [c for c in concentrations]
 
@@ -202,7 +202,7 @@ print("Sim retained vs. experiment retained: "+str(retained_sim_fluence/retained
 if plot_h:
 	# plt.plot(positions[2:], free_hydrogen_c[2:], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
 	plt.plot(positions[2:], trapped_hydrogen_c[2:], label="Simulation", alpha=0.3, marker='^')
-	plt.plot(positions[2:], smoothed_hydrogen_c, label="Simulation Filtered", color='blue', marker='^', markersize=0)
+	plt.plot(positions[2:627], smoothed_hydrogen_c[:625], label="Simulation Filtered", color='blue', marker='^', markersize=0)
 	# plt.plot(positions[:upto], all_hydrogen_c[:upto], label="Hydrogen Concentration")
 # if plot_v:
 	# indices_to_delete = [i for i in range(len(vacancy_c)) if vacancy_c[i] == 0]		
@@ -212,8 +212,8 @@ if plot_h:
 # print("Summed retained concentration: "+str(np.sum(trapped_hydrogen_c)))
 # plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
 plt.yscale('log')
-# plt.ylim(2*10**-3, 10**0)
-# plt.xlim(0, 2)
+plt.ylim(2*10**-3, 10**0)
+plt.xlim(0, 5)
 plt.plot(experiment_positions, concentrations, label="Experiment", color='r')
 plt.legend()
 plt.title("Trapped Hydrogen Concentration Vs. Depth\n $T = 383K, Fluence = 1 \cdot 10^{24}$ $[m^{-2}]$")

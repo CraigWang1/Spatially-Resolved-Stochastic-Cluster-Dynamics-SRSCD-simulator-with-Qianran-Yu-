@@ -328,7 +328,7 @@ void Object::computeDiffCoeff()
             prefactor = 3.8e-3;
             energy_m = 0.41;
              */
-            prefactor = 1.58e-3;
+            prefactor = 1.58e-3 / sqrt(2.); // divide by sqrt(2) for deuterium
             energy_m = 0.25;
         }
         else
