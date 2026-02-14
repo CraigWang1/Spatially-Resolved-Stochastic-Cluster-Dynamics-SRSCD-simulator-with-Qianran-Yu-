@@ -49,7 +49,7 @@ print(total_fluence)
 starting_temp = 300
 temperatures = [starting_temp]
 desorbed_flux = [0]
-window_size = 20
+window_size = 50
 for i in range(window_size, len(times)-window_size):
 	temperatures.append(starting_temp + times[i] * 0.5) # 0.5 K/s heating
 	dt = times[i+window_size] - times[i-window_size]

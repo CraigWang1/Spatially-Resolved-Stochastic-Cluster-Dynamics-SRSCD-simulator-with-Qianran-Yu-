@@ -517,10 +517,11 @@ void Object::computeBindTerm()
             else if (numV == 12)
                 maxBindE = 1.69;
             else
-                maxBindE = 2.08 - 1.47 * exp(-0.54 * numV);
+                maxBindE = 1.86;
+                // maxBindE = 2.08 - 1.47 * exp(-0.54 * numV);
 
             // Regression so that when H = 1, energy_b = maxBindE and when we reach maxSurfHDensity, energy_b = 0
-            energy_b = -maxBindE / pow(fabs(maxSurfHDensity - 1.0/surfArea), 1.05) * pow(fabs(surfHDensity - 1.0/surfArea), 1.05) + maxBindE;
+            energy_b = -maxBindE / pow(fabs(maxSurfHDensity - 1.0/surfArea), 1.1) * pow(fabs(surfHDensity - 1.0/surfArea), 1.1) + maxBindE;
             energy_d[2] = energy_b + emh;
             bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
             bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
