@@ -668,6 +668,7 @@ void OneLine::computeSAVReaction(
      * And allow excess 1H to eject W atom when H is oversaturated.
      */
     SAVR = 0;
+    double volume = volumeAtIndex(count);
 
     if (!SAV_ON 
         || count == SURFACE_INDEX 
@@ -678,15 +679,37 @@ void OneLine::computeSAVReaction(
         return;
     }
 
-    // If we have a mV-nH object
-    if (hostObject->getAttri(0) < 0 && hostObject->getAttri(2) > 0 && hostObject->getNumber(count) > 0)
+    // If we have a mV-nH object, or nH object
+    if (hostObject->getAttri(0) <= 0 && hostObject->getAttri(2) > 0 && hostObject->getNumber(count) > 0)
     {
         int numHPerCluster = hostObject->getAttri(2);
         int numVacancies = abs(hostObject->getAttri(0));
         double clusterThresholdH = 4.0*numVacancies;   // Qianran Yu 2020, did linear fit from graph of excess sav energies
         if (numHPerCluster > clusterThresholdH)
         {
-            SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * hostObject->getNumber(count);
+            // 1H is SAV candidate only if dissolved H concentration is oversaturated
+            if (hostObject->getKey() == 1) 
+            {
+                double tetrahedralSiteConc = DENSITY * 6.0;
+                double maxSolubilityConc = tetrahedralSiteConc * exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
+                double maxNumH = maxSolubilityConc * volume;
+                int numH = hostObject->getNumber(count);
+
+                if (numH > maxNumH)
+                {
+                    // Critical p-value to become oversaturated
+                    double pCrit = 0.01;
+                    double pValue = 1 - PoissonCDF(maxNumH, numH - 1);
+                    if (pValue < pCrit)
+                    {
+                        double extraH = numH - maxNumH;
+                        SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * extraH;
+                    }
+                }
+            }
+            // Overpressurized VH cluster is always SAV candidate
+            else
+                SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * hostObject->getNumber(count);
         }
     }
 }
@@ -737,7 +760,7 @@ void OneLine::computeRecombReaction(
             // desorbE = 2.0*(0.9 - 0.2*surfaceSaturationFraction - 0.7*pow(surfaceSaturationFraction, 12));
             // desorbE = 1.023 + 0.584/(1.0 + exp(7.38e-16 * surfaceConc - 2.85));
             // desorbE = 1.029 + 0.700/(1.0+exp((surfaceSaturationFraction-0.475)/0.151));
-        double desorptionR = NU0 * pow(ALATT, 2); // [cm^2 s^-1]
+        double desorptionR = NU0 / maxSurfaceConc; // [cm^2 s^-1]
         recombRLH = desorptionR * exp(-desorbE / KB / TEMPERATURE) * surfaceConc * surfaceConc * DIVIDING_AREA;
     }
     else
