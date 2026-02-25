@@ -359,6 +359,16 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     }
     else // avoid unnecessary calculation if we are processing special cases
     {
+        /* 
+         * If the number of objects is small, 
+         * transition from net diffusion rate
+         * to a (non-net) hop rate to capture 
+         * realistic local concentration spikes
+         */
+        const int hopThres = 10;
+        bool hopFront = (objectN[0] < hopThres) && (objectN[1] < hopThres);
+        bool hopBack = (objectN[0] < hopThres) && (objectN[2] < hopThres); 
+
         diffRToF = diffRToB = 0;
 
         /* 
@@ -366,24 +376,39 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         * Diffusion goes from area of higher concentration to lower concentration
         * Object not allowed to diffuse out through the front
         */
-        if (concentration > frontConcentration 
+        if ((concentration > frontConcentration || hopFront)
             && count != SURFACE_INDEX
             && count != BACK_SURFACE_INDEX  
             && (count != SUBSURFACE_INDEX || (hostObject->getAttri(0) != 0 && hostObject->getAttri(2) == 0))) 
         {
             prefactor = hostObject->getDiff() * DIVIDING_AREA / distf;
-            diffRToF = prefactor*(concentration - frontConcentration);
+            if (hopFront)
+            {
+                diffRToF = prefactor*concentration;
+            }
+            else
+            {
+                diffRToF = prefactor*(concentration - frontConcentration);
+            }
         }
 
-        /* 2. compute diffusion rate to the back element
-        */
-        if (concentration > backConcentration 
+        /* 
+         * 2. compute diffusion rate to the back element
+         */
+        if ((concentration > backConcentration || hopBack) 
             && count != SURFACE_INDEX 
             && count != BACK_SURFACE_INDEX
             && (count != BACK_SUBSURFACE_INDEX || (hostObject->getAttri(0) != 0 && hostObject->getAttri(2) == 0))) 
         {
             prefactor = hostObject->getDiff() * DIVIDING_AREA / distb;
-            diffRToB = prefactor*(concentration - backConcentration);
+            if (hopBack)
+            {
+                diffRToB = prefactor*concentration;
+            }
+            else
+            {
+                diffRToB = prefactor*(concentration - backConcentration);
+            }
         }
     }
 }
@@ -697,19 +722,15 @@ void OneLine::computeSAVReaction(
 
                 if (numH > maxNumH)
                 {
-                    // Critical p-value to become oversaturated
-                    double pCrit = 0.01;
-                    double pValue = 1 - PoissonCDF(maxNumH, numH - 1);
-                    if (pValue < pCrit)
-                    {
-                        double extraH = numH - maxNumH;
-                        SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * extraH;
-                    }
+                    double extraH = numH - maxNumH;
+                    SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * extraH;
                 }
             }
             // Overpressurized VH cluster is always SAV candidate
             else
+            {
                 SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * hostObject->getNumber(count);
+            }
         }
     }
 }
