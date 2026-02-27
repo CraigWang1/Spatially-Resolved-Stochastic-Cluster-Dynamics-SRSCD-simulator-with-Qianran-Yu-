@@ -709,8 +709,21 @@ void OneLine::computeSAVReaction(
     {
         int numHPerCluster = hostObject->getAttri(2);
         int numVacancies = abs(hostObject->getAttri(0));
-        double clusterThresholdH = 4.0*numVacancies;   // Qianran Yu 2020, did linear fit from graph of excess sav energies
-        if (numHPerCluster > clusterThresholdH)
+        double clusterThresholdH;
+        if (numVacancies == 0)
+        {
+            clusterThresholdH = 0;
+        }
+        else if (numVacancies <= 7)
+        {
+            int savHThres[8] = {0, 9, 14, 17, 22, 29, 34, 36}; // index = #vac, value = numH that will trigger sav
+            clusterThresholdH = savHThres[numVacancies];
+        }
+        else
+        {
+            clusterThresholdH = 4.75*numVacancies + 4; // Qianran Yu 2020, did linear fit from graph of excess sav energies
+        }
+        if (numHPerCluster >= clusterThresholdH)
         {
             // 1H is SAV candidate only if dissolved H concentration is oversaturated
             if (hostObject->getKey() == 1) 
