@@ -42,6 +42,16 @@ module load mpich #change if you want intelmpi or openmpi, I found mpich works b
 module li
 echo " "
 
+# Start a background watchdog process to backup files
+(
+  while true; do
+    sleep 900 # Wait 15 minutes
+    echo "Watchdog: Periodic backup at $(date)"
+    cp species*.txt sink*.txt Desorbed.txt "$DEST/"
+  done
+) & 
+WATCHDOG_PID=$!
+
 # substitute the <NAME OF YOUR EXECUTABLE> to run below:
 echo '/usr/bin/time -v mpirun -n $NSLOTS ./scdexe >> output.$JOB_ID'
 /usr/bin/time -v `which mpirun` -n $NSLOTS ./scdexe >> output.$JOB_ID
@@ -52,8 +62,10 @@ echo "Job $JOB_ID ended on:   " `hostname -s`
 echo "Job $JOB_ID ended on:   " `date `
 echo " "
 
+# Kill the watchdog once the program finishes normally
+kill $WATCHDOG_PID
+
 # log output files
 cp species*.txt sink*.txt Desorbed.txt "$DEST"/
 
 ###### MPI_SUBMIT.sh STOP ######################
-

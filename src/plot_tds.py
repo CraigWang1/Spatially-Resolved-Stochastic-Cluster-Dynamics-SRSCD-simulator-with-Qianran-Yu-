@@ -55,7 +55,6 @@ for i in range(window_size, len(times)-window_size):
 	dt = times[i+window_size] - times[i-window_size]
 	dN = desorbed[i+window_size] - desorbed[i-window_size]
 	desorbed_flux.append(dN/dt/DIVIDING_AREA)
-
 temperatures.insert(1, temperatures[0]+(temperatures[1]-temperatures[0])*0.7)
 desorbed_flux.insert(1, 0)
 
