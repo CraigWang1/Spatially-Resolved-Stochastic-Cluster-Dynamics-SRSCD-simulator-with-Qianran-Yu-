@@ -262,11 +262,11 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     {
         frontConcentration = 0;
     }
-    else if (count == BACK_SUBSURFACE_INDEX)
+    else if (count == BACK_SUBSURFACE_INDEX && BACK_DESORB)
     {
         backConcentration = 0;
     }
-    else if (count == BACK_SURFACE_INDEX)
+    else if (count == BACK_SURFACE_INDEX && BACK_DESORB)
     {
         concentration = 0;
         backConcentration = 0;
@@ -280,8 +280,8 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
     if ((
         count == SURFACE_INDEX
         || count == SUBSURFACE_INDEX
-        || count == BACK_SUBSURFACE_INDEX
-        || count == BACK_SURFACE_INDEX
+        || (count == BACK_SUBSURFACE_INDEX && BACK_DESORB)
+        || (count == BACK_SURFACE_INDEX && BACK_DESORB)
         ) 
         && hostObject->getKey() == 1)
     {
@@ -378,7 +378,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         */
         if ((concentration > frontConcentration || hopFront)
             && count != SURFACE_INDEX
-            && count != BACK_SURFACE_INDEX  
+            && (count != BACK_SURFACE_INDEX || !BACK_DESORB)  
             && (count != SUBSURFACE_INDEX || (hostObject->getAttri(0) != 0 && hostObject->getAttri(2) == 0))) 
         {
             prefactor = hostObject->getDiff() * DIVIDING_AREA / distf;
@@ -398,7 +398,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         if ((concentration > backConcentration || hopBack) 
             && count != SURFACE_INDEX 
             && count != BACK_SURFACE_INDEX
-            && (count != BACK_SUBSURFACE_INDEX || (hostObject->getAttri(0) != 0 && hostObject->getAttri(2) == 0))) 
+            && (count != BACK_SUBSURFACE_INDEX || !BACK_DESORB || (hostObject->getAttri(0) != 0 && hostObject->getAttri(2) == 0))) 
         {
             prefactor = hostObject->getDiff() * DIVIDING_AREA / distb;
             if (hopBack)
@@ -418,8 +418,8 @@ void OneLine::computeSinkReaction(const Object* const hostObject, const int coun
     if (!SINK_ON 
         || count == SURFACE_INDEX 
         || count == SUBSURFACE_INDEX
-        || count == BACK_SUBSURFACE_INDEX
-        || count == BACK_SURFACE_INDEX)
+        || (count == BACK_SUBSURFACE_INDEX && BACK_DESORB)
+        || (count == BACK_SURFACE_INDEX && BACK_DESORB))
     {
         sinkRDislocation = 0.0;
         sinkRGrainBndry = 0.0;
@@ -438,8 +438,8 @@ long double OneLine::computeBaseDissReaction(
     if (!DISS_ON 
         || count == SURFACE_INDEX 
         || count == SUBSURFACE_INDEX
-        || count == BACK_SUBSURFACE_INDEX
-        || count == BACK_SURFACE_INDEX)
+        || (count == BACK_SUBSURFACE_INDEX && BACK_DESORB)
+        || (count == BACK_SURFACE_INDEX && BACK_DESORB))
     {
         return 0.0;
     }
@@ -555,8 +555,8 @@ long double OneLine::computeBaseCombReaction(
     if (!COMB_ON 
         || count == SURFACE_INDEX 
         || count == SUBSURFACE_INDEX
-        || count == BACK_SUBSURFACE_INDEX
-        || count == BACK_SURFACE_INDEX)
+        || (count == BACK_SUBSURFACE_INDEX && BACK_DESORB)
+        || (count == BACK_SURFACE_INDEX && BACK_DESORB))
     {
         return 0.0;
     }
@@ -698,8 +698,8 @@ void OneLine::computeSAVReaction(
     if (!SAV_ON 
         || count == SURFACE_INDEX 
         || count == SUBSURFACE_INDEX
-        || count == BACK_SUBSURFACE_INDEX
-        || count == BACK_SURFACE_INDEX)
+        || (count == BACK_SUBSURFACE_INDEX && BACK_DESORB)
+        || (count == BACK_SURFACE_INDEX && BACK_DESORB))
     {
         return;
     }
@@ -759,7 +759,7 @@ void OneLine::computeRecombReaction(
 
     // only H can recombine at surface and leave surface
     if (!RECOMB_ON 
-        || (count != SURFACE_INDEX && count != BACK_SURFACE_INDEX) 
+        || (count != SURFACE_INDEX && (count != BACK_SURFACE_INDEX || !BACK_DESORB)) 
         || hostObject->getKey() != HKey
         || allObjects.find(HKey) == allObjects.end())
     {

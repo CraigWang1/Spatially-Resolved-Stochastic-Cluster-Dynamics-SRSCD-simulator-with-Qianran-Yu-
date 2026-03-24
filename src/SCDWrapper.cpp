@@ -565,8 +565,8 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
 {
     if (point == SURFACE_INDEX 
         || point == SUBSURFACE_INDEX
-        || point == BACK_SUBSURFACE_INDEX
-        || point == BACK_SURFACE_INDEX)
+        || (point == BACK_SUBSURFACE_INDEX && BACK_DESORB)
+        || (point == BACK_SURFACE_INDEX && BACK_DESORB))
     {
         sinkDissRateDislocation[type][point] = 0;
         sinkDissRateGrainBndry[type][point] = 0;
@@ -822,7 +822,7 @@ void SCDWrapper::updateSinks(const int point, const int* number){
 void SCDWrapper::processDiffEvent(Object* hostObject, const int n, const char signal)
 {
     int64 key = hostObject->getKey();
-    
+
     if (signal == 'f') {
         ++reactions[0][n];
         if(n != 0){ /* when not surface */
@@ -1004,8 +1004,9 @@ void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
 
 void SCDWrapper::processRecombEvent(Object* hostObject, const int n, bool ER, double time)
 {
-    if (n != SURFACE_INDEX && n != BACK_SURFACE_INDEX)
+    if (n != SURFACE_INDEX && (n != BACK_SURFACE_INDEX || !BACK_DESORB))
         cerr << "Recomb Error" << endl;
+
     /* 
      * Recombination: Two 1H instances combine to form H2 molecule, which
      * leaves the material through either the front or the back of the material 
