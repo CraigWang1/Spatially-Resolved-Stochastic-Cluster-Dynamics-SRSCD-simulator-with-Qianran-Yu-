@@ -920,6 +920,10 @@ void SCDWrapper::processCombEvent(
                                   const int64 theOtherKey,
                                   fstream& fs)
 {
+    if (hostObject->getKey() == 1 && theOtherKey == 1)
+    {
+        // cout << n << endl;
+    }
     ++reactions[4][n];
     /* 1. find the other reactant */
     Object* theOtherObject = allObjects[theOtherKey];

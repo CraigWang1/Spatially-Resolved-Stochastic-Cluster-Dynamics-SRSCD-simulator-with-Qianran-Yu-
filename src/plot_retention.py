@@ -144,7 +144,7 @@ with open("species.txt") as f:
 		if obj_key > 0 and obj_key < 1000000:  # free H
 			free_hydrogen_c += np.array(line_hold[2:]).astype(float) * h_per_cluster
 			plot_h = True
-		elif (obj_key < 0 or obj_key > 1000000) and h_per_cluster > 0: # trapped H
+		elif (obj_key < -1000000 or obj_key > 1000000) and h_per_cluster > 0: # trapped H
 			trapped_hydrogen_c += np.array(line_hold[2:]).astype(float) * h_per_cluster
 			plot_h = True
 
@@ -161,7 +161,9 @@ with open("sink0.txt") as f:
 		line_hold = line_hold.split()
 		numH.append(int(line_hold[3]) + int(line_hold[7]))
 	trapped_hydrogen_c += np.array(numH).astype(float)
-	# print(sum(numH)/np.sum(trapped_hydrogen_c))
+	print("hi", np.sum(trapped_hydrogen_c[:699])/np.sum(trapped_hydrogen_c))
+print(positions[699])
+
 print("Retained fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4))
 # print(trapped_hydrogen_c)
 for i in range(len(trapped_hydrogen_c)):
@@ -216,7 +218,7 @@ if plot_h:
 # plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
 plt.yscale('log')
 plt.ylim(2*10**-3, 10**0)
-plt.xlim(0, 5)
+# plt.xlim(0, 5)
 plt.plot(experiment_positions, concentrations, label="Experiment", color='r')
 plt.legend()
 plt.title("Trapped Hydrogen Concentration Vs. Depth\n $T = 383K, Fluence = 1 \cdot 10^{24}$ $[m^{-2}]$")

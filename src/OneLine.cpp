@@ -577,9 +577,9 @@ long double OneLine::computeBaseCombReaction(
 
     // H+H-->2H
     // Disable H clustering for now to reduce complexity
-    if (hostObject->getKey() == 1 && mobileObject->getKey() == 1){
-        return 0.0;
-    }
+    // if (hostObject->getKey() == 1 && mobileObject->getKey() == 1){
+    //     return 0.0;
+    // }
 
     // Disable multiples of 1V-12H + 1H because vacancy can store max 12H, save sim time
     if (hostObject->getAttri(0) < 0 && 
@@ -726,17 +726,17 @@ void OneLine::computeSAVReaction(
         if (numHPerCluster >= clusterThresholdH)
         {
             // 1H is SAV candidate only if dissolved H concentration is oversaturated
-            if (hostObject->getKey() == 1) 
+            if (hostObject->getAttri(0) == 0 && hostObject->getAttri(2) >= 1) 
             {
-                double tetrahedralSiteConc = DENSITY * 6.0;
-                double maxSolubilityConc = tetrahedralSiteConc * exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
-                double maxNumH = maxSolubilityConc * volume;
-                int numH = hostObject->getNumber(count);
+                // double tetrahedralSiteConc = DENSITY * 6.0;
+                // double maxSolubilityConc = tetrahedralSiteConc * exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
+                // double maxNumH = maxSolubilityConc * volume;
+                // int numH = hostObject->getNumber(count);
 
-                if (numH > maxNumH)
+                if (hostObject->getAttri(2) > 1)
                 {
-                    double extraH = numH - maxNumH;
-                    SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * extraH;
+                    // double extraH = numH - maxNumH;
+                    SAVR = NU0 * exp(-0.40/KB/TEMPERATURE) * hostObject->getNumber(count);
                 }
             }
             // Overpressurized VH cluster is always SAV candidate
