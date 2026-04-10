@@ -123,6 +123,7 @@ void SCDWrapper::computeMatrixRate(const int n)
     matrixRate[n] += sinkDissRateDislocation[1][n];
     matrixRate[n] += sinkDissRateGrainBndry[0][n];
     matrixRate[n] += sinkDissRateGrainBndry[1][n];
+    matrixRate[n] += sinkSAVRateDislocation[n];
 
     matrixRateTree.set_val(n, matrixRate[n]);
 }
@@ -257,6 +258,13 @@ Object* SCDWrapper::selectDomainReaction(
             tempRandRate -= sinkDissRateGrainBndry[1][pointIndex];
         }
     }
+    if (reaction == NONE){
+        if (sinkSAVRateDislocation[pointIndex] >= tempRandRate){
+            reaction = SAVDISLOCATION;
+        }else{
+            tempRandRate -= sinkSAVRateDislocation[pointIndex];
+        }
+    }
     
     count = pointIndex;
     if (LOG_REACTIONS)
@@ -351,6 +359,11 @@ void SCDWrapper::processEvent(
             processSinkDissEvent(1, n, false);
             dissH++;
             //cout << "dissH = " << dissH << endl;
+            break;
+        case SAVDISLOCATION:
+            processSAVDislocationEvent(n);
+            if (LOG_REACTIONS)
+                processEventFile << "SAV reaction from dislocation at point " << n << endl;
             break;
         default:
             break;
@@ -570,6 +583,7 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
     {
         sinkDissRateDislocation[type][point] = 0;
         sinkDissRateGrainBndry[type][point] = 0;
+        sinkSAVRateDislocation[point] = 0;
         return;
     }
 
@@ -602,6 +616,11 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
         else
             sinkDissRateGrainBndry[type][point] = 0;
     }
+
+    if (sinksDislocation[3][point] > 0 && SAV_ON)
+        sinkSAVRateDislocation[point] = NU0*exp(-SAV_ENERGY/KB/TEMPERATURE)*sinksDislocation[3][point];
+    else
+        sinkSAVRateDislocation[point] = 0;    
 }
 
 int64 SCDWrapper::atomProperty(SCDWrapper::InsertStyle mode, const int n)
@@ -1047,6 +1066,28 @@ void SCDWrapper::processSinkDissEvent(const int type, const int point, bool disl
     }
     addToObjectMap(productKey, point);
     computeSinkDissRate(type, point);
+}
+
+void SCDWrapper::processSAVDislocationEvent(const int point)
+{
+    /* 
+     * Superabundant vacancy mechanism.
+     * Eject an interstitial (which increases vacancy by 1)
+     */
+    // Eject interstitial
+    int64 SIAKey = (int64)pow(10.0, (double)EXP10 * (LEVELS - 1)); /* Key for SIA. */
+    addToObjectMap(SIAKey, point);
+
+    // Generate H1V1 cluster
+    int productAttr[LEVELS] = { -1, 0, 1 };
+    int64 productKey = attrToKey(productAttr);
+    addToObjectMap(productKey, point);
+
+    // Remove H1 from dislocations in this element
+    sinksDislocation[3][point]--;
+
+    // Update dislocation H diss and sav rate because num H in dislocations changed
+    computeSinkDissRate(1, point);
 }
 
 void SCDWrapper::getElectronInsertion(const int n)

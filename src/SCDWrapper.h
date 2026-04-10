@@ -42,6 +42,7 @@ private:
     int64 sinksGrainBndry[LEVELS+1][POINTS];
     long double sinkDissRateDislocation[2][POINTS];
     long double sinkDissRateGrainBndry[2][POINTS]; // only vac and H allowed to emit from sinks, b/c SIA has high binding energy with sinks 
+    long double sinkSAVRateDislocation[POINTS];
     // dissociation rate of V/H from dislocations
     int reactions[8][POINTS];
     int startIndex, endIndex; // the indices of which points this processor is responsible for
@@ -95,6 +96,7 @@ private:
     void processSAVEvent(Object*, const int);      /* process super-abundant-vacancy reaction */
     void processRecombEvent(Object*, const int, bool, double);   /* process surface recombination event: 1H+1H forms H2 and leaves material surface */
     void processSinkDissEvent(const int, const int, bool); /* process dissociation from sink event */
+    void processSAVDislocationEvent(const int);    /* process SAV (nucleation) occuring at dislocations */
     /* get insertion functions */
     void getElectronInsertion(const int);
     void getNeutronInsertion(const int);
