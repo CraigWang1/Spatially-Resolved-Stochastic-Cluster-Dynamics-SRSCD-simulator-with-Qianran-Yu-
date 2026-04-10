@@ -366,8 +366,8 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
          * realistic local concentration spikes
          */
         const int hopThres = 10;
-        bool hopFront = (objectN[0] < hopThres) && (objectN[1] < hopThres);
-        bool hopBack = (objectN[0] < hopThres) && (objectN[2] < hopThres); 
+        bool hopFront = HOP_ON && (objectN[0] < hopThres) && (objectN[1] < hopThres);
+        bool hopBack = HOP_ON && (objectN[0] < hopThres) && (objectN[2] < hopThres); 
 
         diffRToF = diffRToB = 0;
 

@@ -485,6 +485,7 @@ void Object::computeBindTerm()
             energy_d[0] = energy_b + emv;
 
             /*this part is for binding energy of mV-nH+1H based on Ogorodnikova (2015)*/
+            /*
             int numV = abs(attributes[0]);
             int numH = attributes[2];
             int monovacancyMaxH = 12;
@@ -522,6 +523,14 @@ void Object::computeBindTerm()
 
             // Regression so that when H = 1, energy_b = maxBindE and when we reach maxSurfHDensity, energy_b = 0
             energy_b = -maxBindE / pow(fabs(maxSurfHDensity - 1.0/surfArea), 1.1) * pow(fabs(surfHDensity - 1.0/surfArea), 1.1) + maxBindE;
+            */
+
+            /*this part is for binding energy of mV-nH+1H based on Qianran Yu (2020)*/
+            double numV = abs(attributes[0]);
+            double numH = attributes[2];
+            double HVRatio = numH / numV;
+                
+            energy_b = 1.707 - 0.507 / pow(numV, 3) + 0.1677*HVRatio / pow(numV, 2) - 0.1699*HVRatio - 8.58e-4 * pow(HVRatio, 3) - 1.793e-3*numV*pow(HVRatio, 2);
             energy_d[2] = energy_b + emh;
             bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
             bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);

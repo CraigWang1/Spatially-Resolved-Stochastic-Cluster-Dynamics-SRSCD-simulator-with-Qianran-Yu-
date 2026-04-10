@@ -101,7 +101,8 @@ const bool DISS_ON = true; // dissociation reaction
 const bool DIFF_ON = true; // diffusion reaction
 const bool SAV_ON = true;  // super abundant vacancy reaction
 const bool RECOMB_ON = true; // surface recombination (surface release) reaction
-const bool BACK_DESORB = false; // whether or not the back of the sample is configured as a desorption boundary condition. if not, it will be a no flux boundary condition.
+const bool BACK_DESORB = true; // whether or not the back of the sample is configured as a desorption boundary condition. if not, it will be a no flux boundary condition.
+const bool HOP_ON = false; // whether to enable species to hop between mesh elements even when the concentration gradient is 0
 const double TEMP_INCREASE_RATE = 0.;   // K/s for when doing thermal desorption spectroscopy simulations. For now TDS is only supported in serial (1 processor max)
 extern double TEMPERATURE;  // Temperature is set in main.cpp
 
