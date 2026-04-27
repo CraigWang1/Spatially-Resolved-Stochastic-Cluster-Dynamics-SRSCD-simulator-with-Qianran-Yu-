@@ -26,6 +26,8 @@
 #define ATOMICVOLUME 0.0158 //[nm^3] Atomic volume of W.
 #define BURGER 0.28 //[nm] burger's vector of W.
 #define DISLOCATION 1.0e+8   // [cm^-2] Dislocation density.
+#define EDGE_DISLOCATION_FRAC 0.1 // approximate fraction of dislocations that are edge dislocations
+#define NUM_SINKS 3               // 3 types of sinks: screw dislocations, edge dislocations, and grain boundaries
 //#define DISLOCATION 0.0
 #define ODS_R 2.5e-07       // [cm] ODS-particle radius.
 //#define ODS_DENSITY 2.6e+17 // [cm^-3] ODS-particle density.
@@ -72,7 +74,7 @@
 #define BACK_SURFACE_INDEX (POINTS - 1)
 
 // Auxiliary definitions:
-enum Reaction { DIFFUSETOF, DIFFUSETOB, SINKDISLOCATION, SINKGRAINBNDRY, DISSOCIATION, COMBINATION, SAV, RECOMBER, RECOMBLH, NONE, PARTICLE, HE, H, DISSVDISLOCATION, DISSVGRAINBNDRY, DISSHDISLOCATION, DISSHGRAINBNDRY, ERROR};
+enum Reaction { DIFFUSETOF, DIFFUSETOB, SINKDISLOCATIONSCREW, SINKDISLOCATIONEDGE, SINKGRAINBNDRY, DISSOCIATION, COMBINATION, SAV, RECOMBER, RECOMBLH, NONE, PARTICLE, HE, H, DISSVDISLOCATIONSCREW, DISSVDISLOCATIONEDGE, DISSVGRAINBNDRY, DISSHDISLOCATIONSCREW, DISSHDISLOCATIONEDGE, DISSHGRAINBNDRY, ERROR};
 
 /*
  ** Reaction Types:

@@ -20,7 +20,7 @@ OneLine::OneLine(
     setOneLine(hostObject, count, mobileObjects, allObjects);
 }
 
-OneLine::OneLine() : diffRToF(0.0), diffRToB(0.0), sinkRDislocation(0.0), sinkRGrainBndry(0.0), SAVR(0.0), recombRER(0.0), recombRLH(0.0), totalRate(0.0)
+OneLine::OneLine() : diffRToF(0.0), diffRToB(0.0), sinkRDislocationScrew(0.0), sinkRDislocationEdge(0.0), sinkRGrainBndry(0.0), SAVR(0.0), recombRER(0.0), recombRLH(0.0), totalRate(0.0)
 {
     for (int i = 0; i < LEVELS; i++)
         dissociationR[i] = 0.0;
@@ -50,11 +50,17 @@ Reaction OneLine::selectReaction(
     else {
         tempRate -= diffRToB;
     }
-    if (sinkRDislocation >= tempRate) {
-        return SINKDISLOCATION;
+    if (sinkRDislocationScrew >= tempRate) {
+        return SINKDISLOCATIONSCREW;
     }
     else {
-        tempRate -= sinkRDislocation;
+        tempRate -= sinkRDislocationScrew;
+    }
+    if (sinkRDislocationEdge >= tempRate) {
+        return SINKDISLOCATIONEDGE;
+    }
+    else {
+        tempRate -= sinkRDislocationEdge;
     }
     if (sinkRGrainBndry >= tempRate) {
         return SINKGRAINBNDRY;
@@ -166,7 +172,8 @@ const long double OneLine::computeTotalRate()
     totalRate = 0.0;
     totalRate += diffRToF; /* add one diffusion rate */
     totalRate += diffRToB; /* add another diffusion rate*/
-    totalRate += sinkRDislocation;    /* add dislocation sink rate */
+    totalRate += sinkRDislocationScrew;    /* add dislocation sink rate */
+    totalRate += sinkRDislocationEdge;
     totalRate += sinkRGrainBndry;     /* add grain boundary sink rate */
     totalRate += SAVR;     /* add super abundant vacancy rate */
     totalRate += recombRER; /* add one recombination rate */
@@ -185,7 +192,7 @@ void OneLine::display(Object const * const hostObject)
     ofstream fs;
     fs.open("lines.txt", ios::app);
     fs << "Line for Oject" << hostObject->getKey() << ":    ";
-    fs << "(diff)" << diffRToF << ", " << diffRToB << "    " << "(sink)" << sinkRDislocation << ", " << sinkRGrainBndry << "    ";
+    fs << "(diff)" << diffRToF << ", " << diffRToB << "    " << "(sink)" << sinkRDislocationScrew << ", " << sinkRDislocationEdge << ", " << sinkRGrainBndry << "    ";
     for (int i = 0; i < LEVELS; ++i) {
         fs <<"(diss)"<< dissociationR[i] << "    ";
     }
@@ -421,12 +428,14 @@ void OneLine::computeSinkReaction(const Object* const hostObject, const int coun
         || (count == BACK_SUBSURFACE_INDEX && BACK_DESORB)
         || (count == BACK_SURFACE_INDEX && BACK_DESORB))
     {
-        sinkRDislocation = 0.0;
+        sinkRDislocationScrew = 0.0;
+        sinkRDislocationEdge = 0.0;
         sinkRGrainBndry = 0.0;
         return;
     }
 
-    sinkRDislocation = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSinkDislocation();
+    sinkRDislocationScrew = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSinkDislocation() * (1 - EDGE_DISLOCATION_FRAC);
+    sinkRDislocationEdge = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSinkDislocation() * EDGE_DISLOCATION_FRAC;
     sinkRGrainBndry = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSinkGrainBndry();
 }
 
