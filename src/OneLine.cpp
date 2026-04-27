@@ -586,7 +586,7 @@ long double OneLine::computeBaseCombReaction(
 
     // H+H-->2H
     // Disable H clustering for now to reduce complexity
-    if (hostObject->getKey() == 1 && mobileObject->getKey() == 1){
+    if (hostObject->getKey() == 1 && mobileObject->getKey() == 1 && !NH_CLUSTERING){
         return 0.0;
     }
 
@@ -702,7 +702,6 @@ void OneLine::computeSAVReaction(
      * And allow excess 1H to eject W atom when H is oversaturated.
      */
     SAVR = 0;
-    double volume = volumeAtIndex(count);
 
     if (!SAV_ON 
         || count == SURFACE_INDEX 
@@ -732,27 +731,14 @@ void OneLine::computeSAVReaction(
         {
             clusterThresholdH = 4.75*numVacancies + 4; // Qianran Yu 2020, did linear fit from graph of excess sav energies
         }
-        if (numHPerCluster >= clusterThresholdH)
+        // Allow overpressured HV clusters and nH clusters to be SAV candidates
+        if (numHPerCluster >= clusterThresholdH && numVacancies > 0)
         {
-            // 1H is SAV candidate only if dissolved H concentration is oversaturated
-            if (hostObject->getKey() == 1) 
-            {
-                double tetrahedralSiteConc = DENSITY * 6.0;
-                double maxSolubilityConc = tetrahedralSiteConc * exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE);
-                double maxNumH = maxSolubilityConc * volume;
-                int numH = hostObject->getNumber(count);
-
-                if (numH > maxNumH)
-                {
-                    double extraH = numH - maxNumH;
-                    SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * extraH;
-                }
-            }
-            // Overpressurized VH cluster is always SAV candidate
-            else
-            {
-                SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * hostObject->getNumber(count);
-            }
+            SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * hostObject->getNumber(count);
+        }
+        else if (numHPerCluster > 1 && numVacancies == 0)
+        {
+            SAVR = NU0 * exp(-0.80/KB/TEMPERATURE) * hostObject->getNumber(count);
         }
     }
 }
