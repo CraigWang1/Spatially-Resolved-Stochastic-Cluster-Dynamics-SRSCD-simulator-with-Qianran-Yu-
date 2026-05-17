@@ -1224,7 +1224,7 @@ void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
 void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
 {
     int64 objectKey;
-    int numberSinks[2*(LEVELS+1)] = { 0 };  // LEVELS + 1 to separate vacancies and sia, *2 because separate dislocations and grain boundaries
+    int numberSinks[NUM_SINKS*(LEVELS+1)] = { 0 };  // LEVELS + 1 to separate vacancies and sia, *2 because separate dislocations and grain boundaries
     int number[POINTS] = { 0 };
     int step = 0;
     string skip;
@@ -1267,7 +1267,7 @@ void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
         for(int j = 0; j < POINTS; j++){
             if (getline(file, oneLine)) {
                 lineHold.str(oneLine);
-                for (int i = 0; i < 2*(LEVELS+1); i++) {
+                for (int i = 0; i < NUM_SINKS*(LEVELS+1); i++) {
                     lineHold >> numberSinks[i];
                 }
                 srscd->updateSinks(j,numberSinks);
