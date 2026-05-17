@@ -35,6 +35,7 @@ with open("/home/craig/research/experiment_retention_383K/tds.txt") as f:
 		experiment_temperatures.append(float(line_hold[0]))
 		experiment_desorbed_flux.append(float(line_hold[1])*10**17)
 
+test = 0
 total_fluence = 0
 prev_time = 0
 for i in range(len(experiment_temperatures)-1):
@@ -42,8 +43,11 @@ for i in range(len(experiment_temperatures)-1):
 	time = (temperature - 350) * 2
 	flux = experiment_desorbed_flux[i]
 	total_fluence += flux * (time - prev_time)
+	if temperature <= 600:
+		test += flux*(time - prev_time)
 	prev_time = time
 
+print(test)
 print(total_fluence)
 
 starting_temp = 300

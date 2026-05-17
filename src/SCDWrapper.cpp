@@ -1219,12 +1219,22 @@ void SCDWrapper::getHInsertion(const int n, const double dt, fstream& fs)
     addToObjectMap(clusterKey, n);
     if (LOG_REACTIONS)
         fs << "H insertion: get 1 " << clusterKey <<" in element "<< n <<endl;
+
+    long double probFrenkel = 5.0e-6;
+    if (distribution(engine) < probFrenkel)
+    {
+        int64 SIAKey = 1000000;
+        int64 vacKey = -1000000;
+        addToObjectMap(SIAKey, n);
+        addToObjectMap(vacKey, n);
+    }
+
 }
 
 void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
 {
     int64 objectKey;
-    int numberSinks[2*(LEVELS+1)] = { 0 };  // LEVELS + 1 to separate vacancies and sia, *2 because separate dislocations and grain boundaries
+    int numberSinks[NUM_SINKS*(LEVELS+1)] = { 0 };  // LEVELS + 1 to separate vacancies and sia, *2 because separate dislocations and grain boundaries
     int number[POINTS] = { 0 };
     int step = 0;
     string skip;
@@ -1267,7 +1277,7 @@ void restart(long int & iStep, double & advTime, SCDWrapper *srscd)
         for(int j = 0; j < POINTS; j++){
             if (getline(file, oneLine)) {
                 lineHold.str(oneLine);
-                for (int i = 0; i < 2*(LEVELS+1); i++) {
+                for (int i = 0; i < NUM_SINKS*(LEVELS+1); i++) {
                     lineHold >> numberSinks[i];
                 }
                 srscd->updateSinks(j,numberSinks);

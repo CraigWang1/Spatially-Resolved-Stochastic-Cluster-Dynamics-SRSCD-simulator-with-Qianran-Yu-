@@ -26,7 +26,7 @@
 #define ATOMICVOLUME 0.0158 //[nm^3] Atomic volume of W.
 #define BURGER 0.28 //[nm] burger's vector of W.
 #define DISLOCATION 1.0e+8   // [cm^-2] Dislocation density.
-#define EDGE_DISLOCATION_FRAC 0.1 // approximate fraction of dislocations that are edge dislocations
+#define EDGE_DISLOCATION_FRAC 0 // approximate fraction of dislocations that are edge dislocations
 #define NUM_SINKS 3               // 3 types of sinks: screw dislocations, edge dislocations, and grain boundaries
 //#define DISLOCATION 0.0
 #define ODS_R 2.5e-07       // [cm] ODS-particle radius.
@@ -43,7 +43,7 @@
 #define GAMMA 1.0           // Fraction of surface emission.
 #define TDE 90              // [eV] Threshold displacement energy for W.
 #define HEAT_OF_SOLUTION 0.89   // [eV] Heat of solution of H in W.
-#define SAV_ENERGY 1.12         // [eV] energy that controls SAV rate
+#define SAV_ENERGY 0.95         // [eV] energy that controls SAV rate
 #define H_DEPOSITION_ENERGY 110.0 // [eV] energy of an H atom in the incident flux
 #define H_MIGRATION_ENERGY 0.25   // [eV] energy needed for an H to diffuse through lattice
 #define V_FORM_E 3.23           // [eV] Formation Energy of V1
@@ -104,8 +104,8 @@ const bool DIFF_ON = true; // diffusion reaction
 const bool SAV_ON = true;  // super abundant vacancy reaction
 const bool RECOMB_ON = true; // surface recombination (surface release) reaction
 const bool BACK_DESORB = true; // whether or not the back of the sample is configured as a desorption boundary condition. if not, it will be a no flux boundary condition.
-const bool HOP_ON = true; // whether to enable species to hop between mesh elements even when the concentration gradient is 0
-const bool NH_CLUSTERING = true; // whether to allow H to combine and form nH clusters
+const bool HOP_ON = false; // whether to enable species to hop between mesh elements even when the concentration gradient is 0
+const bool NH_CLUSTERING = false; // whether to allow H to combine and form nH clusters
 const double TEMP_INCREASE_RATE = 0.;   // K/s for when doing thermal desorption spectroscopy simulations. For now TDS is only supported in serial (1 processor max)
 extern double TEMPERATURE;  // Temperature is set in main.cpp
 
