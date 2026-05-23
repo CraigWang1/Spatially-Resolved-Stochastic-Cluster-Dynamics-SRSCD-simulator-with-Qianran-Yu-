@@ -81,6 +81,16 @@ double Object::getDiff() const
     return diffusivity;
 }
 
+double Object::getExpMig() const
+{
+    return exp_mig;
+}
+
+double Object::getExpSAV() const
+{
+    return exp_sav;
+}
+
 int Object::getNumber(const int count) const
 {
     return number[count];
@@ -335,7 +345,8 @@ void Object::computeDiffCoeff()
             prefactor = 0.0;
     }
     /* All data from [CS Becquart et al., J Nucl Mater 403 (2010) 75] */
-    diffusivity = prefactor*exp(-energy_m / KB / TEMPERATURE);
+    exp_mig = exp(-energy_m / (KB * TEMPERATURE));
+    diffusivity = prefactor*exp_mig;
 }
 
 void Object::computeBindTerm()
@@ -407,7 +418,7 @@ void Object::computeBindTerm()
             }
             energy_d[0] = energy_b + emv;
         }
-        bind[0] = attfreq*exp(-energy_d[0] / KB / TEMPERATURE);
+        bind[0] = attfreq*exp(-energy_d[0] / (KB * TEMPERATURE));
     }
     // He-defect clusters:
     else if (!check_He) {
@@ -425,8 +436,8 @@ void Object::computeBindTerm()
                 energy_d[1] = 4.6 - 1.1*log10(ratio) - 0.3*log10(ratio)*log10(ratio);
                 // binding energy of He to cluster.
             }
-            bind[0] = attfreq*exp(-energy_d[0] / KB / TEMPERATURE);
-            bind[1] = attfreq*exp(-energy_d[1] / KB / TEMPERATURE);
+            bind[0] = attfreq*exp(-energy_d[0] / (KB * TEMPERATURE));
+            bind[1] = attfreq*exp(-energy_d[1] / (KB * TEMPERATURE));
         }
         else if (attributes[0]>0) // He-SIA clusters.
             attfreq = 0.0; // No dissociation between He and SIA clusters.
@@ -447,7 +458,7 @@ void Object::computeBindTerm()
                 energy_b = efhe + (eb2he - efhe)*(pow(fabs((double)attributes[0]), 0.6666667) - pow((fabs((double)attributes[0]) - 1.0), 0.6666667)) / 0.5874;
             }
             energy_d[1] = energy_b + emhe;
-            bind[1] = attfreq*exp(-energy_d[1] / KB / TEMPERATURE);
+            bind[1] = attfreq*exp(-energy_d[1] / (KB * TEMPERATURE));
         }
     }
     
@@ -647,6 +658,12 @@ void Object::computeBindTerm()
     }
 }
 
+void Object::computeSAVTerm()
+{
+    // Store exp call here (exp() calls are expensive)
+    exp_sav = exp(-SAV_ENERGY / (KB * TEMPERATURE));
+}
+
 void Object::computeSinks()
 {
     /* The total sink strength for all defects are stored in the array s.
@@ -676,6 +693,7 @@ void Object::computeThermalProperties()
     /* Properties that depend on temperature */
     computeDiffCoeff();
     computeBindTerm();
+    computeSAVTerm();
 }
 
 void Object::setProperties(const int count, const int n)

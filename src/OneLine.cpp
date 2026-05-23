@@ -309,7 +309,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
         if (count == SUBSURFACE_INDEX || count == BACK_SUBSURFACE_INDEX)
         {
             double jumpingDist = maxSurfaceConc / 6 / DENSITY;
-            double freq = NU0 * exp(-H_MIGRATION_ENERGY / KB / TEMPERATURE);
+            double freq = NU0 * hostObject->getExpMig();
             long double diffRToSurf = 0;
             diffRToF = diffRToB = 0;
         
@@ -353,7 +353,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
             // else                          // doing thermal desorption, assume vacuum environment so use DFT data
                 absorbE = -3.6592e-8 * exp(16.9129*surfaceSaturationFraction) + 1.71738;             // Ajmalghan 2019
                 // absorbE = desorbE/2. + HEAT_OF_SOLUTION + H_MIGRATION_ENERGY + 0.02;   // Add 0.02 from Tajuki Oda 2023
-            double freq = NU0 * exp(-absorbE / KB / TEMPERATURE);            
+            double freq = NU0 * exp(-absorbE / (KB * TEMPERATURE));            
             prefactor = freq * surfaceConc * DIVIDING_AREA;
 
             if (count == SURFACE_INDEX)
@@ -734,11 +734,11 @@ void OneLine::computeSAVReaction(
         // Allow overpressured HV clusters and nH clusters to be SAV candidates
         if (numHPerCluster >= clusterThresholdH && numVacancies > 0)
         {
-            SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * hostObject->getNumber(count);
+            SAVR = NU0 * hostObject->getExpSAV() * hostObject->getNumber(count);
         }
         else if (numHPerCluster >= 1 && numVacancies == 0)
         {
-            SAVR = 0.75 * hostObject->getNumber(count);
+            SAVR = 0.1 * hostObject->getNumber(count);
             // SAVR = NU0 * exp(-0.80/KB/TEMPERATURE) * hostObject->getNumber(count);
         }
     }
@@ -791,7 +791,7 @@ void OneLine::computeRecombReaction(
             // desorbE = 1.023 + 0.584/(1.0 + exp(7.38e-16 * surfaceConc - 2.85));
             // desorbE = 1.029 + 0.700/(1.0+exp((surfaceSaturationFraction-0.475)/0.151));
         double desorptionR = NU0 / maxSurfaceConc; // [cm^2 s^-1]
-        recombRLH = desorptionR * exp(-desorbE / KB / TEMPERATURE) * surfaceConc * surfaceConc * DIVIDING_AREA;
+        recombRLH = desorptionR * exp(-desorbE / (KB * TEMPERATURE)) * surfaceConc * surfaceConc * DIVIDING_AREA;
     }
     else
         recombRLH = 0.0;

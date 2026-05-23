@@ -26,6 +26,9 @@ private:
     double r1, r1e;
     double sinkStrengthDislocation;
     double sinkStrengthGrainBndry;
+
+    /* Precomputed exponential terms */
+    double exp_mig, exp_sav;
     
     // private functions
     void setKey(); /* use attributes to get key */
@@ -35,6 +38,7 @@ private:
     void computeR1R1e();
     void computeDiffCoeff();
     void computeBindTerm();
+    void computeSAVTerm();
     void computeSinks();
     void setProperties(const int, const int);
 public:
@@ -52,6 +56,8 @@ public:
     // functions that get access to private data memeber
     int64 getKey() const;  // get access to object key;
     double getDiff() const;  // get access to diffusivity
+    double getExpMig() const; // get access to exp(-migE / kT)
+    double getExpSAV() const; // get access to exp(-SAV_energy / kT)
     int getNumber(const int) const;  // get access to the number of object in this element
     int getTotalNumber() const;
     int getAttri(const int) const;   // get access to one attribute
