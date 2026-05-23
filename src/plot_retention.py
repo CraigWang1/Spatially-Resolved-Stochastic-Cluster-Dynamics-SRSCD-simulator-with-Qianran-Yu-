@@ -13,20 +13,20 @@ from make_speciesfile import combine_species_files
 combine_species_files()
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 732                            # num spatial elements in the simulation (1 surface + 100 bulk)
+POINTS = 831                            # num spatial elements in the simulation (1 surface + 100 bulk)
 NM_TO_CM = 1e-7
 NM_TO_UM = 1e-3
 CM_TO_UM = 1e4
-DIVIDING_AREA = 0.64e-12                    # [cm]
+DIVIDING_AREA = 0.4583e-12                    # [cm]
 SUBSURFACE_THICKNESS = 0.544                # [nm]
-FIRST_BULK_THICKNESS = 8                 # [nm]
-ELEMENT_THICKNESS = 8                   # [nm]
+FIRST_BULK_THICKNESS = 6.77                 # [nm]
+ELEMENT_THICKNESS = 6.77                   # [nm]
 VOLUME = DIVIDING_AREA * ELEMENT_THICKNESS * NM_TO_CM  
 
 SURFACE_INDEX = 0
 SUBSURFACE_INDEX = 1
 FIRST_BULK_INDEX = 2
-FIRST_EXP_INDEX = 627 
+FIRST_EXP_INDEX = 732
 EXP_LENGTH_MULT = 1.1
 
 DENSITY = 6.30705e+22                      # [atoms/cm^3] Atomic density for W.
@@ -159,8 +159,8 @@ with open("sink0.txt") as f:
 	numH = []
 	for line_hold in f:
 		line_hold = line_hold.split()
-		numH.append(int(line_hold[3]) + int(line_hold[7]))
-	trapped_hydrogen_c += np.array(numH).astype(float)
+		numH.append(int(line_hold[3]) + int(line_hold[7]) + int(line_hold[11]))
+	# trapped_hydrogen_c += np.array(numH).astype(float)
 	# print(sum(numH)/np.sum(trapped_hydrogen_c))
 print("Retained fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4))
 # print(trapped_hydrogen_c)

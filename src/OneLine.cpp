@@ -736,9 +736,10 @@ void OneLine::computeSAVReaction(
         {
             SAVR = NU0 * exp(-SAV_ENERGY/KB/TEMPERATURE) * hostObject->getNumber(count);
         }
-        else if (numHPerCluster > 1 && numVacancies == 0)
+        else if (numHPerCluster >= 1 && numVacancies == 0)
         {
-            SAVR = NU0 * exp(-0.80/KB/TEMPERATURE) * hostObject->getNumber(count);
+            SAVR = 0.75 * hostObject->getNumber(count);
+            // SAVR = NU0 * exp(-0.80/KB/TEMPERATURE) * hostObject->getNumber(count);
         }
     }
 }
