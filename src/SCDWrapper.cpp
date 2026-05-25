@@ -119,12 +119,12 @@ void SCDWrapper::computeMatrixRate(const int n)
         }
     }
     matrixRate[n] += damage.getTotalDamage(n);
-    matrixRate[n] += sinkDissRateDislocationScrew[0][n];
-    matrixRate[n] += sinkDissRateDislocationScrew[1][n];
-    matrixRate[n] += sinkDissRateDislocationEdge[0][n];
-    matrixRate[n] += sinkDissRateDislocationEdge[1][n];
-    matrixRate[n] += sinkDissRateGrainBndry[0][n];
-    matrixRate[n] += sinkDissRateGrainBndry[1][n];
+    matrixRate[n] += sinkDissRateDislocationScrew[n][0];
+    matrixRate[n] += sinkDissRateDislocationScrew[n][1];
+    matrixRate[n] += sinkDissRateDislocationEdge[n][0];
+    matrixRate[n] += sinkDissRateDislocationEdge[n][1];
+    matrixRate[n] += sinkDissRateGrainBndry[n][0];
+    matrixRate[n] += sinkDissRateGrainBndry[n][1];
 
     matrixRateTree.set_val(n, matrixRate[n]);
 }
@@ -232,45 +232,45 @@ Object* SCDWrapper::selectDomainReaction(
         reaction = damage.selectDamage(pointIndex, tempRandRate);
     }
     if (reaction == NONE){
-        if (sinkDissRateDislocationScrew[0][pointIndex] >= tempRandRate){
+        if (sinkDissRateDislocationScrew[pointIndex][0] >= tempRandRate){
             reaction = DISSVDISLOCATIONSCREW;
         }else{
-            tempRandRate -= sinkDissRateDislocationScrew[0][pointIndex];
+            tempRandRate -= sinkDissRateDislocationScrew[pointIndex][0];
         }
     }
     if (reaction == NONE){
-        if (sinkDissRateDislocationScrew[1][pointIndex] >= tempRandRate){
+        if (sinkDissRateDislocationScrew[pointIndex][1] >= tempRandRate){
             reaction = DISSHDISLOCATIONSCREW;
         }else{
-            tempRandRate -= sinkDissRateDislocationScrew[1][pointIndex];
+            tempRandRate -= sinkDissRateDislocationScrew[pointIndex][1];
         }
     }
     if (reaction == NONE){
-        if (sinkDissRateDislocationEdge[0][pointIndex] >= tempRandRate){
+        if (sinkDissRateDislocationEdge[pointIndex][0] >= tempRandRate){
             reaction = DISSVDISLOCATIONEDGE;
         }else{
-            tempRandRate -= sinkDissRateDislocationEdge[0][pointIndex];
+            tempRandRate -= sinkDissRateDislocationEdge[pointIndex][0];
         }
     }
     if (reaction == NONE){
-        if (sinkDissRateDislocationEdge[1][pointIndex] >= tempRandRate){
+        if (sinkDissRateDislocationEdge[pointIndex][1] >= tempRandRate){
             reaction = DISSHDISLOCATIONEDGE;
         }else{
-            tempRandRate -= sinkDissRateDislocationEdge[1][pointIndex];
+            tempRandRate -= sinkDissRateDislocationEdge[pointIndex][1];
         }
     }
     if (reaction == NONE){
-        if (sinkDissRateGrainBndry[0][pointIndex] >= tempRandRate){
+        if (sinkDissRateGrainBndry[pointIndex][0] >= tempRandRate){
             reaction = DISSVGRAINBNDRY;
         }else{
-            tempRandRate -= sinkDissRateGrainBndry[0][pointIndex];
+            tempRandRate -= sinkDissRateGrainBndry[pointIndex][0];
         }
     }
     if (reaction == NONE){
-        if (sinkDissRateGrainBndry[1][pointIndex] >= tempRandRate){
+        if (sinkDissRateGrainBndry[pointIndex][1] >= tempRandRate){
             reaction = DISSHGRAINBNDRY;
         }else{
-            tempRandRate -= sinkDissRateGrainBndry[1][pointIndex];
+            tempRandRate -= sinkDissRateGrainBndry[pointIndex][1];
         }
     }
     
@@ -417,20 +417,20 @@ void SCDWrapper::writeSinkFile(const Object * const hostObject, const long int n
         int number = hostObject->getAttri(i);
         if (i == 0 && number<0) {
             if (reaction == SINKDISLOCATIONSCREW)
-                sinksDislocationScrew[i][n] += abs(number);
+                sinksDislocationScrew[n][i] += abs(number);
             else if (reaction == SINKDISLOCATIONEDGE)
-                sinksDislocationEdge[i][n] += abs(number);
+                sinksDislocationEdge[n][i] += abs(number);
             else
-                sinksGrainBndry[i][n] += abs(number);
+                sinksGrainBndry[n][i] += abs(number);
             computeSinkDissRate(i, n);
         }
         else {
             if (reaction == SINKDISLOCATIONSCREW)
-                sinksDislocationScrew[i + 1][n] += number;
+                sinksDislocationScrew[n][i + 1] += number;
             else if (reaction == SINKDISLOCATIONEDGE)
-                sinksDislocationEdge[i + 1][n] += number;
+                sinksDislocationEdge[n][i + 1] += number;
             else
-                sinksGrainBndry[i + 1][n] += number;
+                sinksGrainBndry[n][i + 1] += number;
             if(i == 2){
                 computeSinkDissRate(1, n);
             }
@@ -526,13 +526,13 @@ void SCDWrapper::writeSinkFile(const double time, const long int n, const int th
     //fs << "Aggregate time = " << time << "  step = " << n << endl;
     for (i = 0; i < POINTS; ++i) {
         for (j = 0; j < LEVELS + 1; ++j) {
-            outFile << sinksDislocationScrew[j][i]<< "    ";
+            outFile << sinksDislocationScrew[i][j]<< "    ";
         }
         for (j = 0; j < LEVELS + 1; ++j) {
-            outFile << sinksDislocationEdge[j][i]<< "    ";
+            outFile << sinksDislocationEdge[i][j]<< "    ";
         }
         for (j = 0; j < LEVELS + 1; ++j) {
-            outFile << sinksGrainBndry[j][i]<< "    ";
+            outFile << sinksGrainBndry[i][j]<< "    ";
         }
         outFile << endl;
     }
@@ -566,15 +566,15 @@ void SCDWrapper::writeFile(const double time, const long int n, const int thread
 void SCDWrapper::setSinks()
 {
     int i, j;
-    for (i = 0; i < LEVELS + 1; ++i){
-        for (j = 0; j < POINTS; ++j) {
+    for (i = 0; i < POINTS; ++i){
+        for (j = 0; j < LEVELS + 1; ++j) {
             sinksDislocationScrew[i][j] = 0;
             sinksDislocationEdge[i][j] = 0;
             sinksGrainBndry[i][j] = 0;
         }
     }
-    for (i = 0; i < 2; ++i){
-        for (j = 0; j < POINTS; ++j) {
+    for (i = 0; i < POINTS; ++i){
+        for (j = 0; j < 2; ++j) {
             sinkDissRateDislocationScrew[i][j] = 0;
             sinkDissRateDislocationEdge[i][j] = 0;
             sinkDissRateGrainBndry[i][j] = 0;
@@ -593,9 +593,9 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
         || (point == BACK_SUBSURFACE_INDEX && BACK_DESORB)
         || (point == BACK_SURFACE_INDEX && BACK_DESORB))
     {
-        sinkDissRateDislocationScrew[type][point] = 0;
-        sinkDissRateDislocationEdge[type][point] = 0;
-        sinkDissRateGrainBndry[type][point] = 0;
+        sinkDissRateDislocationScrew[point][type] = 0;
+        sinkDissRateDislocationEdge[point][type] = 0;
+        sinkDissRateGrainBndry[point][type] = 0;
         return;
     }
 
@@ -613,26 +613,26 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
     {
         // Dislocations and grain boundaries are always a source of vacancy emission
         vacVolTerm = max(1.0-totalVacInElement[point]*avol/volume, 0.);                // so that the mesh element doesn't become 100% vac
-        sinkDissRateDislocationScrew[type][point] = 2.0*PI*volume*DISLOCATION*(1-EDGE_DISLOCATION_FRAC)/b*NU0*exp(-(ebVDislocation+vacMigrationEnergy)/KB/TEMPERATURE)*vacVolTerm;
-        sinkDissRateDislocationEdge[type][point] = 2.0*PI*volume*DISLOCATION*EDGE_DISLOCATION_FRAC/b*NU0*exp(-(ebVDislocation+vacMigrationEnergy)/KB/TEMPERATURE)*vacVolTerm;
-        sinkDissRateGrainBndry[type][point] = 6.0*volume/GRAIN_SIZE/b/b*NU0*exp(-(ebVGrainBndry+vacMigrationEnergy)/KB/TEMPERATURE)*vacVolTerm;
+        sinkDissRateDislocationScrew[point][type] = 2.0*PI*volume*DISLOCATION*(1-EDGE_DISLOCATION_FRAC)/b*NU0*exp(-(ebVDislocation+vacMigrationEnergy)/KB/TEMPERATURE)*vacVolTerm;
+        sinkDissRateDislocationEdge[point][type] = 2.0*PI*volume*DISLOCATION*EDGE_DISLOCATION_FRAC/b*NU0*exp(-(ebVDislocation+vacMigrationEnergy)/KB/TEMPERATURE)*vacVolTerm;
+        sinkDissRateGrainBndry[point][type] = 6.0*volume/GRAIN_SIZE/b/b*NU0*exp(-(ebVGrainBndry+vacMigrationEnergy)/KB/TEMPERATURE)*vacVolTerm;
     }
     // hydrogen emission
     else if(type == 1){
-        if (sinksDislocationScrew[3][point] > 0)
-            sinkDissRateDislocationScrew[type][point] = NU0*exp(-(ebHDislocationScrew+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*sinksDislocationScrew[3][point];
+        if (sinksDislocationScrew[point][3] > 0)
+            sinkDissRateDislocationScrew[point][type] = NU0*exp(-(ebHDislocationScrew+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*sinksDislocationScrew[point][3];
         else
-            sinkDissRateDislocationScrew[type][point] = 0;
+            sinkDissRateDislocationScrew[point][type] = 0;
 
-        if (sinksDislocationEdge[3][point] > 0)
-            sinkDissRateDislocationEdge[type][point] = NU0*exp(-(ebHDislocationEdge+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*sinksDislocationEdge[3][point];
+        if (sinksDislocationEdge[point][3] > 0)
+            sinkDissRateDislocationEdge[point][type] = NU0*exp(-(ebHDislocationEdge+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*sinksDislocationEdge[point][3];
         else
-            sinkDissRateDislocationEdge[type][point] = 0;
+            sinkDissRateDislocationEdge[point][type] = 0;
 
-        if (sinksGrainBndry[3][point] > 0)
-            sinkDissRateGrainBndry[type][point] = NU0*exp(-(ebHGrainBndry+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*sinksGrainBndry[3][point];
+        if (sinksGrainBndry[point][3] > 0)
+            sinkDissRateGrainBndry[point][type] = NU0*exp(-(ebHGrainBndry+H_MIGRATION_ENERGY)/KB/TEMPERATURE)*sinksGrainBndry[point][3];
         else
-            sinkDissRateGrainBndry[type][point] = 0;
+            sinkDissRateGrainBndry[point][type] = 0;
     }
 }
 
@@ -840,15 +840,15 @@ void SCDWrapper::updateSinks(const int point, const int* number){
         {
             if (type == 0) // dislocation
             {
-                sinksDislocationScrew[level][point] = number[type*(LEVELS+1)+level];
+                sinksDislocationScrew[point][level] = number[type*(LEVELS+1)+level];
             }
             else if (type == 1)
             {
-                sinksDislocationEdge[level][point] = number[type*(LEVELS+1)+level];
+                sinksDislocationEdge[point][level] = number[type*(LEVELS+1)+level];
             }
             else // grain boundary
             {
-                sinksGrainBndry[level][point] = number[type*(LEVELS+1)+level];
+                sinksGrainBndry[point][level] = number[type*(LEVELS+1)+level];
             }
         }
     }
@@ -1075,22 +1075,22 @@ void SCDWrapper::processSinkDissEvent(const int type, const int point, Reaction 
     if(type == 0)
     {
         if (reaction == DISSVDISLOCATIONSCREW)
-            sinksDislocationScrew[0][point]--;
+            sinksDislocationScrew[point][0]--;
         else if (reaction == DISSVDISLOCATIONEDGE)
-            sinksDislocationEdge[0][point]--;
+            sinksDislocationEdge[point][0]--;
         else
-            sinksGrainBndry[0][point]--;
+            sinksGrainBndry[point][0]--;
         productKey = -1000000; //1V
     }
     // dissH event
     else if(type ==1)
     {
         if (reaction == DISSHDISLOCATIONSCREW)
-            sinksDislocationScrew[3][point]--;
+            sinksDislocationScrew[point][3]--;
         else if (reaction == DISSHDISLOCATIONEDGE)
-            sinksDislocationEdge[3][point]--;
+            sinksDislocationEdge[point][3]--;
         else
-            sinksGrainBndry[3][point]--;
+            sinksGrainBndry[point][3]--;
         productKey = 1;
     }
     addToObjectMap(productKey, point);
@@ -1723,11 +1723,11 @@ void SCDWrapper::getSink(int n, int* output)
         for (int level = 0; level < LEVELS+1; level++)  // levels + 1 because vacancy and sia each have their own levels, so vac + sia + helium + H = 4 levels = 3 + 1
         {
             if (type == 0)
-                output[type*(LEVELS+1)+level] = sinksDislocationScrew[level][n];
+                output[type*(LEVELS+1)+level] = sinksDislocationScrew[n][level];
             else if (type == 1)
-                output[type*(LEVELS+1)+level] = sinksDislocationEdge[level][n];
+                output[type*(LEVELS+1)+level] = sinksDislocationEdge[n][level];
             else
-                output[type*(LEVELS+1)+level] = sinksGrainBndry[level][n];
+                output[type*(LEVELS+1)+level] = sinksGrainBndry[n][level];
         }
     }
 }
@@ -1757,11 +1757,11 @@ void SCDWrapper::addSpatialElement(int newGhostIndex, vector<BoundaryChange> new
         for (int level = 0; level < LEVELS+1; level++)
         {
             if (type == 0)
-                sinksDislocationScrew[level][newBoundaryIndex] = newBoundarySinks[type*(LEVELS+1)+level];
+                sinksDislocationScrew[newBoundaryIndex][level] = newBoundarySinks[type*(LEVELS+1)+level];
             else if (type == 1)
-                sinksDislocationEdge[level][newBoundaryIndex] = newBoundarySinks[type*(LEVELS+1)+level];
+                sinksDislocationEdge[newBoundaryIndex][level] = newBoundarySinks[type*(LEVELS+1)+level];
             else
-                sinksGrainBndry[level][newBoundaryIndex] = newBoundarySinks[type*(LEVELS+1)+level];
+                sinksGrainBndry[newBoundaryIndex][level] = newBoundarySinks[type*(LEVELS+1)+level];
             if (level == 0)
                 computeSinkDissRate(0, newBoundaryIndex);  // V Diss rate
             else if (level == 3)

@@ -38,12 +38,12 @@ private:
     Damage damage;
     Cpdf cpdf;
     int64 totalVacInElement[POINTS];
-    int64 sinksDislocationScrew[LEVELS+1][POINTS];
-    int64 sinksDislocationEdge[LEVELS+1][POINTS];
-    int64 sinksGrainBndry[LEVELS+1][POINTS];
-    long double sinkDissRateDislocationScrew[2][POINTS];
-    long double sinkDissRateDislocationEdge[2][POINTS];
-    long double sinkDissRateGrainBndry[2][POINTS]; // only vac and H allowed to emit from sinks, b/c SIA has high binding energy with sinks 
+    int64 sinksDislocationScrew[POINTS][LEVELS+1];
+    int64 sinksDislocationEdge[POINTS][LEVELS+1];
+    int64 sinksGrainBndry[POINTS][LEVELS+1];
+    long double sinkDissRateDislocationScrew[POINTS][2];
+    long double sinkDissRateDislocationEdge[POINTS][2];
+    long double sinkDissRateGrainBndry[POINTS][2]; // only vac and H allowed to emit from sinks, b/c SIA has high binding energy with sinks 
     // dissociation rate of V/H from dislocations
     int reactions[8][POINTS];
     int startIndex, endIndex; // the indices of which points this processor is responsible for
