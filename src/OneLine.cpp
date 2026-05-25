@@ -738,7 +738,7 @@ void OneLine::computeSAVReaction(
         }
         else if (numHPerCluster >= 1 && numVacancies == 0)
         {
-            SAVR = 0.1 * hostObject->getNumber(count);
+            SAVR = 0.3 * hostObject->getNumber(count);
             // SAVR = NU0 * exp(-0.80/KB/TEMPERATURE) * hostObject->getNumber(count);
         }
     }

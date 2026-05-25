@@ -26,7 +26,7 @@ VOLUME = DIVIDING_AREA * ELEMENT_THICKNESS * NM_TO_CM
 SURFACE_INDEX = 0
 SUBSURFACE_INDEX = 1
 FIRST_BULK_INDEX = 2
-FIRST_EXP_INDEX = 732
+FIRST_EXP_INDEX = 739
 EXP_LENGTH_MULT = 1.1
 
 DENSITY = 6.30705e+22                      # [atoms/cm^3] Atomic density for W.
@@ -215,8 +215,8 @@ if plot_h:
 # print("Summed retained concentration: "+str(np.sum(trapped_hydrogen_c)))
 # plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
 plt.yscale('log')
-plt.ylim(2*10**-3, 10**0)
-plt.xlim(0, 5)
+# plt.ylim(2*10**-3, 10**0)
+# plt.xlim(0, 5)
 plt.plot(experiment_positions, concentrations, label="Experiment", color='r')
 plt.legend()
 plt.title("Trapped Hydrogen Concentration Vs. Depth\n $T = 383K, Fluence = 1 \cdot 10^{24}$ $[m^{-2}]$")

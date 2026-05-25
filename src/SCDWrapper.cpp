@@ -1026,6 +1026,12 @@ void SCDWrapper::processSAVEvent(Object* hostObject, const int n)
     int64 SIAKey = (int64)pow(10.0, (double)EXP10 * (LEVELS - 1)); /* Key for SIA. */
     addToObjectMap(SIAKey, n);
 
+    if (hostObject->getKey() == 1)
+    {
+        addToObjectMap(-1000000, n);
+        return;
+    }
+
     // Generate 1 vacancy
     int productAttr[LEVELS] = { 0 };
     for (int i = 0; i < LEVELS; i++)
