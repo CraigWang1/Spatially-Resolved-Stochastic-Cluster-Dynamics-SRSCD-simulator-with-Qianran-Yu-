@@ -6,6 +6,17 @@ Damage::Damage(unordered_map<int64, Object*>& allObjects)
     int index;
     readFile();
     totalIonRate = 0.0;
+
+    for (int n = 0; n < POINTS; n++) {
+        double elementLen = length(n);
+        if (n == 0) {
+            positions[n] = elementLen / 2.;
+        }
+        else {
+            positions[n] = positions[n-1] + length(n-1)/2. + elementLen/2.;
+        }
+    }
+
     for (index = 0; index < POINTS; ++index) {
         computeDamageZero(index);
         if (CHANNELS > 1) {
@@ -129,12 +140,20 @@ void Damage::computeDamageTwo(const int n, unordered_map<int64, Object*>& allObj
         return;
     }
 
-    double reflectionCoeff = -0.074 * log(H_DEPOSITION_ENERGY) + 0.96; // Data regression from Ogorodnikova 2015
-    if (n == FIRST_BULK_INDEX) // the first bulk layer 
+    // Valid for ion energies of 50-200eV
+    double reflectionCoeff = -0.074 * log(H_DEPOSITION_ENERGY) + 0.96; // Data regressions from Ogorodnikova 2015
+    double meanRange = (0.393651 * sqrt(H_DEPOSITION_ENERGY) - 0.000805616) * NM_TO_CM;
+    double penetratingRate = FLUX_H * (1 - reflectionCoeff) * DIVIDING_AREA;
+
+    if (positions[n] <= meanRange && n < POINTS-1 && positions[n+1] >= meanRange)
     {
-        damage[n][2] = FLUX_H * (1 - reflectionCoeff) * DIVIDING_AREA;
+        damage[n][2] = penetratingRate * (positions[n+1] - meanRange) / (positions[n+1] - positions[n]);
     }
-    else 
+    else if (positions[n] >= meanRange && n >= 1 && positions[n-1] <= meanRange)
+    {
+        damage[n][2] = penetratingRate * (meanRange - positions[n-1]) / (positions[n] - positions[n-1]);
+    }
+    else
     {
         damage[n][2] = 0.0;
     }

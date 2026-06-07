@@ -17,6 +17,7 @@ private:
     double DPA_RATE[POINTS];
     double NRT[POINTS];
     double damage[POINTS][CHANNELS];
+    double positions[POINTS];
     double totalIonRate;
     // private functions:
     void readFile();

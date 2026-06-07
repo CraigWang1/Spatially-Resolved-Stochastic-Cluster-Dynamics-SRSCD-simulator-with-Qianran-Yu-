@@ -22,6 +22,7 @@ SUBSURFACE_THICKNESS = 0.544                # [nm]
 FIRST_BULK_THICKNESS = 6.77                 # [nm]
 ELEMENT_THICKNESS = 6.77                   # [nm]
 VOLUME = DIVIDING_AREA * ELEMENT_THICKNESS * NM_TO_CM  
+TOTAL_TIME = 7692.3
 
 SURFACE_INDEX = 0
 SUBSURFACE_INDEX = 1
@@ -163,6 +164,7 @@ with open("sink0.txt") as f:
 	# trapped_hydrogen_c += np.array(numH).astype(float)
 	# print(sum(numH)/np.sum(trapped_hydrogen_c))
 print("Retained fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4))
+print("Projected retained fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4)*TOTAL_TIME/time)
 # print(trapped_hydrogen_c)
 for i in range(len(trapped_hydrogen_c)):
 	if i != 0:
@@ -215,8 +217,8 @@ if plot_h:
 # print("Summed retained concentration: "+str(np.sum(trapped_hydrogen_c)))
 # plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
 plt.yscale('log')
-# plt.ylim(2*10**-3, 10**0)
-# plt.xlim(0, 5)
+plt.ylim(2*10**-3, 10**0)
+plt.xlim(0, 5)
 plt.plot(experiment_positions, concentrations, label="Experiment", color='r')
 plt.legend()
 plt.title("Trapped Hydrogen Concentration Vs. Depth\n $T = 383K, Fluence = 1 \cdot 10^{24}$ $[m^{-2}]$")
