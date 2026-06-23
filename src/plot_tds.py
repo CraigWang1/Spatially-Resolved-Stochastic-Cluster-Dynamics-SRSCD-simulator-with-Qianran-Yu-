@@ -39,7 +39,7 @@ total_fluence = 0
 prev_time = 0
 for i in range(len(experiment_temperatures)-1):
 	temperature = experiment_temperatures[i]
-	time = (temperature - 350) * 2
+	time = (temperature - 300) * 2
 	flux = experiment_desorbed_flux[i]
 	total_fluence += flux * (time - prev_time)
 	prev_time = time
@@ -51,9 +51,10 @@ temperatures = [starting_temp]
 desorbed_flux = [0]
 window_size = 50
 for i in range(window_size, len(times)-window_size):
-	temperatures.append(starting_temp + times[i] * 0.5) # 0.5 K/s heating
+	avg_time = (times[i + window_size] + times[i - window_size])/2
 	dt = times[i+window_size] - times[i-window_size]
 	dN = desorbed[i+window_size] - desorbed[i-window_size]
+	temperatures.append(starting_temp + avg_time * 0.5) # 0.5 K/s heating
 	desorbed_flux.append(dN/dt/DIVIDING_AREA)
 temperatures.insert(1, temperatures[0]+(temperatures[1]-temperatures[0])*0.7)
 desorbed_flux.insert(1, 0)

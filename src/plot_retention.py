@@ -22,6 +22,7 @@ SUBSURFACE_THICKNESS = 0.544                # [nm]
 FIRST_BULK_THICKNESS = 6.77                 # [nm]
 ELEMENT_THICKNESS = 6.77                   # [nm]
 VOLUME = DIVIDING_AREA * ELEMENT_THICKNESS * NM_TO_CM  
+TOTAL_TIME = 7692.3         # [s]
 
 SURFACE_INDEX = 0
 SUBSURFACE_INDEX = 1
@@ -160,9 +161,10 @@ with open("sink0.txt") as f:
 	for line_hold in f:
 		line_hold = line_hold.split()
 		numH.append(int(line_hold[3]) + int(line_hold[7]) + int(line_hold[11]))
-	# trapped_hydrogen_c += np.array(numH).astype(float)
+	trapped_hydrogen_c += np.array(numH).astype(float)
 	# print(sum(numH)/np.sum(trapped_hydrogen_c))
 print("Retained fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4))
+print("Projected fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4*TOTAL_TIME/time))
 # print(trapped_hydrogen_c)
 for i in range(len(trapped_hydrogen_c)):
 	if i != 0:
