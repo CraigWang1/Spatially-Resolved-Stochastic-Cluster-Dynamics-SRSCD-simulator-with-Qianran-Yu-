@@ -302,7 +302,7 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
                 surfaceConc = allObjects[HKey]->getNumber(BACK_SURFACE_INDEX) / DIVIDING_AREA;  // [cm^-2] concentration
         }
 
-        double maxSurfaceConc = 1.0 * pow(DENSITY, 2.0/3.0); // [110] surface
+        double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0); // [110] surface
         double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
 
         // special case for 1H diffusion from Subsurface to Surface 
@@ -349,9 +349,9 @@ void OneLine::computeDiffReaction(const Object* const hostObject, const int coun
             // double desorbE = 1.023 + 0.584/(1.0 + exp(7.38e-16 * surfaceConc - 2.85));
             // double desorbE = 2.0*(0.525 + 0.591*(1.0/(1.0+exp( (surfaceSaturationFraction-0.247)/0.0692 )))); // from Hodille 2020
             // if (TEMP_INCREASE_RATE == 0)  // no thermal desorption, assume atmosphere environment so use experiment data
-                // absorbE = 1.10 + 0.939*(1.0/(1.0+exp( (surfaceSaturationFraction-0.232)/0.0683 )));  // from Hodille 2020
+                absorbE = 1.10 + 0.939*(1.0/(1.0+exp( (surfaceSaturationFraction-0.232)/0.0683 )));  // from Hodille 2020
             // else                          // doing thermal desorption, assume vacuum environment so use DFT data
-                absorbE = -3.6592e-8 * exp(16.9129*surfaceSaturationFraction) + 1.71738;             // Ajmalghan 2019
+                // absorbE = -3.6592e-8 * exp(16.9129*surfaceSaturationFraction) + 1.71738;             // Ajmalghan 2019
                 // absorbE = desorbE/2. + HEAT_OF_SOLUTION + H_MIGRATION_ENERGY + 0.02;   // Add 0.02 from Tajuki Oda 2023
             double freq = NU0 * exp(-absorbE / (KB * TEMPERATURE));            
             prefactor = freq * surfaceConc * DIVIDING_AREA;
@@ -717,29 +717,15 @@ void OneLine::computeSAVReaction(
     {
         int numHPerCluster = hostObject->getAttri(2);
         int numVacancies = abs(hostObject->getAttri(0));
-        double clusterThresholdH;
-        if (numVacancies == 0)
-        {
-            clusterThresholdH = 0;
-        }
-        else if (numVacancies <= 7)
-        {
-            int savHThres[8] = {0, 9, 14, 17, 22, 29, 34, 36}; // index = #vac, value = numH that will trigger sav
-            clusterThresholdH = savHThres[numVacancies];
-        }
-        else
-        {
-            clusterThresholdH = 4.75*numVacancies + 4; // Qianran Yu 2020, did linear fit from graph of excess sav energies
-        }
+
         // Allow overpressured HV clusters and nH clusters to be SAV candidates
-        if (numHPerCluster >= clusterThresholdH && numVacancies > 0)
+        if (numHPerCluster >= 4*numVacancies && numVacancies > 0)
         {
             SAVR = NU0 * hostObject->getExpSAV() * hostObject->getNumber(count);
         }
         else if (numHPerCluster >= 1 && numVacancies == 0)
         {
-            SAVR = 0.3 * hostObject->getNumber(count);
-            // SAVR = NU0 * exp(-0.80/KB/TEMPERATURE) * hostObject->getNumber(count);
+            SAVR = 0.004 * hostObject->getNumber(count);
         }
     }
 }
@@ -766,7 +752,7 @@ void OneLine::computeRecombReaction(
     int numH = allObjects[HKey]->getNumber(count);  
     surfaceConc = numH / DIVIDING_AREA;  // [cm^-2] concentration
 
-    double maxSurfaceConc = 1.0 * pow(DENSITY, 2.0/3.0);  // [110] surface
+    double maxSurfaceConc = 6.9 * pow(DENSITY, 2.0/3.0);  // [110] surface
     double surfaceSaturationFraction = surfaceConc / maxSurfaceConc;
 
     // Calculate ER recomb rate, only on plasma facing surface
@@ -783,13 +769,16 @@ void OneLine::computeRecombReaction(
     {
         double desorbE;
             // desorbE = 2.0*(0.525 + 0.591*(1.0/(1.0+exp( (surfaceSaturationFraction-0.247)/0.0692 )))); // from Hodille 2020
-            desorbE = -0.00213989*exp(5.78271*surfaceSaturationFraction) + 1.4965;                  // Ajmalghan 2019 NEB
+            // desorbE = -0.00213989*exp(5.78271*surfaceSaturationFraction) + 1.4965;                  // Ajmalghan 2019 NEB
             // desorbE = -0.00195416 * exp(5.87242*surfaceSaturationFraction) + 1.48996;            // Ajmalghan 2019
             // desorbE = 1.40259 - 0.00881176*exp(5.45029*surfaceSaturationFraction - 1.22515);
             // desorbE = 0.019+1.453/(1.0+exp((surfaceSaturationFraction-1.000)/0.111));
             // desorbE = 2.0*(0.9 - 0.2*surfaceSaturationFraction - 0.7*pow(surfaceSaturationFraction, 12));
             // desorbE = 1.023 + 0.584/(1.0 + exp(7.38e-16 * surfaceConc - 2.85));
             // desorbE = 1.029 + 0.700/(1.0+exp((surfaceSaturationFraction-0.475)/0.151));
+            desorbE = 0.8 + 1.4/(1.0+exp((surfaceSaturationFraction-0.3)/0.2));
+            // desorbE = -0.58707 * surfaceSaturationFraction + 1.54351;
+            // desorbE = 0; // Assume H immediately desorbs at the surface
         double desorptionR = NU0 / maxSurfaceConc; // [cm^2 s^-1]
         recombRLH = desorptionR * exp(-desorbE / (KB * TEMPERATURE)) * surfaceConc * surfaceConc * DIVIDING_AREA;
     }

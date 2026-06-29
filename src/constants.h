@@ -36,39 +36,39 @@
 #define GRAIN_SIZE 0.001 //[cm] grain size from UCSD
 #define FOIL_THICKNESS 0.0002 //[cm] Foil thickness from UCSD (2000nm)
 #define SUBSURFACE_THICKNESS 0.544 //[nm] thickness of surface (conrresponds to two monolayers of tungsten)
-#define FIRST_BULK_THICKNESS 6.77   //[nm] thickness of first bulk index (sized so that its centroid corresponds to mean projective range of incident H ions)
-#define ELEMENT_THICKNESS 6.77 // [nm] thickness of bulk spatial element
+#define FIRST_BULK_THICKNESS 8.0   //[nm] thickness of first bulk index (sized so that its centroid corresponds to mean projective range of incident H ions)
+#define ELEMENT_THICKNESS 8.0 // [nm] thickness of bulk spatial element
 #define NU0 1.0e+13           // [Hz] Attempt frequency.
 #define C_DENSITY 10        // [appm] C-atom density
 #define GAMMA 1.0           // Fraction of surface emission.
 #define TDE 90              // [eV] Threshold displacement energy for W.
 #define HEAT_OF_SOLUTION 0.89   // [eV] Heat of solution of H in W.
 #define SAV_ENERGY 0.95         // [eV] energy that controls SAV rate
-#define H_DEPOSITION_ENERGY 100.0 // [eV] energy of an H atom in the incident flux
+#define H_DEPOSITION_ENERGY 110.0 // [eV] energy of an H atom in the incident flux
 #define H_MIGRATION_ENERGY 0.25   // [eV] energy needed for an H to diffuse through lattice
 #define V_FORM_E 3.23           // [eV] Formation Energy of V1
 #define VH_BIND_E 1.17486       // [eV] Binding Energy of V-H
 #define HH_BIND_E 0.02          // [eV] Binding Energy of H-H
 // Run parameters:
 #define ION               // Irradiation type.
-#define TOTAL_TIME 7692.3 // [s] Total simulated time.
+#define TOTAL_TIME 10000.0 // [s] Total simulated time.
 #define TOTAL_DPA 2        // Total DPA damage to reach.
-#define DIVIDING_AREA 0.4583e-12  // [cm^2] Area of the surface in between volume elements.
+#define DIVIDING_AREA 0.64e-12  // [cm^2] Area of the surface in between volume elements.
 //#define RATIO_HE 1.1       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_HE 0       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_H 0
-#define FLUX_H 6.5e17    // [1/(cm^2*s)]
+#define FLUX_H 1.0e16    // [1/(cm^2*s)]
 //#define DPA_RATE 0       //When only H exposure is available. no self-damage at all
 //#define DPA_RATE 3.55e-6   // [dpa/s] Damage rate.
 #define CHANNELS 3         // Irradiation channels used (1:W, 2:He, 3:H,...). the number of different particle insertion(irradiation) process.
 #define PSTEPS 5000000 // Print data every so many.
 #define LEVELS 3
 #define EXP10 3 // number of 0s assigned to each group in object's key in hash table
-#define POINTS 831 // number of elements: one surface(Point 0), one subsurface (Point 1), one implantation bulk element (Point 2), other bulk elements, other elongated bulk elements
+#define POINTS 730 // number of elements: one surface(Point 0), one subsurface (Point 1), one implantation bulk element (Point 2), other bulk elements, other elongated bulk elements
 #define SURFACE_INDEX 0     // the surface layer corresponding of adsorbed layer on material surface (not inside material)
 #define SUBSURFACE_INDEX 1  // the small subsurface layer to facilitate transport from surface to bulk
 #define FIRST_BULK_INDEX 2  // the first bulk layer that all the H ions get implanted into
-#define FIRST_EXP_INDEX 739 // the first mesh element where the length starts to increase exponentially (to reach experiment lengths)
+#define FIRST_EXP_INDEX 627 // the first mesh element where the length starts to increase exponentially (to reach experiment lengths)
 #define EXP_LENGTH_MULT 1.1 // for the mesh elements that exponentially increase in length
 #define BACK_SUBSURFACE_INDEX (POINTS - 2)
 #define BACK_SURFACE_INDEX (POINTS - 1)
@@ -103,7 +103,7 @@ const bool DISS_ON = true; // dissociation reaction
 const bool DIFF_ON = true; // diffusion reaction
 const bool SAV_ON = true;  // super abundant vacancy reaction
 const bool RECOMB_ON = true; // surface recombination (surface release) reaction
-const bool BACK_DESORB = true; // whether or not the back of the sample is configured as a desorption boundary condition. if not, it will be a no flux boundary condition.
+const bool BACK_DESORB = false; // whether or not the back of the sample is configured as a desorption boundary condition. if not, it will be a no flux boundary condition.
 const bool HOP_ON = false; // whether to enable species to hop between mesh elements even when the concentration gradient is 0
 const bool NH_CLUSTERING = false; // whether to allow H to combine and form nH clusters
 const double TEMP_INCREASE_RATE = 0.;   // K/s for when doing thermal desorption spectroscopy simulations. For now TDS is only supported in serial (1 processor max)

@@ -13,22 +13,26 @@ from make_speciesfile import combine_species_files
 combine_species_files()
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 831                            # num spatial elements in the simulation (1 surface + 100 bulk)
+POINTS = 832                            # num spatial elements in the simulation (1 surface + 100 bulk)
+FIRST_EXP_INDEX = 739
+DIVIDING_AREA = 0.4583e-12                    # [cm]
+FIRST_BULK_THICKNESS = 6.77                 # [nm]
+ELEMENT_THICKNESS = 6.77                   # [nm]
+TOTAL_TIME = 7692.3         # [s]
+BACK_DESORB = False
+
 NM_TO_CM = 1e-7
 NM_TO_UM = 1e-3
 CM_TO_UM = 1e4
-DIVIDING_AREA = 0.4583e-12                    # [cm]
-SUBSURFACE_THICKNESS = 0.544                # [nm]
-FIRST_BULK_THICKNESS = 6.77                 # [nm]
-ELEMENT_THICKNESS = 6.77                   # [nm]
 VOLUME = DIVIDING_AREA * ELEMENT_THICKNESS * NM_TO_CM  
-TOTAL_TIME = 7692.3         # [s]
-
+SUBSURFACE_THICKNESS = 0.544                # [nm]
 SURFACE_INDEX = 0
 SUBSURFACE_INDEX = 1
 FIRST_BULK_INDEX = 2
-FIRST_EXP_INDEX = 739
+BACK_SUBSURFACE_INDEX = POINTS - 2
+BACK_SURFACE_INDEX = POINTS - 1
 EXP_LENGTH_MULT = 1.1
+
 
 DENSITY = 6.30705e+22                      # [atoms/cm^3] Atomic density for W.
 HEAT_OF_SOLUTION = 1.04                    # [eV] Heat of solution of H in W.
@@ -47,9 +51,9 @@ def length(i):
 	"""
 	Returns the length (cm) of volume element i
 	"""
-	if i == SURFACE_INDEX:
+	if i == SURFACE_INDEX or (i == BACK_SURFACE_INDEX and BACK_DESORB):
 		return 0
-	if i == SUBSURFACE_INDEX:
+	if i == SUBSURFACE_INDEX or (i == BACK_SUBSURFACE_INDEX and BACK_DESORB):
 		return SUBSURFACE_THICKNESS * NM_TO_CM
 	if i == FIRST_BULK_INDEX:
 		return FIRST_BULK_THICKNESS * NM_TO_CM
@@ -128,6 +132,9 @@ with open("species.txt") as f:
 			positions.append(0)  # surface element
 		else:
 			positions.append( positions[-1] + (length(i) + length(i-1))/2 * CM_TO_UM )
+
+	print(positions[-1] + length(POINTS-1)/2*CM_TO_UM)
+
 
 	trapped_hydrogen_c = np.zeros(POINTS)
 	free_hydrogen_c = np.zeros(POINTS)

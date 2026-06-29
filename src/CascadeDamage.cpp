@@ -68,6 +68,10 @@ void CascadeDamage::generateNeutronDamage(const double energy, int & ndef)
 
 void CascadeDamage::generateIonDamage(const double energy, int & ndef)
 {
+    /* 
+     * Calculates quantity and size of defects created from inputted
+     * primary knock on energy 
+     */
     const double fcli = 0.55; // Fraction of interstitials in clusters
     const double fclv = 0.25; // Fraction of vacancies in clusters, both from: [L Malerba, JNM 351 (2006) 28].
     const double fmd = 0.65; // kMC escape probabilty
