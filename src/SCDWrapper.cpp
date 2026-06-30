@@ -660,7 +660,7 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
 void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
 {
     // If the object is nothing (eg. product of 1V + 1SIA comb), don't process it
-    if (key == 0)
+    if (key == 0 || number == 0)
     {
         return;
     }
@@ -1093,36 +1093,86 @@ void SCDWrapper::getElectronInsertion(const int n)
     addToObjectMap(vacancyKey, n);
 }
 
-void SCDWrapper::getNeutronInsertion(const int n)
+void SCDWrapper::getNeutronInsertion(const int count)
 {
-    double neutronEnergy = 0.0;
-    double totalEnergy = (double)Poisson(AVG_NEUTRON_EN);
-    CascadeDamage damage;
-    int i, j, ndef = 0;
-    int64 clusterKey;
-    while (neutronEnergy < totalEnergy) {
-        double pkaEnergy = 0.0;
-        while (pkaEnergy < 0.62) {
-            // Limit to produce a stable Frenkel pair in keV (from Troev et al (2011)).
-            double xi = (rand() / RAND_MAX) * cpdf.getMaxPossibility(n);
-            neutronEnergy += pkaEnergy;
-            pkaEnergy = cpdf.samplePkaEnergy(xi, n);
-        }
-        damage.generateNeutronDamage(pkaEnergy, ndef);
-        for (i = 0; i < damage.size(); ++i) {
-            int sign = (i == 0) ? -1 : 1;
-            for (j = 0; j < ndef; ++j) {
-                const int number = damage.getDamage(i, j);
-                if (number != 0) {
-                    clusterKey = (int64)sign*(j + 1)*(pow(10.0, (double)EXP10*(LEVELS - 1)));
-                    /* generate cluster key */
-                    addToObjectMap(clusterKey, n, number);
-                }
-            }
-        }
-        damage.cleanDamage();
-        neutronEnergy += pkaEnergy;
+    // log10 of Epka(eV) values vs. cdf of RB19J sample holder, from SPECTER
+    vector<double> log10Epkas = {-5.0000, -3.0000, -2.0000, -1.0000, 0.0000, 0.6990, 1.0000, 1.3010, 1.4771, 1.6021, 1.6990, 1.7782, 1.8451, 1.9031, 1.9542, 2.0000, 2.3010, 2.4771, 2.6021, 2.6990, 2.7782, 2.8451, 2.9031, 2.9542, 3.0000, 3.1761, 3.3010, 3.3979, 3.4771, 3.5441, 3.6021, 3.6532, 3.6990, 3.7404, 3.7782, 3.8129, 3.8451, 3.8751, 3.9031, 3.9294, 3.9542, 3.9777, 4.0000, 4.1761, 4.3010, 4.3979, 4.4771, 4.5441, 4.6021, 4.6532, 4.6990, 4.7404, 4.7782, 4.8129, 4.8451, 4.8751, 4.9031, 4.9294, 4.9542, 4.9777, 5.0000, 5.0792, 5.1461, 5.2041, 5.2553, 5.3010, 5.3424};
+    vector<double> EpkaCDF = {0.000E+00, 4.487E-02, 4.928E-01, 7.778E-01, 8.218E-01, 8.468E-01, 8.719E-01, 8.836E-01, 8.916E-01, 8.983E-01, 9.041E-01, 9.081E-01, 9.114E-01, 9.140E-01, 9.163E-01, 9.303E-01, 9.367E-01, 9.409E-01, 9.440E-01, 9.467E-01, 9.491E-01, 9.511E-01, 9.529E-01, 9.544E-01, 9.607E-01, 9.658E-01, 9.701E-01, 9.734E-01, 9.761E-01, 9.782E-01, 9.800E-01, 9.816E-01, 9.829E-01, 9.841E-01, 9.851E-01, 9.860E-01, 9.868E-01, 9.876E-01, 9.882E-01, 9.889E-01, 9.894E-01, 9.899E-01, 9.938E-01, 9.960E-01, 9.975E-01, 9.984E-01, 9.990E-01, 9.994E-01, 9.996E-01, 9.997E-01, 9.998E-01, 9.999E-01, 9.999E-01, 1.000E+00, 1.000E+00, 1.000E+00, 1.000E+00, 1.000E+00, 1.000E+00, 1.000E+00, 1.000E+00, 1.000E+00, 1.000E+00, 1.000E+00, 1.000E+00, 1.000E+00, 1.000E+00};
+
+    double randomNum = distribution(engine);
+    int interpIdx = lower_bound(EpkaCDF.begin(), EpkaCDF.end(), randomNum) - EpkaCDF.begin();
+    
+    double log10Epka;
+    if (interpIdx == 0)
+    {
+        log10Epka = log10Epkas[0];
     }
+    else // interpolate
+    {
+        log10Epka = log10Epkas[interpIdx-1] + (randomNum-EpkaCDF[interpIdx-1])/(EpkaCDF[interpIdx]-EpkaCDF[interpIdx-1]) * (log10Epkas[interpIdx]-log10Epkas[interpIdx-1]);
+    }
+
+    double Epka = pow(10., log10Epka); // eV
+
+    double numFP;
+    if (Epka < 43000)  // Setyawan 2015
+        numFP = 1.15e-2 * pow(Epka, 0.74);
+    else
+        numFP = 1.89e-5 * pow(Epka, 1.34);
+
+    double fcli = clamp(0.0185 * pow(Epka, 0.326), 0., 1.);     // fraction of generated interstitials that are clustered
+    double fclv = clamp(0.625 - 1.75e-4 * TEMPERATURE, 0., 1.); // fraction of generated vacancies that are clustered
+
+    // Convert decimal number of frenkel pairs created into integer through sampling from Poisson distribution
+    int n = Poisson(numFP);
+    int numClusteredVac = Binomial(n, fclv);
+    int numClusteredSia = Binomial(n, fcli);
+
+    // Vac and SIA cluster sizes (starting at size 2) from A.E. sand 2014
+    vector<double> vacClusterSizeCDF = {2.8528E-01, 3.4358E-01, 3.8455E-01, 4.1752E-01, 4.4561E-01, 4.7032E-01, 4.9251E-01, 5.1271E-01, 5.3131E-01, 5.4857E-01, 5.6469E-01, 5.7982E-01, 5.9409E-01, 6.0760E-01, 6.2042E-01, 6.3262E-01, 6.4426E-01, 6.5540E-01, 6.6606E-01, 6.7629E-01, 6.8612E-01, 6.9558E-01, 7.0469E-01, 7.1348E-01, 7.2195E-01, 7.3015E-01, 7.3807E-01, 7.4573E-01, 7.5315E-01, 7.6034E-01, 7.6731E-01, 7.7407E-01, 7.8063E-01, 7.8700E-01, 7.9319E-01, 7.9921E-01, 8.0505E-01, 8.1074E-01, 8.1627E-01, 8.2165E-01, 8.2688E-01, 8.3198E-01, 8.3695E-01, 8.4179E-01, 8.4650E-01, 8.5109E-01, 8.5556E-01, 8.5992E-01, 8.6417E-01, 8.6832E-01, 8.7236E-01, 8.7630E-01, 8.8014E-01, 8.8389E-01, 8.8755E-01, 8.9111E-01, 8.9459E-01, 8.9798E-01, 9.0129E-01, 9.0452E-01, 9.0767E-01, 9.1074E-01, 9.1374E-01, 9.1667E-01, 9.1952E-01, 9.2230E-01, 9.2501E-01, 9.2766E-01, 9.3024E-01, 9.3275E-01, 9.3520E-01, 9.3759E-01, 9.3992E-01, 9.4219E-01, 9.4440E-01, 9.4656E-01, 9.4866E-01, 9.5070E-01, 9.5269E-01, 9.5463E-01, 9.5652E-01, 9.5835E-01, 9.6013E-01, 9.6187E-01, 9.6356E-01, 9.6520E-01, 9.6679E-01, 9.6834E-01, 9.6984E-01, 9.7130E-01, 9.7271E-01, 9.7408E-01, 9.7541E-01, 9.7670E-01, 9.7794E-01, 9.7915E-01, 9.8032E-01, 9.8144E-01, 9.8253E-01, 9.8358E-01, 9.8459E-01, 9.8557E-01, 9.8651E-01, 9.8741E-01, 9.8828E-01, 9.8912E-01, 9.8992E-01, 9.9068E-01, 9.9141E-01, 9.9211E-01, 9.9278E-01, 9.9341E-01, 9.9402E-01, 9.9459E-01, 9.9513E-01, 9.9564E-01, 9.9612E-01, 9.9657E-01, 9.9699E-01, 9.9738E-01, 9.9774E-01, 9.9808E-01, 9.9838E-01, 9.9866E-01, 9.9891E-01, 9.9914E-01, 9.9934E-01, 9.9951E-01, 9.9965E-01, 9.9977E-01, 9.9987E-01, 9.9994E-01, 9.9998E-01, 1.0000E+00};
+    vector<double> siaClusterSizeCDF = {1.1313E-01, 1.4542E-01, 1.7255E-01, 1.9680E-01, 2.1904E-01, 2.3976E-01, 2.5925E-01, 2.7772E-01, 2.9532E-01, 3.1215E-01, 3.2829E-01, 3.4383E-01, 3.5882E-01, 3.7329E-01, 3.8731E-01, 4.0089E-01, 4.1407E-01, 4.2687E-01, 4.3932E-01, 4.5144E-01, 4.6325E-01, 4.7475E-01, 4.8598E-01, 4.9694E-01, 5.0764E-01, 5.1809E-01, 5.2831E-01, 5.3830E-01, 5.4808E-01, 5.5765E-01, 5.6701E-01, 5.7619E-01, 5.8517E-01, 5.9397E-01, 6.0260E-01, 6.1106E-01, 6.1935E-01, 6.2749E-01, 6.3547E-01, 6.4329E-01, 6.5097E-01, 6.5851E-01, 6.6591E-01, 6.7317E-01, 6.8030E-01, 6.8730E-01, 6.9417E-01, 7.0092E-01, 7.0755E-01, 7.1406E-01, 7.2046E-01, 7.2674E-01, 7.3292E-01, 7.3898E-01, 7.4494E-01, 7.5079E-01, 7.5655E-01, 7.6220E-01, 7.6775E-01, 7.7321E-01, 7.7857E-01, 7.8384E-01, 7.8902E-01, 7.9411E-01, 7.9911E-01, 8.0403E-01, 8.0886E-01, 8.1360E-01, 8.1826E-01, 8.2284E-01, 8.2734E-01, 8.3176E-01, 8.3611E-01, 8.4038E-01, 8.4457E-01, 8.4869E-01, 8.5273E-01, 8.5670E-01, 8.6060E-01, 8.6443E-01, 8.6819E-01, 8.7189E-01, 8.7551E-01, 8.7907E-01, 8.8256E-01, 8.8599E-01, 8.8936E-01, 8.9266E-01, 8.9589E-01, 8.9907E-01, 9.0218E-01, 9.0524E-01, 9.0823E-01, 9.1117E-01, 9.1405E-01, 9.1687E-01, 9.1963E-01, 9.2234E-01, 9.2499E-01, 9.2759E-01, 9.3013E-01, 9.3262E-01, 9.3505E-01, 9.3743E-01, 9.3976E-01, 9.4204E-01, 9.4427E-01, 9.4644E-01, 9.4857E-01, 9.5065E-01, 9.5267E-01, 9.5465E-01, 9.5658E-01, 9.5846E-01, 9.6030E-01, 9.6209E-01, 9.6383E-01, 9.6552E-01, 9.6717E-01, 9.6878E-01, 9.7034E-01, 9.7186E-01, 9.7333E-01, 9.7476E-01, 9.7614E-01, 9.7748E-01, 9.7878E-01, 9.8004E-01, 9.8126E-01, 9.8243E-01, 9.8357E-01, 9.8466E-01, 9.8571E-01, 9.8673E-01, 9.8770E-01, 9.8863E-01, 9.8953E-01, 9.9038E-01, 9.9120E-01, 9.9198E-01, 9.9272E-01, 9.9342E-01, 9.9409E-01, 9.9472E-01, 9.9531E-01, 9.9586E-01, 9.9638E-01, 9.9687E-01, 9.9731E-01, 9.9773E-01, 9.9810E-01, 9.9845E-01, 9.9875E-01, 9.9903E-01, 9.9927E-01, 9.9947E-01, 9.9964E-01, 9.9978E-01, 9.9988E-01, 9.9996E-01, 9.9999E-01, 1.0000E+00};
+
+    // Generate vacancy clusters and monovacancies by sampling cluster size distribution
+    int nv = 0;
+    while (nv < numClusteredVac)
+    {
+        randomNum = distribution(engine);
+        int clusterNum = 2 + (lower_bound(vacClusterSizeCDF.begin(), vacClusterSizeCDF.end(), randomNum) - vacClusterSizeCDF.begin());
+
+        if (nv + clusterNum > numClusteredVac)
+            clusterNum = numClusteredVac - nv;
+
+        int productAttr[3] = {0};
+        productAttr[0] = -clusterNum;
+        int64 key = attrToKey(productAttr);
+        addToObjectMap(key, count);
+
+        nv += clusterNum;
+    }
+
+    int64 vacKey = -1000000;
+    addToObjectMap(vacKey, count, n - numClusteredVac);
+
+    // Generate SIA clusters and single sia
+    int nsia = 0;
+    while (nsia < numClusteredSia)
+    {
+        randomNum = distribution(engine);
+        int clusterNum = 2 + (lower_bound(siaClusterSizeCDF.begin(), siaClusterSizeCDF.end(), randomNum) - siaClusterSizeCDF.begin());
+
+        if (nsia + clusterNum > numClusteredSia)
+            clusterNum = numClusteredSia - nsia;
+
+        int productAttr[3] = {0};
+        productAttr[0] = clusterNum;
+        int64 key = attrToKey(productAttr);
+        addToObjectMap(key, count);
+
+        nsia += clusterNum;
+    }
+
+    int64 siaKey = 1000000;
+    addToObjectMap(siaKey, count, n - numClusteredSia);
 }
 
 void SCDWrapper::getIonInsertion(const int n, const double dt, fstream& fs)

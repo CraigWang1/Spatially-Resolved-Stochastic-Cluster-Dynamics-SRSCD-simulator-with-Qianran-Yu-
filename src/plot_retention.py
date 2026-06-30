@@ -173,6 +173,7 @@ with open("sink0.txt") as f:
 print("Retained fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4))
 print("Projected fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4*TOTAL_TIME/time))
 # print(trapped_hydrogen_c)
+print('Vacancies:', np.sum(vacancy_c))
 for i in range(len(trapped_hydrogen_c)):
 	if i != 0:
 		trapped_hydrogen_c[i] /= volumeAtIndex(i)

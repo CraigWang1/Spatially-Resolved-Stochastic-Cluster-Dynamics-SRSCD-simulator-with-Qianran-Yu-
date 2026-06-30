@@ -8,7 +8,7 @@
 #include <cassert>
 #include"SCDWrapper.h"
 
-double TEMPERATURE = 383;  // [K], this is extern so all files have access to this
+double TEMPERATURE = 864;  // [K], this is extern so all files have access to this
 const double startingTemp = TEMPERATURE;
 
 int main(int argc, char** argv) 
@@ -102,14 +102,14 @@ int main(int argc, char** argv)
             accTime += dt;
             advTime += dt;
 
-            if (IRRADIATION_ON)
-            {
-                done = (dpa >= TOTAL_DPA);
-            }
-            else
-            {
+            // if (IRRADIATION_ON)
+            // {
+                // done = (dpa >= TOTAL_DPA);
+            // }
+            // else
+            // {
                 done = (advTime >= TOTAL_TIME);
-            }
+            // }
             if (done)
             {
                 MPI_Bcast(&done, 1, MPI_C_BOOL, 0, MPI_COMM_WORLD);
@@ -120,7 +120,7 @@ int main(int argc, char** argv)
         hostObject = srscd->selectDomainReaction(theOtherKey, reaction, pointIndex);/* choose an event */
 
         /*
-        string reactions[] = {"diffF", "diffB", "sinkDisloc", "sinkGrain", "diss", "comb", "sav", "recombER", "recombLH", "none", "particle", "HE", "H", "dissVDisloc", "dissVGrain", "dissHDisloc", "dissHGrain", "error"};        
+        string reactions[] = {"diffF", "diffB", "sinkDislocScrew", "sinkDislocEdge", "sinkGrain", "diss", "comb", "sav", "recombER", "recombLH", "none", "particle", "HE", "H", "dissVDisloc", "dissVGrain", "dissHDisloc", "dissHGrain", "error"};        
         if (hostObject != nullptr)
             cout << hostObject->getKey() << " ";
         cout << reactions[reaction] << " at pt " << pointIndex << " with other obj " << theOtherKey;
@@ -236,14 +236,14 @@ int main(int argc, char** argv)
                 prev_time = MPI_Wtime();
 
                 // Chose between dpa or time to calculate progress
-                if (IRRADIATION_ON)
-                {
-                    progress = (dpa / TOTAL_DPA) * 100.;
-                }
-                else
-                {
+                // if (IRRADIATION_ON)
+                // {
+                    // progress = (dpa / TOTAL_DPA) * 100.;
+                // }
+                // else
+                // {
                     progress = (advTime / TOTAL_TIME) * 100.;
-                }
+                // }
 
                 // Initialize the first eta estimate, or update the previous one
                 if (prev_progress != 0 && progress - prev_progress != 0)

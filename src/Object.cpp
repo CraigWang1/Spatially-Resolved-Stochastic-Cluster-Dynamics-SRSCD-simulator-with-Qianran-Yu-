@@ -273,17 +273,20 @@ void Object::computeDiffCoeff()
             if (abs(attributes[0]) == 1) { // 1I
                 prefactor = 8.744e-4;
                 energy_m = 0.009;
-            }else if (abs(attributes[0]) == 2) { // 1I
+            }else if (abs(attributes[0]) == 2) { // 2I
                 prefactor = 7.97e-4;
                 energy_m = 0.024;
-            }else if (abs(attributes[0]) == 3) { // 1I
-                prefactor = 3.92e-4;
-                energy_m = 0.033;
+            }else {
+                prefactor = 0;
             }
-            else if(abs(attributes[0]) > 3) { // >1I
-                prefactor = gi*jumped*jumped*fi*NU0*pow(fabs(attributes[0]), -0.5);
-                energy_m = 0.013;
-            }
+            // else if (abs(attributes[0]) == 3) { // 1I
+            //     prefactor = 3.92e-4;
+            //     energy_m = 0.033;
+            // }
+            // else if(abs(attributes[0]) > 3) { // >1I
+            //     prefactor = gi*jumped*jumped*fi*NU0*pow(fabs(attributes[0]), -0.5);
+            //     energy_m = 0.013;
+            // }
         }
         else if (attributes[0] < 0) { // Vacancies.
             int numV = abs(attributes[0]);
@@ -291,18 +294,17 @@ void Object::computeDiffCoeff()
                 prefactor = 0.04;  // https://scipub.euro-fusion.org/wp-content/uploads/eurofusion/WPPFCPR17_18984_submitted-1.pdf
                 energy_m = 1.78;
             }
-            else if (numV == 2) {  // 2V
-                prefactor = 0.04;
-                energy_m = 1.65;
-            }
-            else if (numV > 2 && numV < 10) {
-                prefactor = gv*jumped*jumped*fv*NU0*pow(0.001, fabs(attributes[0]) - 1.0);
-                energy_m = 1.78;
-            }
+            // else if (numV == 2) {  // 2V
+            //     prefactor = 0.04;
+            //     energy_m = 1.65;
+            // }
+            // else if (numV > 2 && numV < 10) {
+            //     prefactor = gv*jumped*jumped*fv*NU0*pow(0.001, fabs(attributes[0]) - 1.0);
+            //     energy_m = 1.78;
+            // }
             else {
                 prefactor = 0;  // assume >= V10 is immmobile
             }
-
         }
     }
     else if (!check_He) {

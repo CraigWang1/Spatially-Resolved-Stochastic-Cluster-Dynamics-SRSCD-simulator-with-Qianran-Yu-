@@ -93,12 +93,23 @@ void Damage::readFile()
 
 void Damage::computeDamageZero(const int n)
 {
-    if (!IRRADIATION_ON)
+    if (!IRRADIATION_ON 
+        || n == SURFACE_INDEX
+        || n == SUBSURFACE_INDEX
+        || (n == BACK_SURFACE_INDEX && BACK_DESORB)
+        || (n == BACK_SUBSURFACE_INDEX && BACK_DESORB))
     {
         damage[n][0] = 0.0;
         return;
     }
 
+#ifdef NEUTRON
+    double neutronFlux = 8.404e12;  // n/cm2-s
+    double crossSectionPerW = 6.0 * 1.0e-24; // cross sectional area for collision between neutron and single W atom is ~6 barns in our case
+    
+    damage[n][0] = neutronFlux * DENSITY * volumeAtIndex(n) * crossSectionPerW;
+
+#else
     if(n != 0){
         if( NRT[n] == 0.0 ){
             
@@ -110,6 +121,8 @@ void Damage::computeDamageZero(const int n)
     }else{
         damage[n][0] = 0.0;
     }
+
+#endif
 
     totalIonRate += damage[n][0];
     //damage[n][0] = DPA_RATE[n] * DENSITY*volumeAtIndex(n) / NRT[n];

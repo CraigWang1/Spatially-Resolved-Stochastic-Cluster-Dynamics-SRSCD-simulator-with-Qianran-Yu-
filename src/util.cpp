@@ -31,3 +31,8 @@ double lengthb(int i)
 {
 	return (length(i) + length(i + 1))/2.;
 }
+
+double clamp(double val, double minVal, double maxVal)
+{
+	return std::max(std::min(val, maxVal), minVal);
+}

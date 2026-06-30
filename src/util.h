@@ -3,6 +3,7 @@
 
 #include "constants.h"
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -10,6 +11,7 @@ double volumeAtIndex(int);
 double length(int);
 double lengthf(int);
 double lengthb(int);
+double clamp(double, double, double);
 
 template<typename T>
 struct SegmentTree {
