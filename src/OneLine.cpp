@@ -725,7 +725,15 @@ void OneLine::computeSAVReaction(
         }
         else if (numHPerCluster >= 1 && numVacancies == 0)
         {
-            SAVR = 0.004 * hostObject->getNumber(count);
+            double coeff = 0;
+            if (TEMPERATURE < 383)   // custom fitting based on experiments at 383K (simmonds 2017) and 823K (nobuta 2022)
+                coeff = 0.01;
+            else if (TEMPERATURE > 823)
+                coeff = 0.0015;
+            else
+                coeff = 0.01 + (TEMPERATURE-383.0)/(823.0-383.0) * (0.0015-0.01);   // linear interpolation
+            
+            SAVR = coeff * hostObject->getNumber(count);
         }
     }
 }
