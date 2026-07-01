@@ -247,8 +247,9 @@ void Object::computeR1R1e()
 
 void Object::computeDiffCoeff()
 {
-    const double fi = 0.9, fv = 0.7; // Diffusion correlationm factors.
-    const double gi = 0.5, gv = 0.125; // Geometric factor for diffusion.
+    // const double fi = 0.9, fv = 0.7; // Diffusion correlationm factors.
+    // const double gv = 0.125;
+    const double gi = 0.5; // Geometric factor for diffusion.
     double prefactor = 0, energy_m = 0;
     int check_all = 0;
     int check_He = 0;
@@ -276,7 +277,8 @@ void Object::computeDiffCoeff()
             }else if (abs(attributes[0]) == 2) { // 2I
                 prefactor = 7.97e-4;
                 energy_m = 0.024;
-            }else {
+            }
+            else {
                 prefactor = 0;
             }
             // else if (abs(attributes[0]) == 3) { // 1I

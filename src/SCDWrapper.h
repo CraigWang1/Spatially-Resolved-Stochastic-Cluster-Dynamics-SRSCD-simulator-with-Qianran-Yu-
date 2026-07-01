@@ -65,6 +65,9 @@ private:
     // GnuplotS gd1, gd2; /* damage graph 1 and damage graph 2*/
     // GnuplotS gh1, gh2, gh3; /* H deposition graph 1,2,3 */
     // GnuplotS gv;
+
+    vector<double> vacClusterSizeCDF;
+    vector<double> siaClusterSizeCDF;
     
     /* private functions */
     /* set sinks function */
