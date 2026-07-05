@@ -1151,7 +1151,14 @@ void SCDWrapper::getNeutronInsertion(const int count)
         numFP = 0.50 * pow(Epka/1000.0, 1.15);
 
     // Convert decimal number of frenkel pairs created into integer through sampling from Poisson distribution
-    int n = Poisson(numFP);
+    int n;
+    int lower = int(numFP);
+    int upper = lower + 1;
+    randomNum = distribution(engine);
+    if (lower + randomNum < numFP)
+        n = upper;
+    else
+        n = lower;
 
     // Generate vacancy clusters and monovacancies by sampling cluster size distribution
     int nv = 0;
