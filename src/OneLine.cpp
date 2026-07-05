@@ -727,11 +727,11 @@ void OneLine::computeSAVReaction(
         {
             double coeff = 0;
             if (TEMPERATURE < 383)   // custom fitting based on experiments at 383K (simmonds 2017) and 823K (nobuta 2022)
-                coeff = 0.01;
+                coeff = 0.007;
             else if (TEMPERATURE > 823)
                 coeff = 0.0015;
             else
-                coeff = 0.01 + (TEMPERATURE-383.0)/(823.0-383.0) * (0.0015-0.01);   // linear interpolation
+                coeff = 0.007 + (TEMPERATURE-383.0)/(823.0-383.0) * (0.0015-0.007);   // linear interpolation
             
             SAVR = coeff * hostObject->getNumber(count);
         }
