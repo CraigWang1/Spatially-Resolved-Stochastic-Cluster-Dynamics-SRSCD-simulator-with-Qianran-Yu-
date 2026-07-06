@@ -2,7 +2,7 @@
 CXX= mpicxx
 
 # Use CXXFLAGS to specify additional compiler options to use:
-CXXFLAGS = -Wall -std=c++0x -O3 -flto
+CXXFLAGS = -Wall -std=c++0x -O3 -flto -march=native
 
 # Define variables:
 EXE_FILE= scdexe 
@@ -13,8 +13,7 @@ HEADER_FILES= SCDWrapper.h Bundle.h CascadeDamage.h Damage.h Object.h OneLine.h 
 # Build executable:
 exe : $(EXE_FILE)
 $(EXE_FILE) : $(OBJ_FILES) 
-	$(CXX) -o $(EXE_FILE) $(OBJ_FILES) -lm -O3 -flto
-	# chmod ugo+x $(EXE_FILE)	# turn on execute permissionss
+	$(CXX) $(CXXFLAGS) -o $(EXE_FILE) $(OBJ_FILES) -lm
 
 # Rules:
 .cpp.o:	$(HEADER_FILES)
