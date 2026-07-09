@@ -12,9 +12,9 @@ from scipy.signal import butter, filtfilt, savgol_coeffs
 from scipy.interpolate import make_interp_spline
 from make_speciesfile import combine_species_files
 
-DIVIDING_AREA = 0.64e-16 # m^2
+DIVIDING_AREA = 0.5141e-16 # m^2
 STARTING_TEMP = 300   # K
-TEMP_RISE_RATE = 0.5  # K/s
+TEMP_RISE_RATE = 1/2  # K/s
 FWHM = 140            # Full width at half maximum in K (for smoothing later)
 
 times = []

@@ -31,7 +31,7 @@ TEMPERATURE = 300
 H_SATURATION_CONCENTRATION = DENSITY * math.exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE) / DENSITY * 100
 dpi = 100
 
-TOTAL_NUM_H = 4262
+TOTAL_NUM_H = 4248
 
 def volumeAtIndex(i):
     """
@@ -64,7 +64,23 @@ positions = np.array(positions)
 sample_depth_um = positions[-1] + length(POINTS-1)/2*CM_TO_UM
 # print(sample_depth_um)
 
-num_H_cdf = [0.67, 0.86, 0.97, 1]
+obj_keys = [
+    -1000000,
+    -1000001,
+    -1000002,
+    -1000003,
+    -1000004,
+    -2000005,
+]
+num_H_per_key = [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+]
+num_H_cdf = [0.25, 0.59, 0.79, 0.89, 0.96, 1]
 num_H = 0
 
 counts = {}
@@ -76,22 +92,24 @@ while num_H < TOTAL_NUM_H:
         depth = random.random() * sample_depth_um
         point_index = np.argmin(np.abs(positions - depth))
     
+    # Choose the type of cluster this is
     random_num = random.random()
-    cluster_H = np.searchsorted(num_H_cdf, random_num)
+    cdf_idx = np.searchsorted(num_H_cdf, random_num)
+    obj_key = obj_keys[cdf_idx]
 
-    if cluster_H not in counts:
-        counts[cluster_H] = np.zeros(POINTS)
+    if obj_key not in counts:
+        counts[obj_key] = np.zeros(POINTS)
 
-    counts[cluster_H][point_index] += 1
-    num_H += cluster_H
+    counts[obj_key][point_index] += 1
+    num_H += num_H_per_key[cdf_idx]
 
 with open('restart.txt', 'w') as f:
     f.write("step = 0\n")
     f.write("time = 0.0\n")
     f.write("fluenceH = 0.0\n")
 
-    for cluster_H in counts:
-        f.write(f"object -100000{str(cluster_H)}")
-        for i in range(len(counts[cluster_H])):
-            f.write(f"    {str(int(counts[cluster_H][i]))}")
+    for obj_key in counts:
+        f.write(f"object {str(obj_key)}")
+        for i in range(len(counts[obj_key])):
+            f.write(f"    {str(int(counts[obj_key][i]))}")
         f.write("\n")

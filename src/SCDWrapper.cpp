@@ -134,14 +134,18 @@ void SCDWrapper::computeMatrixRate(const int n)
     /* Qianran 0925 */
     //cout << "Element " << n + 1 << endl;
     matrixRate[n] = 0.0;
-    unordered_map<int64, Object*>::iterator iter;
+
     unordered_map<int64, Object*>& objectsInThisElement = objectsInElement[n];
-    for (iter = objectsInThisElement.begin(); iter != objectsInThisElement.end(); ++iter) {
-        Object* tempObject = iter->second;
-        OneLine* tempLine = tempObject->lines[n];
-        if (tempLine != nullptr) {
-            matrixRate[n] += tempLine->computeTotalRate();
-            //tempLine->display(tempObject);/* Qianran 0925 */
+    if (objectsInThisElement.size() > 0)
+    {
+        unordered_map<int64, Object*>::iterator iter;
+        for (iter = objectsInThisElement.begin(); iter != objectsInThisElement.end(); ++iter) {
+            Object* tempObject = iter->second;
+            OneLine* tempLine = tempObject->lines[n];
+            if (tempLine != nullptr) {
+                matrixRate[n] += tempLine->computeTotalRate();
+                //tempLine->display(tempObject);/* Qianran 0925 */
+            }
         }
     }
     matrixRate[n] += damage.getTotalDamage(n);
@@ -245,14 +249,17 @@ Object* SCDWrapper::selectDomainReaction(
     // Select the reaction inside of our spatial element
     reaction = NONE;
     unordered_map<int64, Object*>& objectsInThisElement = objectsInElement[pointIndex];
-    unordered_map<int64, Object*>::iterator iter = objectsInThisElement.begin();
-    while (reaction == NONE && iter != objectsInThisElement.end()) {
-        tempObject = iter->second;
-        tempLine = tempObject->lines[pointIndex];
-        if (tempLine != nullptr) {
-            reaction = tempLine->selectReaction(tempObject, theOtherKey, tempRandRate);
+    if (objectsInThisElement.size() > 0)
+    {
+        unordered_map<int64, Object*>::iterator iter = objectsInThisElement.begin();
+        while (reaction == NONE && iter != objectsInThisElement.end()) {
+            tempObject = iter->second;
+            tempLine = tempObject->lines[pointIndex];
+            if (tempLine != nullptr) {
+                reaction = tempLine->selectReaction(tempObject, theOtherKey, tempRandRate);
+            }
+            ++iter;
         }
-        ++iter;
     }
     if (reaction == NONE) {
         reaction = damage.selectDamage(pointIndex, tempRandRate);
@@ -691,19 +698,24 @@ void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
         return;
     }
 
+    Object* anObject;
+
     bool objExists = allObjects.find(key) != allObjects.end();
-    if ( (objExists && allObjects[key]->getNumber(n) <= 0 && number < 0) 
+    if (objExists)
+    {
+        anObject = allObjects[key];
+    }
+
+    if ( (objExists && anObject->getNumber(n) <= 0 && number < 0) 
         || (!objExists && number <= 0) )
     {
         return;
     }
 
     /* If the object exists, add to it. Otherwise create the object. */
-    Object* anObject;
     if (objExists) 
     {
         /* object found! then number of instances in this element increases by number*/
-        anObject = allObjects[key];
         anObject->addNumber(n, number);
     }
     else
@@ -722,27 +734,12 @@ void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
     // If this object exists in this spatial element, account for it
     if (anObject->getNumber(n) > 0)
     {
-        objectsInElement[n][anObject->getKey()] = anObject;
+        objectsInElement[n][key] = anObject;
     }
     else
     {
-        objectsInElement[n].erase(anObject->getKey());
+        objectsInElement[n].erase(key);
     }
-
-    bool leftBoundary = (
-        (n == startIndex || n == startIndex - 1) && n != 0
-    );
-
-    bool rightBoundary = (
-        (n == endIndex || n == endIndex + 1) && n != POINTS - 1
-    );
-
-    if (leftBoundary)
-        leftBoundaryChangeQ.push_back(
-            BoundaryChange(key, n, number));
-    if (rightBoundary)  
-        rightBoundaryChangeQ.push_back(
-            BoundaryChange(key, n, number)); 
 
     affectedObjects.insert(key);
 }
@@ -794,28 +791,32 @@ void SCDWrapper::updateObjectInMap(Object * hostObject, const int count)
         }
     }
 
-    if (hostObject->getKey() == -1000000)
-        computeSinkDissRate(0, count);
-    else if (hostObject->getKey() == 1)
-        computeSinkDissRate(1, count);
+    // If the sink diss rates depend on free species count, uncomment the below lines
+    // if (hostObject->getKey() == -1000000)
+    //     computeSinkDissRate(0, count);
+    // else if (hostObject->getKey() == 1)
+    //     computeSinkDissRate(1, count);
 }
 
 void SCDWrapper::updateRateToOther(Object const * const mobileObject, const int count)
 {
     unordered_map<int64, Object*>& objectsInThisElement = objectsInElement[count];
-    unordered_map<int64, Object*>::iterator iter;
-
-    for (iter = objectsInThisElement.begin(); iter != objectsInThisElement.end(); ++iter)
+    
+    if (objectsInThisElement.size() > 0)
     {
-        Object* hostObject = iter->second;
-        OneLine* tempLine = hostObject->lines[count];
-        if (tempLine != nullptr) {
-            /* If both are mobile objects, mobileObject will have already recorded the combination rate, no need to record it again */
-            if (hostObject->getDiff() > 0 && mobileObject->getKey() != hostObject->getKey()) {
-                tempLine->setCombReaction(mobileObject->getKey(), 0.0);
-            }
-            else {
-                tempLine->updateReaction(hostObject, mobileObject, allObjects, count);
+        unordered_map<int64, Object*>::iterator iter;
+        for (iter = objectsInThisElement.begin(); iter != objectsInThisElement.end(); ++iter)
+        {
+            Object* hostObject = iter->second;
+            OneLine* tempLine = hostObject->lines[count];
+            if (tempLine != nullptr) {
+                /* If both are mobile objects, mobileObject will have already recorded the combination rate, no need to record it again */
+                if (hostObject->getDiff() > 0 && mobileObject->getKey() != hostObject->getKey()) {
+                    tempLine->setCombReaction(mobileObject->getKey(), 0.0);
+                }
+                else {
+                    tempLine->updateReaction(hostObject, mobileObject, allObjects, count);
+                }
             }
         }
     }
@@ -879,6 +880,7 @@ void SCDWrapper::updateSinks(const int point, const int* number){
 void SCDWrapper::processDiffEvent(Object* hostObject, const int n, const char signal)
 {
     int64 key = hostObject->getKey();
+    reduceFromObjectMap(key, n);
 
     if (signal == 'f') {
         ++reactions[0][n];
@@ -911,7 +913,6 @@ void SCDWrapper::processDiffEvent(Object* hostObject, const int n, const char si
             }
         }
     }
-    reduceFromObjectMap(key, n);
 }
 
 void SCDWrapper::processSinkEvent(Object * hostObject, const int n)
@@ -930,9 +931,14 @@ void SCDWrapper::processDissoEvent(
     int64 HKey = 1;
     int number = 1;
     int theOtherAttr[LEVELS] = { 0 };   /* this holds the attribute of the other cluster(product) */
-    /* 1) deal with monomer */
+    
+    /* deal with the host object */
+    reduceFromObjectMap(hostObject->getKey(), n);
+
+    /* deal with monomer */
     addToObjectMap(monomerKey, n);
-    /* 2) generate the other cluster */
+
+    /* generate the other cluster */
     Object* monomer = allObjects[monomerKey];
     for (int i = 0; i < LEVELS; i++) {
         theOtherAttr[i] = hostObject->getAttri(i) - monomer->getAttri(i);
@@ -955,8 +961,6 @@ void SCDWrapper::processDissoEvent(
     
     addToObjectMap(theOtherKey, n, number);
 
-    /* 3) deal with the host object */
-    reduceFromObjectMap(hostObject->getKey(), n);
     /*
     if(n==0){
         fs1 <<"Dissociation: " << hostObject->getKey() << " -> " << theOtherKey << " + "<<monomerKey<<endl;
@@ -989,6 +993,11 @@ void SCDWrapper::processCombEvent(
         productAttr[i] = hostObject->getAttri(i) + theOtherObject->getAttri(i);
     } /* now I have the attribute of the product object */
     productKey = attrToKey(productAttr);
+    
+    /* update reactant */
+    reduceFromObjectMap(hostObject->getKey(), n);
+    reduceFromObjectMap(theOtherObject->getKey(), n);
+
     if(hostObject->getAttri(0)<0 && hostObject->getAttri(2)>0 && productAttr[0] > 0 && productAttr[2] > 0){
         /* Vn-Hm + xxx -> SIAp-Hq (n, m are not zero) */
         /* change above reaction to Vn-Hm + xxx -> SIAp + q*H */
@@ -1023,9 +1032,6 @@ void SCDWrapper::processCombEvent(
     else{
         addToObjectMap(productKey, n, number);
     }
-    /* update reactant */
-    reduceFromObjectMap(hostObject->getKey(), n);
-    reduceFromObjectMap(theOtherObject->getKey(), n);
 
     int attrZeroA = hostObject->getAttri(0);
     int attrZeroB = theOtherObject -> getAttri(0);
