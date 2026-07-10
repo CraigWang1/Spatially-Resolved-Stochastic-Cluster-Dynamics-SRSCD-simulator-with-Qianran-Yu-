@@ -693,7 +693,10 @@ void SCDWrapper::addNewObjectToMap(Object* newObject)
 void SCDWrapper::addToObjectMap(const int64 key, const int n, const int number)
 {
     // If the object is nothing (eg. product of 1V + 1SIA comb), don't process it
-    if (key == 0 || number == 0)
+    // For uniform free H concentration mode, don't touch the existing 1H, it's needed there for calculating rates
+    if (key == 0 
+        || number == 0
+        || (UNIFORM_FREE_H_ON && key == 1))
     {
         return;
     }
@@ -1691,6 +1694,45 @@ void SCDWrapper::setDomain(int start, int end)
 {
     startIndex = start;
     endIndex = end;
+
+    if (UNIFORM_FREE_H_ON)
+    {
+        // To simulate a constant concentration of free 1H in each element,
+        // put a placeholder of 1 count of 1H in each mesh element as a placeholder
+        // to make it easier to calculate rates. There is not actually exactly 1H in each element.
+        int64 HKey = 1;
+        Object* HObj;
+        if (allObjects.find(HKey) != allObjects.end())
+        {
+            HObj = allObjects[HKey];
+        }
+        else
+        {
+            HObj = new Object(HKey, 0, 0);
+            addNewObjectToMap(HObj);
+        }
+
+        for (int n = startIndex; n <= endIndex; n++)
+        {
+            if (n == SURFACE_INDEX 
+                || n == SUBSURFACE_INDEX
+                || (n == BACK_SUBSURFACE_INDEX && BACK_DESORB)
+                || (n == BACK_SURFACE_INDEX && BACK_DESORB))
+            {
+                // 0 H in these mesh elements are needed bc no relevant reactions in uniform free H mode would take place here
+                HObj->addNumber(n, -HObj->getNumber(n));
+                updateObjectInMap(HObj, n);
+                objectsInElement[n].erase(HKey);
+            }
+            else
+            {
+                // place 1 count of 1H in mesh element
+                HObj->addNumber(n, 1 - HObj->getNumber(n));
+                updateObjectInMap(HObj, n);
+                objectsInElement[n][HKey] = HObj;
+            }
+        }
+    }
 }
 
 void SCDWrapper::fillNoneReaction(long double maxDomainRate)

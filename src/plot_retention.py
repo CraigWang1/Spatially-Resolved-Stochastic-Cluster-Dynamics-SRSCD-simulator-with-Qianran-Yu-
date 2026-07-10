@@ -168,20 +168,22 @@ with open("sink0.txt") as f:
 	for line_hold in f:
 		line_hold = line_hold.split()
 		numH.append(int(line_hold[3]) + int(line_hold[7]) + int(line_hold[11]))
-	# trapped_hydrogen_c += np.array(numH).astype(float)
+	trapped_hydrogen_c += np.array(numH).astype(float)
 	# print(sum(numH)/np.sum(trapped_hydrogen_c))
 print("Retained fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4))
 print("Projected fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4*TOTAL_TIME/time))
-# print(trapped_hydrogen_c)
 print('Vacancies:', np.sum(vacancy_c))
+print('Num Free H:', np.sum(free_hydrogen_c)-free_hydrogen_c[0])
 for i in range(len(trapped_hydrogen_c)):
 	if i != 0:
 		trapped_hydrogen_c[i] /= volumeAtIndex(i)
+		free_hydrogen_c[i] /= volumeAtIndex(i)
 
 all_hydrogen_c = free_hydrogen_c + trapped_hydrogen_c
 
 for i in range(len(trapped_hydrogen_c)):
 	trapped_hydrogen_c[i] = trapped_hydrogen_c[i] / (DENSITY) * 100
+	free_hydrogen_c[i] = free_hydrogen_c[i] / (DENSITY) * 100
 
 # Apply Butterworth filter with filtfilt for zero phase shift
 def lowpass(data: np.ndarray, cutoff: float, sample_rate: float, poles: int = 5):
@@ -197,7 +199,7 @@ fs = 1 / (positions[5] - positions[4])  # Sampling frequency
 
 # Apply the filter using Gustafsson's method
 # smoothed_hydrogen_c = scipy.signal.filtfilt(b, a, trapped_hydrogen_c[2:], method="gust")
-smoothed_hydrogen_c = scipy.signal.savgol_filter(trapped_hydrogen_c[2:627], 50, 1)
+smoothed_hydrogen_c = scipy.signal.savgol_filter(trapped_hydrogen_c[2:], 50, 1)
 
 concentrations = [c for c in concentrations]
 
@@ -213,9 +215,9 @@ print(retained_experiment_fluence)
 print()
 print("Sim retained vs. experiment retained: "+str(retained_sim_fluence/retained_experiment_fluence))
 if plot_h:
-	# plt.plot(positions[2:], free_hydrogen_c[2:], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
+	plt.plot(positions[2:], free_hydrogen_c[2:], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
 	plt.plot(positions[2:], trapped_hydrogen_c[2:], label="Simulation", alpha=0.3, marker='^')
-	plt.plot(positions[2:627], smoothed_hydrogen_c[:625], label="Simulation Filtered", color='blue', marker='^', markersize=0)
+	# plt.plot(positions[2:], smoothed_hydrogen_c[:], label="Simulation Filtered", color='blue', marker='^', markersize=0)
 	# plt.plot(positions[2:], all_hydrogen_c[2:], label="Hydrogen Concentration")
 # if plot_v:
 	# indices_to_delete = [i for i in range(len(vacancy_c)) if vacancy_c[i] == 0]		

@@ -238,10 +238,15 @@ void OneLine::setOneLine(
 
 void OneLine::computeDiffReaction(const Object* const hostObject, const int count, unordered_map<int64, Object*>& allObjects)
 {
-    if (!DIFF_ON)
+    diffRToF = 0.0;
+    diffRToB = 0.0;
+
+    if (!DIFF_ON
+        || (UNIFORM_FREE_H_ON && hostObject->getKey() == 1))
     {
-        diffRToF = 0.0;
-        diffRToB = 0.0;
+        // For uniform concentration of free hydrogen mode,
+        // don't need to simulate diffusion because there is assuemd to be
+        // uniform, constant concentration
         return;
     }
 
@@ -426,7 +431,8 @@ void OneLine::computeSinkReaction(const Object* const hostObject, const int coun
         || count == SURFACE_INDEX 
         || count == SUBSURFACE_INDEX
         || (count == BACK_SUBSURFACE_INDEX && BACK_DESORB)
-        || (count == BACK_SURFACE_INDEX && BACK_DESORB))
+        || (count == BACK_SURFACE_INDEX && BACK_DESORB)
+        || (UNIFORM_FREE_H_ON && hostObject->getKey() == 1))
     {
         sinkRDislocationScrew = 0.0;
         sinkRDislocationEdge = 0.0;
@@ -576,12 +582,17 @@ long double OneLine::computeBaseCombReaction(
     double volume = volumeAtIndex(count);
     double adjustmentFactor = 1;
     
+    double hostNumber = hostObject->getNumber(count);
+    double mobileNumber = mobileObject->getNumber(count);
+    if (UNIFORM_FREE_H_ON && hostObject->getKey() == 1)
+        hostNumber = UNIFORM_H_CONCENTRATION*volume;
+    else if (UNIFORM_FREE_H_ON && mobileObject->getKey() == 1)
+        mobileNumber = UNIFORM_H_CONCENTRATION*volume;
+
     if (hostObject->getKey() != mobileObject->getKey()) {
-        concentration = hostObject->getNumber(count)*mobileObject->getNumber(count) / volume;
-        
+        concentration = hostNumber*mobileNumber / volume;
     }else {
-        concentration = hostObject->getNumber(count)*(hostObject->getNumber(count) - 1) / volume;
-        
+        concentration = hostNumber*(hostNumber - 1) / volume;
     }
 
     // H+H-->2H
@@ -747,7 +758,10 @@ void OneLine::computeSAVReaction(
             //     coeff = 0.007 + (TEMPERATURE-383.0)/(823.0-383.0) * (0.0015-0.007);   // linear interpolation
             
             // SAVR = coeff * hostObject->getNumber(count);
-            SAVR = 0.03*hostObject->getNumber(count);
+            double hostNumber = hostObject->getNumber(count);
+            if (UNIFORM_FREE_H_ON)
+                hostNumber = UNIFORM_H_CONCENTRATION*volumeAtIndex(count);
+            SAVR = 0.10*hostNumber;
         }
     }
 }
@@ -765,7 +779,8 @@ void OneLine::computeRecombReaction(
     if (!RECOMB_ON 
         || (count != SURFACE_INDEX && (count != BACK_SURFACE_INDEX || !BACK_DESORB)) 
         || hostObject->getKey() != HKey
-        || allObjects.find(HKey) == allObjects.end())
+        || allObjects.find(HKey) == allObjects.end()
+        || UNIFORM_FREE_H_ON)
     {
         return;
     }

@@ -12,10 +12,10 @@ from scipy.signal import butter, filtfilt, savgol_coeffs
 from scipy.interpolate import make_interp_spline
 from make_speciesfile import combine_species_files
 
-DIVIDING_AREA = 0.5141e-16 # m^2
-STARTING_TEMP = 300   # K
-TEMP_RISE_RATE = 1/2  # K/s
-FWHM = 140            # Full width at half maximum in K (for smoothing later)
+DIVIDING_AREA = 0.4583e-16 # m^2
+STARTING_TEMP = 400   # K
+TEMP_RISE_RATE = 1/6  # K/s
+FWHM = 10            # Full width at half maximum in K (for smoothing later)
 
 times = []
 desorbed = []
@@ -85,7 +85,7 @@ def zero_phase_ma(data, window_size):
 # Apply the forward-backward zero-lag filter
 smooth_flux = zero_phase_ma(desorbed_flux, window_size=window_size)
 
-plt.xlim([350, 1050])
+# plt.xlim([350, 1050])
 
 plt.plot(temperatures, smooth_flux, label="Simulation", color='b')
 plt.plot(experiment_temperatures, experiment_desorbed_flux, color='r', label="Experiment")

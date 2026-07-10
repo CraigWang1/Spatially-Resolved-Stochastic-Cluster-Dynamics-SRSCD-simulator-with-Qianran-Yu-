@@ -51,13 +51,14 @@
 #define HH_BIND_E 0.02          // [eV] Binding Energy of H-H
 // Run parameters:
 #define NEUTRON               // Irradiation type.
-#define TOTAL_TIME 8121600.0 // [s] Total simulated time.
+#define TOTAL_TIME 7692.3 // [s] Total simulated time.
 #define TOTAL_DPA 2        // Total DPA damage to reach.
 #define DIVIDING_AREA 0.4583e-12  // [cm^2] Area of the surface in between volume elements.
 //#define RATIO_HE 1.1       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_HE 0       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_H 0
-#define FLUX_H 1.0e16    // [1/(cm^2*s)]
+#define FLUX_H 6.5e17    // [1/(cm^2*s)]
+#define UNIFORM_H_CONCENTRATION 2.838e15   // [1/cm^3], if simulating constant H concentration in bulk filling of traps
 //#define DPA_RATE 0       //When only H exposure is available. no self-damage at all
 //#define DPA_RATE 3.55e-6   // [dpa/s] Damage rate.
 #define CHANNELS 3         // Irradiation channels used (1:W, 2:He, 3:H,...). the number of different particle insertion(irradiation) process.
@@ -95,8 +96,13 @@ enum Reaction { DIFFUSETOF, DIFFUSETOB, SINKDISLOCATIONSCREW, SINKDISLOCATIONEDG
 const bool LOG_REACTIONS = false;
 
 /* Configure which features to run */
-const bool IRRADIATION_ON = true;
-const bool HYDROGEN_ON = false;
+
+// Only one of the following three modes can be true at a time
+const bool IRRADIATION_ON = false;       // ion or neutron damage
+const bool HYDROGEN_ON = false;           // H flux
+const bool UNIFORM_FREE_H_ON = true;    // const concentration of free (untrapped) H inside each mesh element, so no explicit H flux
+//
+
 const bool COMB_ON = true; // combination reaction
 const bool SINK_ON = true; // sink reaction
 const bool DISS_ON = true; // dissociation reaction
