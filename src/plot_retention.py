@@ -13,11 +13,11 @@ from make_speciesfile import combine_species_files
 combine_species_files()
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 799                            # num spatial elements in the simulation (1 surface + 100 bulk)
-FIRST_EXP_INDEX = 739
-DIVIDING_AREA = 0.4583e-12                    # [cm]
-FIRST_BULK_THICKNESS = 6.77                 # [nm]
-ELEMENT_THICKNESS = 6.77                   # [nm]
+POINTS = 252                            # num spatial elements in the simulation (1 surface + 100 bulk)
+FIRST_EXP_INDEX = 3800
+DIVIDING_AREA = 1.0e-10                    # [cm]
+FIRST_BULK_THICKNESS = 100                 # [nm]
+ELEMENT_THICKNESS = 100                   # [nm]
 TOTAL_TIME = 7692.3         # [s]
 BACK_DESORB = False
 
@@ -96,6 +96,16 @@ def vacancies_per_cluster(obj_key):
 	else:
 		return 0
 
+def interstitials_per_cluster(obj_key):
+	"""
+	obj_key: string of the object's key
+	Assumes obj_key is in form of xxx000mmm, xxx is num sia, mmm is num H
+	"""
+	if int(obj_key) >= 1000000:
+		return abs(int(obj_key[:len(obj_key) - 6]))
+	else:
+		return 0
+
 # out = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 40.0, (640,480))
 
 # plt.figure(figsize=(640/dpi, 480/dpi), dpi=dpi)
@@ -133,11 +143,12 @@ with open("species.txt") as f:
 		else:
 			positions.append( positions[-1] + (length(i) + length(i-1))/2 * CM_TO_UM )
 
-	print('Sample length:', positions[-1] + length(POINTS-1)/2*CM_TO_UM, 'um')
+	print('Sample length:', round(positions[-1] + length(POINTS-1)/2*CM_TO_UM, 2), 'um')
 
 	trapped_hydrogen_c = np.zeros(POINTS)
 	free_hydrogen_c = np.zeros(POINTS)
 	vacancy_c = np.zeros(POINTS)
+	sia_c = np.zeros(POINTS)
 	plot_h = False
 	plot_v = False
 	f.readline() #step
@@ -161,19 +172,24 @@ with open("species.txt") as f:
 			vacancy_c += np.array(line_hold[2:]).astype(float) * v_per_cluster
 			plot_v = True
 
-with open("sink0.txt") as f:
-	f.readline()
-	f.readline()
-	numH = []
-	for line_hold in f:
-		line_hold = line_hold.split()
-		numH.append(int(line_hold[3]) + int(line_hold[7]) + int(line_hold[11]))
-	trapped_hydrogen_c += np.array(numH).astype(float)
+		sia_per_cluster = interstitials_per_cluster(line_hold[1])
+		if sia_per_cluster > 0:
+			sia_c += np.array(line_hold[2:]).astype(float) * sia_per_cluster
+
+# with open("sink0.txt") as f:
+# 	f.readline()
+# 	f.readline()
+# 	numH = []
+# 	for line_hold in f:
+# 		line_hold = line_hold.split()
+# 		numH.append(int(line_hold[3]) + int(line_hold[7]) + int(line_hold[11]))
+# 	trapped_hydrogen_c += np.array(numH).astype(float)
 	# print(sum(numH)/np.sum(trapped_hydrogen_c))
 print("Retained fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4))
 print("Projected fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4*TOTAL_TIME/time))
-# print('Vacancies:', np.sum(vacancy_c))
-print('Num Free H:', np.sum(free_hydrogen_c)-free_hydrogen_c[0])
+print('Vacancies:', np.sum(vacancy_c) - vacancy_c[0])
+print('SIAs:', np.sum(sia_c) - sia_c[0])
+# print('Num Free H:', np.sum(free_hydrogen_c)-free_hydrogen_c[0])
 for i in range(len(trapped_hydrogen_c)):
 	if i != 0:
 		trapped_hydrogen_c[i] /= volumeAtIndex(i)
