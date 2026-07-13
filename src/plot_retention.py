@@ -13,7 +13,7 @@ from make_speciesfile import combine_species_files
 combine_species_files()
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 832                            # num spatial elements in the simulation (1 surface + 100 bulk)
+POINTS = 799                            # num spatial elements in the simulation (1 surface + 100 bulk)
 FIRST_EXP_INDEX = 739
 DIVIDING_AREA = 0.4583e-12                    # [cm]
 FIRST_BULK_THICKNESS = 6.77                 # [nm]
@@ -133,8 +133,7 @@ with open("species.txt") as f:
 		else:
 			positions.append( positions[-1] + (length(i) + length(i-1))/2 * CM_TO_UM )
 
-	print(positions[-1] + length(POINTS-1)/2*CM_TO_UM)
-
+	print('Sample length:', positions[-1] + length(POINTS-1)/2*CM_TO_UM, 'um')
 
 	trapped_hydrogen_c = np.zeros(POINTS)
 	free_hydrogen_c = np.zeros(POINTS)
@@ -143,6 +142,7 @@ with open("species.txt") as f:
 	plot_v = False
 	f.readline() #step
 	time = float(f.readline().split()[2]) #time
+	print("time (s):", round(time, 2))
 	f.readline() #fluenceH
 	for line_hold in f:
 		line_hold = line_hold.split()
@@ -172,7 +172,7 @@ with open("sink0.txt") as f:
 	# print(sum(numH)/np.sum(trapped_hydrogen_c))
 print("Retained fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4))
 print("Projected fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4*TOTAL_TIME/time))
-print('Vacancies:', np.sum(vacancy_c))
+# print('Vacancies:', np.sum(vacancy_c))
 print('Num Free H:', np.sum(free_hydrogen_c)-free_hydrogen_c[0])
 for i in range(len(trapped_hydrogen_c)):
 	if i != 0:
@@ -206,14 +206,14 @@ concentrations = [c for c in concentrations]
 retained_experiment_fluence = 0  # arbitrary units
 retained_sim_fluence = 0
 for i in range(len(experiment_positions)-1):
-	if i == 0:
-		print(concentrations[i] * (experiment_positions[i+1]-experiment_positions[i]))
+	# if i == 0:
+		# print(concentrations[i] * (experiment_positions[i+1]-experiment_positions[i]))
 	retained_experiment_fluence += concentrations[i] * (experiment_positions[i+1]-experiment_positions[i])
 for i in range(len(positions)-1):
 	retained_sim_fluence += trapped_hydrogen_c[i] * (positions[i+1]-positions[i])
-print(retained_experiment_fluence)
+# print(retained_experiment_fluence)
 print()
-print("Sim retained vs. experiment retained: "+str(retained_sim_fluence/retained_experiment_fluence))
+# print("Sim retained vs. experiment retained: "+str(retained_sim_fluence/retained_experiment_fluence))
 if plot_h:
 	plt.plot(positions[2:], free_hydrogen_c[2:], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
 	plt.plot(positions[2:], trapped_hydrogen_c[2:], label="Simulation", alpha=0.3, marker='^')

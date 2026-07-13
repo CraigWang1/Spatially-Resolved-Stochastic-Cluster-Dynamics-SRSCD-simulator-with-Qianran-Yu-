@@ -65,7 +65,7 @@
 #define PSTEPS 5000000 // Print data every so many.
 #define LEVELS 3
 #define EXP10 3 // number of 0s assigned to each group in object's key in hash table
-#define POINTS 832 // number of elements: one surface(Point 0), one subsurface (Point 1), one implantation bulk element (Point 2), other bulk elements, other elongated bulk elements
+#define POINTS 799 // number of elements: one surface(Point 0), one subsurface (Point 1), one implantation bulk element (Point 2), other bulk elements, other elongated bulk elements
 #define SURFACE_INDEX 0     // the surface layer corresponding of adsorbed layer on material surface (not inside material)
 #define SUBSURFACE_INDEX 1  // the small subsurface layer to facilitate transport from surface to bulk
 #define FIRST_BULK_INDEX 2  // the first bulk layer that all the H ions get implanted into

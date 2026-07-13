@@ -632,7 +632,7 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
         return;
     }
 
-    double ebHDislocationScrew = 0.55, ebHDislocationEdge = 0.89, ebHGrainBndry = 0.85; //binding and migration energy of hydrogen
+    double ebHDislocationScrew = 0.55, ebHDislocationEdge = 0.89, ebHGrainBndry = 0.86; //binding and migration energy of hydrogen
 
     // vacancy emission (neglect vac emission from sinks)
     if(type == 0)
