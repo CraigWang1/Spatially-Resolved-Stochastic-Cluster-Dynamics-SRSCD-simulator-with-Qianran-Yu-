@@ -13,11 +13,11 @@ from make_speciesfile import combine_species_files
 combine_species_files()
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 252                            # num spatial elements in the simulation (1 surface + 100 bulk)
+POINTS = 3695                            # num spatial elements in the simulation (1 surface + 100 bulk)
 FIRST_EXP_INDEX = 3800
-DIVIDING_AREA = 1.0e-10                    # [cm]
-FIRST_BULK_THICKNESS = 100                 # [nm]
-ELEMENT_THICKNESS = 100                   # [nm]
+DIVIDING_AREA = 0.4583e-12                    # [cm]
+FIRST_BULK_THICKNESS = 6.77                 # [nm]
+ELEMENT_THICKNESS = 6.77                   # [nm]
 TOTAL_TIME = 7692.3         # [s]
 BACK_DESORB = False
 

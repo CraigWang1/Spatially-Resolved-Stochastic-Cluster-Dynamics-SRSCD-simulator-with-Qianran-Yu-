@@ -1,3 +1,12 @@
+"""
+Script to read clusters from one case and distribute those clusters
+into a sample of different cross sectional area but same length.
+
+Assumes the clusters are uniformly distributed along the length
+of the sample.
+"""
+
+
 import os, re, cv2, time
 import math
 import random
@@ -12,8 +21,8 @@ from scipy.signal import butter, filtfilt
 from make_speciesfile import combine_species_files
 
 
-ORIGINAL_POINTS = 252
-ORIGINAL_DIVIDING_AREA = 1.0e-10
+ORIGINAL_POINTS = 3695
+ORIGINAL_DIVIDING_AREA = 0.4583e-12
 
 # Change data files list, times list, and flux for custom use case
 # Downsized sample's parameters:
@@ -188,15 +197,16 @@ while nsia < num_downsampled_sia:
     counts[obj_key][point_index] += 1
     nsia += num_sia_in_cluster
 
-print(counts)
+print(list(vac_cluster_keys))
+print(list(vac_cluster_cdf))
 
-with open('restart.txt', 'w') as f:
-    f.write("step = 0\n")
-    f.write("time = 0.0\n")
-    f.write("fluenceH = 0.0\n")
+# with open('restart.txt', 'w') as f:
+#     f.write("step = 0\n")
+#     f.write("time = 0.0\n")
+#     f.write("fluenceH = 0.0\n")
 
-    for obj_key in counts:
-        f.write(f"object {str(obj_key)}")
-        for i in range(len(counts[obj_key])):
-            f.write(f"    {str(int(counts[obj_key][i]))}")
-        f.write("\n")
+#     for obj_key in counts:
+#         f.write(f"object {str(obj_key)}")
+#         for i in range(len(counts[obj_key])):
+#             f.write(f"    {str(int(counts[obj_key][i]))}")
+#         f.write("\n")

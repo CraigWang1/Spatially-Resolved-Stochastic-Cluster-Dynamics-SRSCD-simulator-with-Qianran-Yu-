@@ -31,7 +31,7 @@ TEMPERATURE = 300
 H_SATURATION_CONCENTRATION = DENSITY * math.exp(-HEAT_OF_SOLUTION/KB/TEMPERATURE) / DENSITY * 100
 dpi = 100
 
-TOTAL_NUM_H = 4248
+TOTAL_NUM_H = 4345
 
 def volumeAtIndex(i):
     """
@@ -64,23 +64,9 @@ positions = np.array(positions)
 sample_depth_um = positions[-1] + length(POINTS-1)/2*CM_TO_UM
 # print(sample_depth_um)
 
-obj_keys = [
-    -1000000,
-    -1000001,
-    -1000002,
-    -1000003,
-    -1000004,
-    -2000005,
-]
-num_H_per_key = [
-    0,
-    1,
-    2,
-    3,
-    4,
-    5,
-]
-num_H_cdf = [0.25, 0.59, 0.79, 0.89, 0.96, 1]
+obj_keys = [-1000000, -1000001, -1000002, -1000003, -1000004, -2000004, -2000005, -2000006, -2000007, -3000008, -4000010, -6000016]
+num_H_per_key = [0, 1, 2, 3, 4, 4, 5, 6, 7, 8, 10, 16]
+num_H_cdf = [0.10989010989010989, 0.4175824175824176, 0.6813186813186813, 0.7692307692307693, 0.8021978021978022, 0.8351648351648352, 0.8901098901098902, 0.9450549450549451, 0.9670329670329672, 0.9780219780219781, 0.989010989010989, 1.0]
 num_H = 0
 
 counts = {}

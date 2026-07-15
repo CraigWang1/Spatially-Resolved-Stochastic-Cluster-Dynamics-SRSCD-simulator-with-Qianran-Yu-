@@ -761,7 +761,8 @@ void OneLine::computeSAVReaction(
             double hostNumber = hostObject->getNumber(count);
             if (UNIFORM_FREE_H_ON)
                 hostNumber = UNIFORM_H_CONCENTRATION*volumeAtIndex(count);
-            SAVR = 0.10*hostNumber;
+            SAVR = 1.88 * exp(-0.097/(KB*TEMPERATURE)) * hostNumber;
+            // SAVR = 0.03*hostNumber;
         }
     }
 }
