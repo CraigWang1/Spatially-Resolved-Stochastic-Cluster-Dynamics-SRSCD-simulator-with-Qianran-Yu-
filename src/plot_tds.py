@@ -12,10 +12,13 @@ from scipy.signal import butter, filtfilt, savgol_coeffs
 from scipy.interpolate import make_interp_spline
 from make_speciesfile import combine_species_files
 
-DIVIDING_AREA = 0.5141e-16 # m^2
-STARTING_TEMP = 300   # K
-TEMP_RISE_RATE = 0.5  # K/s
-FWHM = 140            # Full width at half maximum in K (for smoothing later)
+plt.rcParams.update({'font.size': 14})
+
+
+DIVIDING_AREA = 0.4583e-16 # m^2
+STARTING_TEMP = 400   # K
+TEMP_RISE_RATE = 1/6  # K/s
+FWHM = 200            # Full width at half maximum in K (for smoothing later)
 
 times = []
 desorbed = []
@@ -33,12 +36,15 @@ with open("Desorbed.txt", "r") as f:
 
 experiment_temperatures = []
 experiment_desorbed_flux = []
-with open("/home/craig/research/experiment_retention_383K/tds.txt") as f:
+with open("/home/craig/research/experiment_retention_823K_unirr/tds.txt") as f:
 	f.readline() # Header
 	for line_hold in f:
 		line_hold = line_hold.split(", ")
 		experiment_temperatures.append(float(line_hold[0]))
 		experiment_desorbed_flux.append(float(line_hold[1])*10**17)
+	idx = np.argsort(experiment_temperatures)
+	experiment_temperatures = np.array(experiment_temperatures)[idx]
+	experiment_desorbed_flux = np.array(experiment_desorbed_flux)[idx]
 
 total_fluence = 0
 prev_time = 0
@@ -62,6 +68,16 @@ temperatures = STARTING_TEMP + times*TEMP_RISE_RATE
 
 desorbed_flux = np.insert(desorbed_flux, 0, 0)
 temperatures = np.insert(temperatures, 0, temperatures[0]-5)
+
+desorbed_flux = np.append(desorbed_flux, 0)
+temperatures = np.append(temperatures, temperatures[-1]+5)
+
+# Specialized additions
+desorbed_flux = np.insert(desorbed_flux, 0, 0)
+temperatures = np.insert(temperatures, 0, experiment_temperatures[0])
+
+desorbed_flux = np.append(desorbed_flux, 0)
+temperatures = np.append(temperatures, experiment_temperatures[-1])
 
 plt.plot(temperatures, desorbed_flux)
 plt.show()
@@ -91,6 +107,7 @@ plt.plot(temperatures, smooth_flux, label="Simulation", color='b')
 plt.plot(experiment_temperatures, experiment_desorbed_flux, color='r', label="Experiment")
 plt.xlabel("Temperature $[K]$")
 plt.ylabel("Desorption Flux $[D/m^{2}/s]$")
-plt.title("Desorbed Flux Vs. Temperature")
+plt.title("Desorbed Flux Vs. Temperature\n(823K Nobuta Unirradiated Experiment)")
 plt.legend()
+plt.tight_layout()
 plt.show()

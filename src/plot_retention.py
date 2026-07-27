@@ -4,6 +4,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.signal
+import addcopyfighandler
 from tqdm import tqdm
 from textwrap import wrap
 from math import floor, ceil
@@ -12,13 +13,15 @@ from make_speciesfile import combine_species_files
 
 combine_species_files()
 
+plt.rcParams.update({'font.size': 14})
+
 # Change data files list, times list, and flux for custom use case
-POINTS = 3695                            # num spatial elements in the simulation (1 surface + 100 bulk)
-FIRST_EXP_INDEX = 3800
-DIVIDING_AREA = 0.4583e-12                    # [cm]
-FIRST_BULK_THICKNESS = 6.77                 # [nm]
-ELEMENT_THICKNESS = 6.77                   # [nm]
-TOTAL_TIME = 7692.3         # [s]
+POINTS = 252                            # num spatial elements in the simulation (1 surface + 100 bulk)
+FIRST_EXP_INDEX = 700
+DIVIDING_AREA = 0.5141e-12                    # [cm]
+FIRST_BULK_THICKNESS = 7.17                 # [nm]
+ELEMENT_THICKNESS = 7.17                   # [nm]
+TOTAL_TIME = 10000         # [s]
 BACK_DESORB = False
 
 NM_TO_CM = 1e-7
@@ -176,14 +179,14 @@ with open("species.txt") as f:
 		if sia_per_cluster > 0:
 			sia_c += np.array(line_hold[2:]).astype(float) * sia_per_cluster
 
-# with open("sink0.txt") as f:
-# 	f.readline()
-# 	f.readline()
-# 	numH = []
-# 	for line_hold in f:
-# 		line_hold = line_hold.split()
-# 		numH.append(int(line_hold[3]) + int(line_hold[7]) + int(line_hold[11]))
-# 	trapped_hydrogen_c += np.array(numH).astype(float)
+with open("sink0.txt") as f:
+	f.readline()
+	f.readline()
+	numH = []
+	for line_hold in f:
+		line_hold = line_hold.split()
+		numH.append(int(line_hold[3]) + int(line_hold[7]) + int(line_hold[11]))
+	trapped_hydrogen_c += np.array(numH).astype(float)
 	# print(sum(numH)/np.sum(trapped_hydrogen_c))
 print("Retained fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4))
 print("Projected fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4*TOTAL_TIME/time))
@@ -231,9 +234,9 @@ for i in range(len(positions)-1):
 print()
 # print("Sim retained vs. experiment retained: "+str(retained_sim_fluence/retained_experiment_fluence))
 if plot_h:
-	plt.plot(positions[2:], free_hydrogen_c[2:], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
+	# plt.plot(positions[2:], free_hydrogen_c[2:], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
 	plt.plot(positions[2:], trapped_hydrogen_c[2:], label="Simulation", alpha=0.3, marker='^')
-	# plt.plot(positions[2:], smoothed_hydrogen_c[:], label="Simulation Filtered", color='blue', marker='^', markersize=0)
+	plt.plot(positions[2:], smoothed_hydrogen_c[:], label="Simulation Filtered", color='blue', marker='^', markersize=0)
 	# plt.plot(positions[2:], all_hydrogen_c[2:], label="Hydrogen Concentration")
 # if plot_v:
 	# indices_to_delete = [i for i in range(len(vacancy_c)) if vacancy_c[i] == 0]		
@@ -243,8 +246,8 @@ if plot_h:
 # print("Summed retained concentration: "+str(np.sum(trapped_hydrogen_c)))
 # plt.axhline(y=H_SATURATION_CONCENTRATION, color='black', linestyle='--', label="Free Hydrogen Saturation Limit")
 plt.yscale('log')
-# plt.ylim(2*10**-3, 10**0)
-# plt.xlim(0, 5)
+plt.ylim(2*10**-3, 10**0)
+plt.xlim(0, 5)
 plt.plot(experiment_positions, concentrations, label="Experiment", color='r')
 plt.legend()
 plt.title("Trapped Hydrogen Concentration Vs. Depth\n $T = 383K, Fluence = 1 \cdot 10^{24}$ $[m^{-2}]$")

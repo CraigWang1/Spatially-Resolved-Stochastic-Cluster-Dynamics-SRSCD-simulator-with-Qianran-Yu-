@@ -21,8 +21,8 @@ from scipy.signal import butter, filtfilt
 from make_speciesfile import combine_species_files
 
 
-ORIGINAL_POINTS = 3695
-ORIGINAL_DIVIDING_AREA = 0.4583e-12
+ORIGINAL_POINTS = 252
+ORIGINAL_DIVIDING_AREA = 1.0e-10
 
 # Change data files list, times list, and flux for custom use case
 # Downsized sample's parameters:
@@ -198,7 +198,7 @@ while nsia < num_downsampled_sia:
     nsia += num_sia_in_cluster
 
 print(list(vac_cluster_keys))
-print(list(vac_cluster_cdf))
+print(list(vac_cluster_probs))
 
 # with open('restart.txt', 'w') as f:
 #     f.write("step = 0\n")

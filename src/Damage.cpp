@@ -104,10 +104,13 @@ void Damage::computeDamageZero(const int n)
     }
 
 #ifdef NEUTRON
-    double neutronFlux = 8.404e12;  // n/cm2-s - from Nobuta 2022
-    double crossSectionPerW = 6.0 * 1.0e-24; // cross sectional area for collision between neutron and single W atom is ~6 barns in our case (CAN BE DIFFERENT FOR DIFFERENT EXPERIMENTS)
+    // double neutronFlux = 8.404e12;  // n/cm2-s - from Nobuta 2022
+    // double neutronFlux = 2.19e15;
+    // double crossSectionPerW = 6.0 * 1.0e-24; // cross sectional area for collision between neutron and single W atom is ~6 barns in our case (CAN BE DIFFERENT FOR DIFFERENT EXPERIMENTS)
     
-    damage[n][0] = neutronFlux * DENSITY * volumeAtIndex(n) * crossSectionPerW;
+    // damage[n][0] = neutronFlux * DENSITY * volumeAtIndex(n) * crossSectionPerW;
+
+    damage[n][0] = 4.3095e-8 / 4.6328e-8 * 2.19e15 * volumeAtIndex(n);
 
 #else
     if(n != 0){

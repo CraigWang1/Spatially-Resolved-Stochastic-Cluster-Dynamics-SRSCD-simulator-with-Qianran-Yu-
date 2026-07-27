@@ -644,7 +644,41 @@ long double OneLine::computeBaseCombReaction(
 
     r12 = hostObject->getR1() + mobileObject->getR1();
     dimensionTerm = computeDimensionTerm(r12, hostObject, mobileObject, count);
-    return 4.0*PI*concentration*r12*dimensionTerm*adjustmentFactor;
+
+    // if ((hostObject->getAttri(0) >= 3 && mobileObject->getAttri(0) > 0)
+    //     || (hostObject->getAttri(0) > 0 && mobileObject->getAttri(0) >= 3))
+    //     return 0;
+
+    // if (mobileObject->getKey() == 2000000 ||
+        // (mobileObject->getKey() == 2000000 && hostObject->getKey() == -1000000)){
+    // if (mobileObject->getKey() == 2000000){
+    //     return 8*PI*mobileObject->getDiff()*pow(r12, 2.0)*mobileObject->getNumber(count)/volume*pow(hostObject->getNumber(count)/volume, 4.0/3.0)*volume;
+    // }
+
+    // if (hostObject->getKey() == 2000000 && mobileObject->getKey() == -1000000){
+    //     return 8*PI*hostObject->getDiff()*pow(r12, 2.0)*hostObject->getNumber(count)/volume*pow(mobileObject->getNumber(count)/volume, 4.0/3.0)*volume;
+    // }
+
+    // Number of SIA in SIA cluster for it to travel in 1D only (no rotations)
+    // int numSIAfor1D = 5;
+
+    // if (hostObject->getAttri(0) >= numSIAfor1D && mobileObject->getAttri(0) >= numSIAfor1D)
+    //     return 0;   // Assume 1D-1D collision negligibly happens
+
+    // // 1D + immobile object (rate formula from Sicong He 2025)
+    // if (mobileObject->getAttri(0) >= numSIAfor1D && mobileObject->getAttri(2) == 0)
+    //     return 8*PI*mobileObject->getDiff()*pow(r12, 2.0)*mobileObject->getNumber(count)/volume*pow(hostObject->getNumber(count)/volume, 4.0/3.0)*volume;
+
+    // if (hostObject->getAttri(0) >= numSIAfor1D && hostObject->getAttri(2) == 0)
+    // {
+    //     cout << hostObject->getKey() << " " << mobileObject->getKey() << endl;
+    //     cout << 8*PI*hostObject->getDiff()*pow(r12, 2.0)*hostObject->getNumber(count)/volume*pow(mobileObject->getNumber(count)/volume, 4.0/3.0)*volume << endl;
+    //     cout << endl;
+    //     return 8*PI*hostObject->getDiff()*pow(r12, 2.0)*hostObject->getNumber(count)/volume*pow(mobileObject->getNumber(count)/volume, 4.0/3.0)*volume;
+    // }
+
+    // Otherwise it's a 3D+3D reaction
+    return 4.0*PI*concentration*r12*dimensionTerm;
 }
 
 long double OneLine::computeCombReaction(

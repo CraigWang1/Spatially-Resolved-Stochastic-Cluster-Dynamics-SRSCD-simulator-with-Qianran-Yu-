@@ -247,8 +247,8 @@ void Object::computeR1R1e()
 
 void Object::computeDiffCoeff()
 {
-    // const double fi = 0.9, fv = 0.7; // Diffusion correlationm factors.
-    // const double gv = 0.125;
+    const double fi = 0.9, fv = 0.7; // Diffusion correlationm factors.
+    const double gv = 0.125;
     const double gi = 0.5; // Geometric factor for diffusion.
     double prefactor = 0, energy_m = 0;
     int check_all = 0;
@@ -278,35 +278,51 @@ void Object::computeDiffCoeff()
                 prefactor = 7.97e-4;
                 energy_m = 0.024;
             }
-            else {
-                prefactor = 0;
+            // else {
+            //     prefactor = 0;
+            // }
+            else if (abs(attributes[0]) == 3) { // 3I
+                prefactor = 3.92e-4;
+                energy_m = 0.033;
             }
-            // else if (abs(attributes[0]) == 3) { // 1I
-            //     prefactor = 3.92e-4;
-            //     energy_m = 0.033;
-            // }
-            // else if(abs(attributes[0]) > 3) { // >1I
-            //     prefactor = gi*jumped*jumped*fi*NU0*pow(fabs(attributes[0]), -0.5);
-            //     energy_m = 0.013;
-            // }
+            else if(abs(attributes[0]) > 3) { // >3I
+                // prefactor = gi*jumped*jumped*fi*NU0*pow(fabs(attributes[0]), -0.5);
+                prefactor = 8.744e-4 / sqrt(fabs(attributes[0]));   // 1/sqrt(N) dependence from Swinburne 2017
+                energy_m = 0.013;                                   // Derlet 2007
+            }
         }
         else if (attributes[0] < 0) { // Vacancies.
             int numV = abs(attributes[0]);
             if (numV == 1) { // 1V
-                prefactor = 0.04;  // https://scipub.euro-fusion.org/wp-content/uploads/eurofusion/WPPFCPR17_18984_submitted-1.pdf
-                energy_m = 1.78;
+                // prefactor = 0.04;  // https://scipub.euro-fusion.org/wp-content/uploads/eurofusion/WPPFCPR17_18984_submitted-1.pdf
+                // energy_m = 1.78;
+                // prefactor = 177.0e-4;
+                // energy_m = 1.29;
+                prefactor = 1.11e-2;   // Sicong He 2025
+                energy_m = 1.71;
             }
-            // else if (numV == 2) {  // 2V
-            //     prefactor = 0.04;
-            //     energy_m = 1.65;
-            // }
+            else if (numV == 2) {  
+                // prefactor = 0.04;
+                // energy_m = 1.65;
+                prefactor = 3.81e-3;   // 2V, Zi-Yang Cao 2026
+                energy_m = 1.64;
+            }
+            else if (numV == 3) {  // 3V
+                prefactor = 5.04e-4;
+                energy_m = 0.98;
+            }
             // else if (numV > 2 && numV < 10) {
-            //     prefactor = gv*jumped*jumped*fv*NU0*pow(0.001, fabs(attributes[0]) - 1.0);
-            //     energy_m = 1.78;
-            // }
             else {
-                prefactor = 0;  // assume >= V10 is immmobile
+                // prefactor = gv*jumped*jumped*fv*NU0*pow(0.001, fabs(attributes[0]) - 1.0);
+                // energy_m = 1.78;
+                // energy_m = 1.29;
+                // energy_m = 1.71;
+                prefactor = 1.11e-2 * pow(0.001, fabs(attributes[0]) - 1);   // Nandipati 2015
+                energy_m = 1.66;    
             }
+            // else {
+                // prefactor = 0;  // assume >= V10 is immmobile
+            // }
         }
     }
     else if (!check_He) {
@@ -359,7 +375,7 @@ void Object::computeBindTerm()
     long double energy_b = 0.0;
     double attfreq = 1.0;
     double efi = 9.96, emi = 0.013; // Ab initio migration and formation energies of V and SIA in pure W.
-    double emv = 1.78;
+    double emv = 1.71;
     double eb2i = 2.12, eb2he = 1.03;
     double efhe = 4.0, emhe = 0.01;
     double emh = H_MIGRATION_ENERGY;
@@ -684,11 +700,13 @@ void Object::computeSinks()
     {
         sinkStrengthDislocation = Sd * Zdv;
         sinkStrengthGrainBndry = 6*sqrt(sinkStrengthDislocation)/GRAIN_SIZE;
+        // sinkStrengthGrainBndry = 6 / GRAIN_SIZE / GRAIN_SIZE;
     }
     else // SIA objects
     {
         sinkStrengthDislocation = Sd * Zdi;
         sinkStrengthGrainBndry = 6*sqrt(sinkStrengthDislocation)/GRAIN_SIZE;
+        // sinkStrengthGrainBndry = 6 / GRAIN_SIZE / GRAIN_SIZE;
     }
 }
 

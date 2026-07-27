@@ -15,6 +15,8 @@
 #include <iomanip>
 #include <cassert>
 #include <random>
+#include <algorithm>
+#include <numeric>
 #include <unordered_set>
 
 class SCDWrapper {
