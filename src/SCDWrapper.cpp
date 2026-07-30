@@ -236,7 +236,7 @@ Object* SCDWrapper::selectDomainReaction(
     pointIndex = matrixRateTree.first_prefix_at_least_from(startIndex, tempRandRate);
 
     // If the reaction isn't in our domain (if running in parallel)
-    if (pointIndex > endIndex)
+    if (pointIndex > endIndex || tempRandRate == 0)
     {
         reaction = NONE;
         return tempObject;

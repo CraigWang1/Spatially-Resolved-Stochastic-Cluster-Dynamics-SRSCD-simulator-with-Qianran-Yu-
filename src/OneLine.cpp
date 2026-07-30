@@ -443,6 +443,12 @@ void OneLine::computeSinkReaction(const Object* const hostObject, const int coun
     sinkRDislocationScrew = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSinkDislocation() * (1 - EDGE_DISLOCATION_FRAC);
     sinkRDislocationEdge = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSinkDislocation() * EDGE_DISLOCATION_FRAC;
     sinkRGrainBndry = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSinkGrainBndry();
+
+    // if (hostObject->getAttri(0) >= 3 && hostObject->getAttri(2) == 0)
+    // {
+    //     sinkRDislocationScrew = 1.1*hostObject->getNumber(count)*8*hostObject->getDiff()*(jumped)*pow(DISLOCATION, 1.5);
+    //     sinkRGrainBndry = 1.1*24*hostObject->getDiff()/GRAIN_SIZE/GRAIN_SIZE * hostObject->getNumber(count);
+    // }
 }
 
 long double OneLine::computeBaseDissReaction(
@@ -659,8 +665,8 @@ long double OneLine::computeBaseCombReaction(
     //     return 8*PI*hostObject->getDiff()*pow(r12, 2.0)*hostObject->getNumber(count)/volume*pow(mobileObject->getNumber(count)/volume, 4.0/3.0)*volume;
     // }
 
-    // Number of SIA in SIA cluster for it to travel in 1D only (no rotations)
-    // int numSIAfor1D = 5;
+    // // Number of SIA in SIA cluster for it to travel in 1D only (no rotations)
+    // int numSIAfor1D = 3;
 
     // if (hostObject->getAttri(0) >= numSIAfor1D && mobileObject->getAttri(0) >= numSIAfor1D)
     //     return 0;   // Assume 1D-1D collision negligibly happens
@@ -671,9 +677,9 @@ long double OneLine::computeBaseCombReaction(
 
     // if (hostObject->getAttri(0) >= numSIAfor1D && hostObject->getAttri(2) == 0)
     // {
-    //     cout << hostObject->getKey() << " " << mobileObject->getKey() << endl;
-    //     cout << 8*PI*hostObject->getDiff()*pow(r12, 2.0)*hostObject->getNumber(count)/volume*pow(mobileObject->getNumber(count)/volume, 4.0/3.0)*volume << endl;
-    //     cout << endl;
+    //     // cout << hostObject->getKey() << " " << mobileObject->getKey() << endl;
+    //     // cout << 8*PI*hostObject->getDiff()*pow(r12, 2.0)*hostObject->getNumber(count)/volume*pow(mobileObject->getNumber(count)/volume, 4.0/3.0)*volume << endl;
+    //     // cout << endl;
     //     return 8*PI*hostObject->getDiff()*pow(r12, 2.0)*hostObject->getNumber(count)/volume*pow(mobileObject->getNumber(count)/volume, 4.0/3.0)*volume;
     // }
 

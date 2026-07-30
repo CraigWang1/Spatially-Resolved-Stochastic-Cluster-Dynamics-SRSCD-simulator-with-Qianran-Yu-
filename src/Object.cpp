@@ -688,7 +688,7 @@ void Object::computeSinks()
 {
     /* The total sink strength for all defects are stored in the array s.
      [0] for vacancies; [1] for SIAs; */
-    double Zdv = 1.0, Zdi = 1.1;
+    double Zdv = 1.0, Zdi = 1.029;
     // double Zsv = 1.0, Zsi = 1.1;
     double Sd;
     /* 1. Dislocation sink strength: */

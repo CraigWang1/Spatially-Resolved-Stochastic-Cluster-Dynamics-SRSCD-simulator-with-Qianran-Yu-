@@ -25,7 +25,7 @@
 #define ALATT 3.165e-08     // [cm] Lattice parameter for W.
 #define ATOMICVOLUME 0.0158 //[nm^3] Atomic volume of W.
 #define BURGER 0.28 //[nm] burger's vector of W.
-#define DISLOCATION 1.0e+8   // [cm^-2] Dislocation density.
+#define DISLOCATION 1.0e+10   // [cm^-2] Dislocation density.
 #define EDGE_DISLOCATION_FRAC 0.0 // approximate fraction of dislocations that are edge dislocations
 #define NUM_SINKS 3               // 3 types of sinks: screw dislocations, edge dislocations, and grain boundaries
 //#define DISLOCATION 0.0
