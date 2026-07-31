@@ -707,7 +707,7 @@ void Object::computeSinks()
     {
         sinkStrengthDislocation = Sd * dislocationBias;
         sinkStrengthGrainBndry = 6*sqrt(sinkStrengthDislocation)/GRAIN_SIZE;
-        // sinkStrengthGrainBndry = 6 / GRAIN_SIZE / GRAIN_SIZE;
+        // sinkStrengthGrainBndry = 60 / GRAIN_SIZE / GRAIN_SIZE;
     }
     else  // 1D
     {
