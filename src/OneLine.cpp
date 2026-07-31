@@ -443,12 +443,6 @@ void OneLine::computeSinkReaction(const Object* const hostObject, const int coun
     sinkRDislocationScrew = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSinkDislocation() * (1 - EDGE_DISLOCATION_FRAC);
     sinkRDislocationEdge = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSinkDislocation() * EDGE_DISLOCATION_FRAC;
     sinkRGrainBndry = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSinkGrainBndry();
-
-    // if (hostObject->getAttri(0) >= 3 && hostObject->getAttri(2) == 0)
-    // {
-    //     sinkRDislocationScrew = 1.1*hostObject->getNumber(count)*8*hostObject->getDiff()*(jumped)*pow(DISLOCATION, 1.5);
-    //     sinkRGrainBndry = 1.1*24*hostObject->getDiff()/GRAIN_SIZE/GRAIN_SIZE * hostObject->getNumber(count);
-    // }
 }
 
 long double OneLine::computeBaseDissReaction(
@@ -665,26 +659,60 @@ long double OneLine::computeBaseCombReaction(
     //     return 8*PI*hostObject->getDiff()*pow(r12, 2.0)*hostObject->getNumber(count)/volume*pow(mobileObject->getNumber(count)/volume, 4.0/3.0)*volume;
     // }
 
-    // // Number of SIA in SIA cluster for it to travel in 1D only (no rotations)
-    // int numSIAfor1D = 3;
+    
+    // 1D + 1D
+    if (hostObject->getDim() == 1 && mobileObject->getDim() == 1)
+    {
+        return 8*r12*(hostObject->getDiff()+mobileObject->getDiff())*(r12*pow(mobileObject->getNumber(count)/volume, 1.0/3)+1.0/(2*log(pow(mobileObject->getNumber(count)/volume, -1.0/3)/2.0/r12)))*concentration;
+    }
 
-    // if (hostObject->getAttri(0) >= numSIAfor1D && mobileObject->getAttri(0) >= numSIAfor1D)
-    //     return 0;   // Assume 1D-1D collision negligibly happens
+    // 1D + 3D
+    else if (hostObject->getDim() == 1 && mobileObject->getDim() == 3)
+    {
+        double rate_3D_to_0D = 4*PI*r12*mobileObject->getDiff()*concentration;
+        double rate_1D_to_0D = 8*PI*hostObject->getDiff()*pow(r12, 2)*hostObject->getNumber(count)/volume*pow(mobileObject->getNumber(count)/volume, 4.0/3)*volume;
+        
+        return rate_3D_to_0D + rate_1D_to_0D;
+    }
 
-    // // 1D + immobile object (rate formula from Sicong He 2025)
-    // if (mobileObject->getAttri(0) >= numSIAfor1D && mobileObject->getAttri(2) == 0)
-    //     return 8*PI*mobileObject->getDiff()*pow(r12, 2.0)*mobileObject->getNumber(count)/volume*pow(hostObject->getNumber(count)/volume, 4.0/3.0)*volume;
+    // 3D + 1D
+    else if (hostObject->getDim() == 3 && mobileObject->getDim() == 1)
+    {
+        double rate_3D_to_0D = 4*PI*r12*hostObject->getDiff()*concentration;
+        double rate_1D_to_0D = 8*PI*mobileObject->getDiff()*pow(r12, 2)*mobileObject->getNumber(count)/volume*pow(hostObject->getNumber(count)/volume, 4.0/3)*volume;
+        
+        return rate_3D_to_0D + rate_1D_to_0D;
+    }
 
-    // if (hostObject->getAttri(0) >= numSIAfor1D && hostObject->getAttri(2) == 0)
-    // {
-    //     // cout << hostObject->getKey() << " " << mobileObject->getKey() << endl;
-    //     // cout << 8*PI*hostObject->getDiff()*pow(r12, 2.0)*hostObject->getNumber(count)/volume*pow(mobileObject->getNumber(count)/volume, 4.0/3.0)*volume << endl;
-    //     // cout << endl;
-    //     return 8*PI*hostObject->getDiff()*pow(r12, 2.0)*hostObject->getNumber(count)/volume*pow(mobileObject->getNumber(count)/volume, 4.0/3.0)*volume;
-    // }
+    // 3D + 3D
+    else
+    {
+        return 4.0*PI*concentration*r12*dimensionTerm;
+    }
+
+
+    /*
+    // Number of SIA in SIA cluster for it to travel in 1D only (no rotations)
+    int numSIAfor1D = 3;
+
+    if (hostObject->getAttri(0) >= numSIAfor1D && mobileObject->getAttri(0) >= numSIAfor1D)
+        return 0;   // Assume 1D-1D collision negligibly happens
+
+    // 1D + immobile object (rate formula from Sicong He 2025)
+    if (mobileObject->getAttri(0) >= numSIAfor1D && mobileObject->getAttri(2) == 0)
+        return 8*PI*mobileObject->getDiff()*pow(r12, 2.0)*mobileObject->getNumber(count)/volume*pow(hostObject->getNumber(count)/volume, 4.0/3.0)*volume;
+
+    if (hostObject->getAttri(0) >= numSIAfor1D && hostObject->getAttri(2) == 0)
+    {
+        // cout << hostObject->getKey() << " " << mobileObject->getKey() << endl;
+        // cout << 8*PI*hostObject->getDiff()*pow(r12, 2.0)*hostObject->getNumber(count)/volume*pow(mobileObject->getNumber(count)/volume, 4.0/3.0)*volume << endl;
+        // cout << endl;
+        return 8*PI*hostObject->getDiff()*pow(r12, 2.0)*hostObject->getNumber(count)/volume*pow(mobileObject->getNumber(count)/volume, 4.0/3.0)*volume;
+    }
 
     // Otherwise it's a 3D+3D reaction
     return 4.0*PI*concentration*r12*dimensionTerm;
+    */
 }
 
 long double OneLine::computeCombReaction(

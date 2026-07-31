@@ -222,7 +222,8 @@ void Object::setNumber()
 
 int Object::setDimensionality()
 {
-    return attributes[0] > 4 ? 1 : 3;
+    return 3;
+    // return attributes[0] >= 3 ? 1 : 3;
 }
 
 void Object::computeR1R1e()
@@ -695,18 +696,24 @@ void Object::computeSinks()
     Sd = DISLOCATION;
     
     /* 2. Grain boundary sink strength: */
+
+    double dislocationBias;
+    if (attributes[0] <= 0)
+        dislocationBias = Zdv; // Vacancies or H objects
+    else
+        dislocationBias = Zdi; // SIA objects
     
-    if (attributes[0] <= 0) // Vacancies or H objects
+    if (dimensionality == 3)
     {
-        sinkStrengthDislocation = Sd * Zdv;
+        sinkStrengthDislocation = Sd * dislocationBias;
         sinkStrengthGrainBndry = 6*sqrt(sinkStrengthDislocation)/GRAIN_SIZE;
         // sinkStrengthGrainBndry = 6 / GRAIN_SIZE / GRAIN_SIZE;
     }
-    else // SIA objects
+    else  // 1D
     {
-        sinkStrengthDislocation = Sd * Zdi;
-        sinkStrengthGrainBndry = 6*sqrt(sinkStrengthDislocation)/GRAIN_SIZE;
-        // sinkStrengthGrainBndry = 6 / GRAIN_SIZE / GRAIN_SIZE;
+        sinkStrengthDislocation = 8.0*(r1+jumped)*pow(Sd, 3.0/2) * dislocationBias;  // Huang and Marian 2019
+        // sinkStrengthGrainBndry = 4*sqrt(sinkStrengthDislocation)/GRAIN_SIZE;
+        sinkStrengthGrainBndry = 24 / GRAIN_SIZE / GRAIN_SIZE;
     }
 }
 
