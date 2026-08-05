@@ -36,8 +36,8 @@
 #define GRAIN_SIZE 0.001 //[cm] grain size from UCSD
 #define FOIL_THICKNESS 0.0002 //[cm] Foil thickness from UCSD (2000nm)
 #define SUBSURFACE_THICKNESS 0.544 //[nm] thickness of surface (conrresponds to two monolayers of tungsten)
-#define FIRST_BULK_THICKNESS 100.0   //[nm] thickness of first bulk index (sized so that its centroid corresponds to mean projective range of incident H ions)
-#define ELEMENT_THICKNESS 100.0 // [nm] thickness of bulk spatial element
+#define FIRST_BULK_THICKNESS 6.77   //[nm] thickness of first bulk index (sized so that its centroid corresponds to mean projective range of incident H ions)
+#define ELEMENT_THICKNESS 6.77 // [nm] thickness of bulk spatial element
 #define NU0 1.0e+13           // [Hz] Attempt frequency.
 #define C_DENSITY 10        // [appm] C-atom density
 #define GAMMA 1.0           // Fraction of surface emission.
@@ -51,9 +51,9 @@
 #define HH_BIND_E 0.02          // [eV] Binding Energy of H-H
 // Run parameters:
 #define NEUTRON               // Irradiation type.
-#define TOTAL_TIME 8121600.0 // [s] Total simulated time.
+#define TOTAL_TIME 7692.3 // [s] Total simulated time.
 #define TOTAL_DPA 2        // Total DPA damage to reach.
-#define DIVIDING_AREA 1.0e-10  // [cm^2] Area of the surface in between volume elements.
+#define DIVIDING_AREA 0.4583e-12  // [cm^2] Area of the surface in between volume elements.
 //#define RATIO_HE 1.1       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_HE 0       // [appm/dpa] He-to-dpa ratio.
 #define RATIO_H 0
@@ -65,11 +65,11 @@
 #define PSTEPS 5000000 // Print data every so many.
 #define LEVELS 3
 #define EXP10 3 // number of 0s assigned to each group in object's key in hash table
-#define POINTS 252 // number of elements: one surface(Point 0), one subsurface (Point 1), one implantation bulk element (Point 2), other bulk elements, other elongated bulk elements
+#define POINTS 3695 // number of elements: one surface(Point 0), one subsurface (Point 1), one implantation bulk element (Point 2), other bulk elements, other elongated bulk elements
 #define SURFACE_INDEX 0     // the surface layer corresponding of adsorbed layer on material surface (not inside material)
 #define SUBSURFACE_INDEX 1  // the small subsurface layer to facilitate transport from surface to bulk
 #define FIRST_BULK_INDEX 2  // the first bulk layer that all the H ions get implanted into
-#define FIRST_EXP_INDEX 2500 // the first mesh element where the length starts to increase exponentially (to reach experiment lengths)
+#define FIRST_EXP_INDEX 3800 // the first mesh element where the length starts to increase exponentially (to reach experiment lengths)
 #define EXP_LENGTH_MULT 1.1 // for the mesh elements that exponentially increase in length
 #define BACK_SUBSURFACE_INDEX (POINTS - 2)
 #define BACK_SURFACE_INDEX (POINTS - 1)
@@ -98,9 +98,9 @@ const bool LOG_REACTIONS = false;
 /* Configure which features to run */
 
 // Only one of the following three modes can be true at a time
-const bool IRRADIATION_ON = true;       // ion or neutron damage
+const bool IRRADIATION_ON = false;       // ion or neutron damage
 const bool HYDROGEN_ON = false;           // H flux
-const bool UNIFORM_FREE_H_ON = false;    // const concentration of free (untrapped) H inside each mesh element, so no explicit H flux
+const bool UNIFORM_FREE_H_ON = true;    // const concentration of free (untrapped) H inside each mesh element, so no explicit H flux
 //
 
 const bool COMB_ON = true; // combination reaction

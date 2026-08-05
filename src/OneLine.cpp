@@ -432,7 +432,7 @@ void OneLine::computeSinkReaction(const Object* const hostObject, const int coun
         || count == SUBSURFACE_INDEX
         || (count == BACK_SUBSURFACE_INDEX && BACK_DESORB)
         || (count == BACK_SURFACE_INDEX && BACK_DESORB)
-        || (UNIFORM_FREE_H_ON && hostObject->getKey() == 1))
+        || (UNIFORM_FREE_H_ON && hostObject->getKey() == 1)) // Assume that if you're in UNIFORM_FREE_H_ON mode, that since your temperature was high enough such that you assumed the H could penetrate to the back of the sample relatively quickly, that the temperature is high enough that the amount of H trapped in intrinsic traps (dislocations, grain boundaries) is negligible. If this is not the case, comment out this line.
     {
         sinkRDislocationScrew = 0.0;
         sinkRDislocationEdge = 0.0;
@@ -440,9 +440,13 @@ void OneLine::computeSinkReaction(const Object* const hostObject, const int coun
         return;
     }
 
-    sinkRDislocationScrew = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSinkDislocation() * (1 - EDGE_DISLOCATION_FRAC);
-    sinkRDislocationEdge = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSinkDislocation() * EDGE_DISLOCATION_FRAC;
-    sinkRGrainBndry = hostObject->getNumber(count)*hostObject->getDiff()*hostObject->getSinkGrainBndry();
+    double hostNumber = hostObject->getNumber(count);
+    if (UNIFORM_FREE_H_ON && hostObject->getKey() == 1)
+        hostNumber = UNIFORM_H_CONCENTRATION*volumeAtIndex(count);
+
+    sinkRDislocationScrew = hostNumber*hostObject->getDiff()*hostObject->getSinkDislocation() * (1 - EDGE_DISLOCATION_FRAC);
+    sinkRDislocationEdge = hostNumber*hostObject->getDiff()*hostObject->getSinkDislocation() * EDGE_DISLOCATION_FRAC;
+    sinkRGrainBndry = hostNumber*hostObject->getDiff()*hostObject->getSinkGrainBndry();
 }
 
 long double OneLine::computeBaseDissReaction(
@@ -829,8 +833,8 @@ void OneLine::computeSAVReaction(
             double hostNumber = hostObject->getNumber(count);
             if (UNIFORM_FREE_H_ON)
                 hostNumber = UNIFORM_H_CONCENTRATION*volumeAtIndex(count);
-            SAVR = 1.88 * exp(-0.097/(KB*TEMPERATURE)) * hostNumber;
-            // SAVR = 0.03*hostNumber;
+            // SAVR = 1.88 * exp(-0.097/(KB*TEMPERATURE)) * hostNumber;
+            SAVR = 0.087*hostNumber;
         }
     }
 }

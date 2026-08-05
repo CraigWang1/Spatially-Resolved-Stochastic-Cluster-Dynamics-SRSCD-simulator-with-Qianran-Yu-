@@ -22,13 +22,13 @@ from make_speciesfile import combine_species_files
 
 
 ORIGINAL_POINTS = 252
-ORIGINAL_DIVIDING_AREA = 1.0e-10
+ORIGINAL_DIVIDING_AREA = 1.0e-10           # [cm2]
 
 # Change data files list, times list, and flux for custom use case
 # Downsized sample's parameters:
 POINTS = 3695                            # num spatial elements in the simulation (1 surface + 100 bulk)
 FIRST_EXP_INDEX = 3800
-DIVIDING_AREA = 0.4583e-12                    # [cm]
+DIVIDING_AREA = 0.4583e-12                    # [cm2]
 FIRST_BULK_THICKNESS = 6.77                 # [nm]
 ELEMENT_THICKNESS = 6.77                   # [nm]
 BACK_DESORB = False
@@ -128,8 +128,8 @@ print()
 num_downsampled_vac = round(np.sum(vacancy_c)*DIVIDING_AREA/ORIGINAL_DIVIDING_AREA)
 num_downsampled_sia = round(np.sum(sia_c)*DIVIDING_AREA/ORIGINAL_DIVIDING_AREA)
 
-print('Downsampled vacancies:', num_downsampled_vac)
-print('Downsampled sias:', num_downsampled_sia)
+print('Expected downsampled vacancies:', num_downsampled_vac)
+print('Expected downsampled sias:', num_downsampled_sia)
 
 print()
 
@@ -145,6 +145,7 @@ sia_cluster_probs = np.array(list(sia_cluster_counts.values())) / np.sum(list(si
 sia_cluster_cdf = np.cumsum(sia_cluster_probs)
 
 # Sample from cluster distributions to get our desired number of vac and sia for downsized sample
+"""
 counts = {}
 nv = 0
 
@@ -197,16 +198,50 @@ while nsia < num_downsampled_sia:
     counts[obj_key][point_index] += 1
     nsia += num_sia_in_cluster
 
-print(list(vac_cluster_keys))
-print(list(vac_cluster_probs))
+# print(list(vac_cluster_keys))
+# print(list(vac_cluster_probs))
 
-# with open('restart.txt', 'w') as f:
-#     f.write("step = 0\n")
-#     f.write("time = 0.0\n")
-#     f.write("fluenceH = 0.0\n")
+"""
 
-#     for obj_key in counts:
-#         f.write(f"object {str(obj_key)}")
-#         for i in range(len(counts[obj_key])):
-#             f.write(f"    {str(int(counts[obj_key][i]))}")
-#         f.write("\n")
+binomial_draws = np.random.binomial(
+	np.array(list(vac_cluster_counts.values())).astype(np.int64, casting='unsafe'), 
+	DIVIDING_AREA/ORIGINAL_DIVIDING_AREA
+)
+
+new_vac_counts = dict(zip(vac_cluster_counts.keys(), binomial_draws))
+
+binomial_draws = np.random.binomial(
+	np.array(list(sia_cluster_counts.values())).astype(np.int64, casting='unsafe'), 
+	DIVIDING_AREA/ORIGINAL_DIVIDING_AREA
+)
+
+new_sia_counts = dict(zip(sia_cluster_counts.keys(), binomial_draws))
+
+new_counts = {**new_vac_counts, **new_sia_counts}
+
+spatial_counts = {}
+for obj_key in new_counts:
+	for i in range(new_counts[obj_key]):
+		# Choose which mesh element to insert the cluster to
+		point_index = 0
+		while point_index == 0 or point_index == 1:
+			depth = random.random() * sample_depth_um
+			point_index = np.argmin(np.abs(positions - depth))
+
+		if obj_key not in spatial_counts:
+			spatial_counts[obj_key] = np.zeros(POINTS)
+
+		spatial_counts[obj_key][point_index] += 1
+
+print(spatial_counts)
+
+with open('restart.txt', 'w') as f:
+    f.write("step = 0\n")
+    f.write("time = 0.0\n")
+    f.write("fluenceH = 0.0\n")
+
+    for obj_key in spatial_counts:
+        f.write(f"object {str(obj_key)}")
+        for i in range(len(spatial_counts[obj_key])):
+            f.write(f"    {str(int(spatial_counts[obj_key][i]))}")
+        f.write("\n")

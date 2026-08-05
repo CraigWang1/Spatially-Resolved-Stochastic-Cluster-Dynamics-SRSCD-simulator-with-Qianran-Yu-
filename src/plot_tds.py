@@ -14,11 +14,10 @@ from make_speciesfile import combine_species_files
 
 plt.rcParams.update({'font.size': 14})
 
-
-DIVIDING_AREA = 0.4583e-16 # m^2
-STARTING_TEMP = 400   # K
-TEMP_RISE_RATE = 1/6  # K/s
-FWHM = 200            # Full width at half maximum in K (for smoothing later)
+DIVIDING_AREA = 0.5141e-16 # m^2
+STARTING_TEMP = 300   # K
+TEMP_RISE_RATE = 1/2  # K/s
+FWHM = 140            # Full width at half maximum in K (for smoothing later)
 
 times = []
 desorbed = []
@@ -36,7 +35,7 @@ with open("Desorbed.txt", "r") as f:
 
 experiment_temperatures = []
 experiment_desorbed_flux = []
-with open("/home/craig/research/experiment_retention_823K_unirr/tds.txt") as f:
+with open("/home/craig/research/experiment_retention_383K/tds.txt") as f:
 	f.readline() # Header
 	for line_hold in f:
 		line_hold = line_hold.split(", ")
@@ -101,13 +100,14 @@ def zero_phase_ma(data, window_size):
 # Apply the forward-backward zero-lag filter
 smooth_flux = zero_phase_ma(desorbed_flux, window_size=window_size)
 
-# plt.xlim([350, 1050])
+plt.xlim([350, 1050])
 
 plt.plot(temperatures, smooth_flux, label="Simulation", color='b')
 plt.plot(experiment_temperatures, experiment_desorbed_flux, color='r', label="Experiment")
 plt.xlabel("Temperature $[K]$")
 plt.ylabel("Desorption Flux $[D/m^{2}/s]$")
-plt.title("Desorbed Flux Vs. Temperature\n(823K Nobuta Unirradiated Experiment)")
+plt.title("Desorbed Flux Vs. Temperature\n(383K Simmonds Unirradiated Experiment)")
 plt.legend()
 plt.tight_layout()
+plt.savefig('fig.png', dpi=300)
 plt.show()
