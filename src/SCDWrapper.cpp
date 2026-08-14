@@ -632,7 +632,7 @@ void SCDWrapper::computeSinkDissRate(const int type, const int point)
         return;
     }
 
-    double ebHDislocationScrew = 0.55, ebHDislocationEdge = 0.89, ebHGrainBndry = 0.86; //binding and migration energy of hydrogen
+    double ebHDislocationScrew = 0.55, ebHDislocationEdge = 0.89, ebHGrainBndry = 0.79; //binding and migration energy of hydrogen
 
     // vacancy emission (neglect vac emission from sinks)
     if(type == 0)
@@ -1207,23 +1207,21 @@ void SCDWrapper::getNeutronInsertion(const int count)
     else
         n = lower;
 
-    // Number of vac and interstitials that are clustered
-    int ncli = Binomial(n, fcli);
-    int nclv = Binomial(n, fclv);
-    // int ncli = round(n * fcli);
-    // int nclv = round(n * fclv);
+    // 1. GENERATE ALL VACANCY CLUSTER SIZES FIRST
+    int numVac = n;
+    int nclv = Binomial(numVac, fclv);
 
-    // Generate vacancy clusters and monovacancies by sampling cluster size distribution
-    int nv = 0;
+    std::vector<int> vacClusters;
 
-    for (nv = 0; nv < n-nclv; nv++)
+    // Monovacancies (size = 1)
+    for (int nv = 0; nv < numVac - nclv; nv++)
     {
-        int productAttr[3] = {-1, 0, 0}; // vac1
-        int64 key = attrToKey(productAttr);
-        addToObjectMap(key, count);
+        vacClusters.push_back(1);
     }
 
-    while (nv < n)
+    // Vacancy clusters (size > 1)
+    int nv = numVac - nclv;
+    while (nv < numVac)
     {
         randomNum = distribution(engine);
         int clusterNum = 1 + (lower_bound(vacClusterSizeCDF.begin(), vacClusterSizeCDF.end(), randomNum) - vacClusterSizeCDF.begin());
@@ -1231,27 +1229,57 @@ void SCDWrapper::getNeutronInsertion(const int count)
         if (clusterNum == 1)
             continue;
 
-        if (nv + clusterNum > n)
-            clusterNum = n - nv;
+        if (nv + clusterNum > numVac)
+            clusterNum = numVac - nv;
 
-        int productAttr[3] = {0};
-        productAttr[0] = -clusterNum;
-        int64 key = attrToKey(productAttr);
-        addToObjectMap(key, count);
-
+        vacClusters.push_back(clusterNum);
         nv += clusterNum;
     }
 
-    // Generate SIA clusters and single sia
+
+    // 2. GENERATE SIAS & PERFORM WEIGHTED RECOMBINATION WITH VACANCY CLUSTERS
+    int ncli = Binomial(n, fcli);
     int nsia = 0;
 
-    for (nsia = 0; nsia < n-ncli; nsia++)
+    for (nsia = 0; nsia < n - ncli; nsia++)
     {
-        int productAttr[3] = {1, 0, 0}; // sia1
-        int64 key = attrToKey(productAttr);
-        addToObjectMap(key, count);
+        // 81% chance for single SIA to recombine with a vacancy cluster
+        if (distribution(engine) <= 0.81)
+        {
+            if (!vacClusters.empty())
+            {
+                // Build weights vector proportional to radius: R ~ (num_vacancies)^(1/3)
+                std::vector<double> weights;
+                weights.reserve(vacClusters.size());
+                for (int vSize : vacClusters)
+                {
+                    weights.push_back(std::cbrt(static_cast<double>(vSize)));
+                }
+
+                // Select a random vacancy cluster weighted by its radius
+                std::discrete_distribution<size_t> weightedDist(weights.begin(), weights.end());
+                size_t chosenIdx = weightedDist(engine);
+
+                // Recombine: decrement chosen cluster size by 1
+                vacClusters[chosenIdx]--;
+
+                // If cluster is fully annihilated, remove it from the list
+                if (vacClusters[chosenIdx] == 0)
+                {
+                    vacClusters.erase(vacClusters.begin() + chosenIdx);
+                }
+            }
+        }
+        else
+        {
+            // 19% chance single SIA survives
+            int productAttr[3] = {1, 0, 0}; // sia1
+            int64 key = attrToKey(productAttr);
+            addToObjectMap(key, count);
+        }
     }
 
+    // Generate SIA clusters (unchanged)
     while (nsia < n)
     {
         randomNum = distribution(engine);
@@ -1270,6 +1298,91 @@ void SCDWrapper::getNeutronInsertion(const int count)
 
         nsia += clusterNum;
     }
+
+
+    // 3. PUSH SURVIVING VACANCIES / VACANCY CLUSTERS TO OBJECT MAP
+    for (int vSize : vacClusters)
+    {
+        int productAttr[3] = {-vSize, 0, 0}; // vac size convention
+        int64 key = attrToKey(productAttr);
+        addToObjectMap(key, count);
+    }
+
+
+
+    // // Number of vac and interstitials that are clustered
+    // int numVac = n;
+    // int ncli = Binomial(n, fcli);
+
+    // // Generate SIA clusters and single sia
+    // int nsia = 0;
+
+    // for (nsia = 0; nsia < n-ncli; nsia++)
+    // {
+    //     if (distribution(engine) > 0.81)
+    //     {
+    //         int productAttr[3] = {1, 0, 0}; // sia1
+    //         int64 key = attrToKey(productAttr);
+    //         addToObjectMap(key, count);
+    //     }
+    //     else
+    //     {
+    //         numVac--;
+    //     }
+    // }
+
+    // while (nsia < n)
+    // {
+    //     randomNum = distribution(engine);
+    //     int clusterNum = 1 + (lower_bound(siaClusterSizeCDF.begin(), siaClusterSizeCDF.end(), randomNum) - siaClusterSizeCDF.begin());
+
+    //     if (clusterNum == 1)
+    //         continue;
+
+    //     if (nsia + clusterNum > n)
+    //         clusterNum = n - nsia;
+
+    //     int productAttr[3] = {0};
+    //     productAttr[0] = clusterNum;
+    //     int64 key = attrToKey(productAttr);
+    //     addToObjectMap(key, count);
+
+    //     nsia += clusterNum;
+    // }
+
+
+    // n = numVac;
+
+    // int nclv = Binomial(n, fclv);
+
+    // // Generate vacancy clusters and monovacancies by sampling cluster size distribution
+    // int nv = 0;
+
+    // for (nv = 0; nv < n-nclv; nv++)
+    // {
+    //     int productAttr[3] = {-1, 0, 0}; // vac1
+    //     int64 key = attrToKey(productAttr);
+    //     addToObjectMap(key, count);
+    // }
+
+    // while (nv < n)
+    // {
+    //     randomNum = distribution(engine);
+    //     int clusterNum = 1 + (lower_bound(vacClusterSizeCDF.begin(), vacClusterSizeCDF.end(), randomNum) - vacClusterSizeCDF.begin());
+
+    //     if (clusterNum == 1)
+    //         continue;
+
+    //     if (nv + clusterNum > n)
+    //         clusterNum = n - nv;
+
+    //     int productAttr[3] = {0};
+    //     productAttr[0] = -clusterNum;
+    //     int64 key = attrToKey(productAttr);
+    //     addToObjectMap(key, count);
+
+    //     nv += clusterNum;
+    // }
 }
 
 // void SCDWrapper::getNeutronInsertion(const int count)

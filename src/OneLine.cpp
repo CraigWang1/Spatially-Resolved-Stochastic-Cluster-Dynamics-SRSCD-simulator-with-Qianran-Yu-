@@ -833,8 +833,17 @@ void OneLine::computeSAVReaction(
             double hostNumber = hostObject->getNumber(count);
             if (UNIFORM_FREE_H_ON)
                 hostNumber = UNIFORM_H_CONCENTRATION*volumeAtIndex(count);
-            // SAVR = 1.88 * exp(-0.097/(KB*TEMPERATURE)) * hostNumber;
-            SAVR = 0.087*hostNumber;
+            SAVR = 0.477 * exp(-0.128/(KB*TEMPERATURE)) * hostNumber;
+            // SAVR = 0.079*hostNumber;
+        }
+
+        // For W-Re, SIA1 travels in complete 3D to recombine with the newly created vac
+        if (SAVR > 0)
+        {
+            int prodAttr[3] = {-(numVacancies+1), 0, 0};
+            int64 key = attrToKey(prodAttr);
+            Object temp(key, count);
+            SAVR *= (jumped / (jumped+temp.getR1()));
         }
     }
 }

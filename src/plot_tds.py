@@ -14,9 +14,9 @@ from make_speciesfile import combine_species_files
 
 plt.rcParams.update({'font.size': 14})
 
-DIVIDING_AREA = 0.5141e-16 # m^2
-STARTING_TEMP = 300   # K
-TEMP_RISE_RATE = 1/2  # K/s
+DIVIDING_AREA = 0.4583e-16 # m^2
+STARTING_TEMP = 400   # K
+TEMP_RISE_RATE = 1/6  # K/s
 FWHM = 140            # Full width at half maximum in K (for smoothing later)
 
 times = []
@@ -35,7 +35,7 @@ with open("Desorbed.txt", "r") as f:
 
 experiment_temperatures = []
 experiment_desorbed_flux = []
-with open("/home/craig/research/experiment_retention_383K/tds.txt") as f:
+with open("/home/craig/research/experiment_retention_823K_unirr/tds.txt") as f:
 	f.readline() # Header
 	for line_hold in f:
 		line_hold = line_hold.split(", ")
@@ -44,6 +44,8 @@ with open("/home/craig/research/experiment_retention_383K/tds.txt") as f:
 	idx = np.argsort(experiment_temperatures)
 	experiment_temperatures = np.array(experiment_temperatures)[idx]
 	experiment_desorbed_flux = np.array(experiment_desorbed_flux)[idx]
+
+	print(np.trapz(experiment_desorbed_flux, experiment_temperatures/TEMP_RISE_RATE))
 
 total_fluence = 0
 prev_time = 0
@@ -75,8 +77,8 @@ temperatures = np.append(temperatures, temperatures[-1]+5)
 desorbed_flux = np.insert(desorbed_flux, 0, 0)
 temperatures = np.insert(temperatures, 0, experiment_temperatures[0])
 
-desorbed_flux = np.append(desorbed_flux, 0)
-temperatures = np.append(temperatures, experiment_temperatures[-1])
+# desorbed_flux = np.append(desorbed_flux, 0)
+# temperatures = np.append(temperatures, experiment_temperatures[-1])
 
 plt.plot(temperatures, desorbed_flux)
 plt.show()
@@ -100,7 +102,7 @@ def zero_phase_ma(data, window_size):
 # Apply the forward-backward zero-lag filter
 smooth_flux = zero_phase_ma(desorbed_flux, window_size=window_size)
 
-plt.xlim([350, 1050])
+# plt.xlim([350, 1050])
 
 plt.plot(temperatures, smooth_flux, label="Simulation", color='b')
 plt.plot(experiment_temperatures, experiment_desorbed_flux, color='r', label="Experiment")

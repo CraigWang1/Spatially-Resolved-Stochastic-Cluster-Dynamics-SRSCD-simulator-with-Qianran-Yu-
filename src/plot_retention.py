@@ -16,7 +16,7 @@ combine_species_files()
 plt.rcParams.update({'font.size': 14})
 
 # Change data files list, times list, and flux for custom use case
-POINTS = 3695                            # num spatial elements in the simulation (1 surface + 100 bulk)
+POINTS = 252                            # num spatial elements in the simulation (1 surface + 100 bulk)
 FIRST_EXP_INDEX = 3800
 DIVIDING_AREA = 0.4583e-12                    # [cm]
 FIRST_BULK_THICKNESS = 6.77                 # [nm]
@@ -186,7 +186,7 @@ with open("sink0.txt") as f:
 	for line_hold in f:
 		line_hold = line_hold.split()
 		numH.append(int(line_hold[3]) + int(line_hold[7]) + int(line_hold[11]))
-	trapped_hydrogen_c += np.array(numH).astype(float)
+	# trapped_hydrogen_c += np.array(numH).astype(float)
 	# print(sum(numH)/np.sum(trapped_hydrogen_c))
 print("Retained fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4))
 print("Projected fluence [m^-2]:", np.sum(trapped_hydrogen_c/DIVIDING_AREA*1e4*TOTAL_TIME/time))
@@ -236,7 +236,7 @@ print()
 if plot_h:
 	# plt.plot(positions[2:], free_hydrogen_c[2:], label="Free Hydrogen Concentration", marker='^', linestyle='-', markersize=0)
 	plt.plot(positions[2:], trapped_hydrogen_c[2:], label="Simulation", alpha=0.3, marker='^')
-	# plt.plot(positions[2:], smoothed_hydrogen_c[:], label="Simulation Filtered", color='blue', marker='^', markersize=0)
+	plt.plot(positions[2:], smoothed_hydrogen_c[:], label="Simulation Filtered", color='blue', marker='^', markersize=0)
 	# plt.plot(positions[2:], all_hydrogen_c[2:], label="Hydrogen Concentration")
 # if plot_v:
 	# indices_to_delete = [i for i in range(len(vacancy_c)) if vacancy_c[i] == 0]		

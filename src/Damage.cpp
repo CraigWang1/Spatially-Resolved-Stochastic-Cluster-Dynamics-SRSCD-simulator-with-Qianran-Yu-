@@ -110,7 +110,8 @@ void Damage::computeDamageZero(const int n)
     
     // damage[n][0] = neutronFlux * DENSITY * volumeAtIndex(n) * crossSectionPerW;
 
-    damage[n][0] = 4.3095e-8 / 4.6328e-8 * 2.19e15 * volumeAtIndex(n);
+    damage[n][0] = (0.26/8121600.) / 4.6328e-8 * 2.19e15 * volumeAtIndex(n);
+    // damage[n][0] = 3.2013e-8 / 4.6328e-8 * 2.19e15 * volumeAtIndex(n);
 
 #else
     if(n != 0){

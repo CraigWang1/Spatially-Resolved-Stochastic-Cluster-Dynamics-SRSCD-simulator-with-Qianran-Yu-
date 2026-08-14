@@ -21,6 +21,7 @@ from scipy.signal import butter, filtfilt
 from make_speciesfile import combine_species_files
 
 
+# ORIGINAL_POINTS = 3695
 ORIGINAL_POINTS = 252
 ORIGINAL_DIVIDING_AREA = 1.0e-10           # [cm2]
 
@@ -44,7 +45,6 @@ FIRST_BULK_INDEX = 2
 BACK_SUBSURFACE_INDEX = POINTS - 2
 BACK_SURFACE_INDEX = POINTS - 1
 EXP_LENGTH_MULT = 1.1
-
 
 combine_species_files()
 
@@ -232,6 +232,8 @@ for obj_key in new_counts:
 			spatial_counts[obj_key] = np.zeros(POINTS)
 
 		spatial_counts[obj_key][point_index] += 1
+
+# print(vac_cluster_counts)
 
 print(spatial_counts)
 

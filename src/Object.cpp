@@ -275,9 +275,13 @@ void Object::computeDiffCoeff()
             if (abs(attributes[0]) == 1) { // 1I
                 prefactor = 8.744e-4;
                 energy_m = 0.009;
+                // prefactor = 2.154e-6;
+                // energy_m = 0.449;
             }else if (abs(attributes[0]) == 2) { // 2I
                 prefactor = 7.97e-4;
                 energy_m = 0.024;
+                // prefactor = 7.972e-6;
+                // energy_m = 0.622;
             }
             // else {
             //     prefactor = 0;
@@ -285,11 +289,15 @@ void Object::computeDiffCoeff()
             else if (abs(attributes[0]) == 3) { // 3I
                 prefactor = 3.92e-4;
                 energy_m = 0.033;
+                // prefactor = 4.979e-6;
+                // energy_m = 0.606;
             }
             else if(abs(attributes[0]) > 3) { // >3I
                 // prefactor = gi*jumped*jumped*fi*NU0*pow(fabs(attributes[0]), -0.5);
                 prefactor = 8.744e-4 / sqrt(fabs(attributes[0]));   // 1/sqrt(N) dependence from Swinburne 2017
                 energy_m = 0.013;                                   // Derlet 2007
+                // prefactor = 5.0e-6;
+                // energy_m = 0.3;
             }
         }
         else if (attributes[0] < 0) { // Vacancies.
@@ -563,7 +571,7 @@ void Object::computeBindTerm()
             double HVRatio = numH / numV;
                 
             energy_b = 1.707 - 0.507 / pow(numV, 3) + 0.1677*HVRatio / pow(numV, 2) - 0.1699*HVRatio - 8.58e-4 * pow(HVRatio, 3) - 1.793e-3*numV*pow(HVRatio, 2);
-            energy_d[2] = energy_b + emh;
+            energy_d[2] = energy_b + emh - 0.28;  // For W-Re, subtract 0.28 eV from binding energy (Yu-Wei You 2026)
             bind[0] = attfreq*exp(-energy_d[0]/KB/TEMPERATURE);
             bind[2] = attfreq*exp(-energy_d[2]/KB/TEMPERATURE);
         }
@@ -711,9 +719,10 @@ void Object::computeSinks()
     }
     else  // 1D
     {
-        sinkStrengthDislocation = 8.0*(r1+jumped)*pow(Sd, 3.0/2) * dislocationBias;  // Huang and Marian 2019
-        // sinkStrengthGrainBndry = 4*sqrt(sinkStrengthDislocation)/GRAIN_SIZE;
-        sinkStrengthGrainBndry = 24 / GRAIN_SIZE / GRAIN_SIZE;
+        // sinkStrengthDislocation = 8.0*(r1+jumped)*pow(Sd, 3.0/2) * dislocationBias;  // Huang and Marian 2019
+        sinkStrengthDislocation = 6 * pow(PI*(jumped+r1)*DISLOCATION/2., 2) * dislocationBias;
+        sinkStrengthGrainBndry = 3*sqrt(sinkStrengthDislocation)/GRAIN_SIZE;
+        // sinkStrengthGrainBndry = 24 / GRAIN_SIZE / GRAIN_SIZE;
     }
 }
 
